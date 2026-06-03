@@ -972,15 +972,18 @@ const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 
 // Check auth — redirect to login if not signed in
 async function checkAuth(){
+  // Refresh session to pick up latest metadata
+  await sb.auth.refreshSession();
   const {data:{session}} = await sb.auth.getSession();
   if(!session){ window.location.href='/'; return false; }
   // Populate sidebar user
   const email = session.user.email||'';
-  const meta = session.user.user_metadata||{};
-  const fullName = meta.full_name||'';
+  const meta = session.user.user_metadata || session.user.raw_user_meta_data || {};
+  const fullName = (meta.full_name||'').trim();
   const namePart = email.split('@')[0];
   const displayName = fullName || (namePart.charAt(0).toUpperCase()+namePart.slice(1));
-  const initials = fullName ? fullName.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : namePart.slice(0,2).toUpperCase();
+  const parts = displayName.split(' ').filter(Boolean);
+  const initials = parts.length>=2 ? (parts[0][0]+parts[1][0]).toUpperCase() : displayName.slice(0,2).toUpperCase();
   const avEl=document.getElementById('u-av');
   const nameEl=document.getElementById('u-name');
   const roleEl=document.getElementById('u-role');
