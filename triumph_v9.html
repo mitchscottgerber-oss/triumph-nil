@@ -976,9 +976,11 @@ async function checkAuth(){
   if(!session){ window.location.href='/'; return false; }
   // Populate sidebar user
   const email = session.user.email||'';
+  const meta = session.user.user_metadata||{};
+  const fullName = meta.full_name||'';
   const namePart = email.split('@')[0];
-  const displayName = namePart.charAt(0).toUpperCase()+namePart.slice(1);
-  const initials = namePart.slice(0,2).toUpperCase();
+  const displayName = fullName || (namePart.charAt(0).toUpperCase()+namePart.slice(1));
+  const initials = fullName ? fullName.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : namePart.slice(0,2).toUpperCase();
   const avEl=document.getElementById('u-av');
   const nameEl=document.getElementById('u-name');
   const roleEl=document.getElementById('u-role');
