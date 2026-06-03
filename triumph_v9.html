@@ -976,12 +976,14 @@ async function checkAuth(){
   if(!session){ window.location.href='/'; return false; }
   // Populate sidebar user
   const email = session.user.email||'';
-  const initials = email.slice(0,2).toUpperCase();
+  const namePart = email.split('@')[0];
+  const displayName = namePart.charAt(0).toUpperCase()+namePart.slice(1);
+  const initials = namePart.slice(0,2).toUpperCase();
   const avEl=document.getElementById('u-av');
   const nameEl=document.getElementById('u-name');
   const roleEl=document.getElementById('u-role');
   if(avEl) avEl.textContent=initials;
-  if(nameEl) nameEl.textContent=email;
+  if(nameEl) nameEl.textContent=displayName;
   if(roleEl) roleEl.textContent='Triumph NIL';
   return true;
 }
