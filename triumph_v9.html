@@ -3401,7 +3401,7 @@ function currencyInput(el){
   el.addEventListener('blur',function(){
     this.type='text';
     const n=parseFloat(this.value.replace(/[$,]/g,''))||0;
-    this.value=n>0?'$'+n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}):'';
+    this.value=n>0?n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}):'';
   });
 }
 function getCurrencyVal(id){
