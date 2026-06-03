@@ -577,6 +577,7 @@ select.aa-inp{appearance:auto}
 .aa-inp::-webkit-outer-spin-button,.aa-inp::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .aa-inp[type=number]{-moz-appearance:textfield}
 .aa-paid-chk input{cursor:pointer}
+.aa-paid-chk input{cursor:pointer}
 
 .set-section{background:#fff;border:1.5px solid #e5e5ea;border-radius:14px;padding:20px 22px;margin-bottom:16px}
 .set-sec-title{font-size:13px;font-weight:700;color:#1d1d1f;-webkit-text-fill-color:#1d1d1f;letter-spacing:-.2px;margin-bottom:4px}
@@ -848,17 +849,17 @@ select.aa-inp{appearance:auto}
         <div class="aa-field"><div class="aa-lbl">Contract Value *</div>
       <div style="display:flex;align-items:center;border:1.5px solid #b3d4f5;border-radius:8px;background:#eef6ff;overflow:hidden;height:34px">
         <span style="padding:0 10px;font-size:13px;color:#2980b9;font-weight:600;border-right:1px solid #b3d4f5;height:100%;display:flex;align-items:center">$</span>
-        <input class="aa-inp" id="aa-contract" type="number" min="0" placeholder="0" style="border:none!important;background:transparent!important;height:100%;flex:1;border-radius:0;padding:0 10px;font-size:13px">
+        <input class="aa-inp" id="aa-contract" type="text" inputmode="decimal" min="0" placeholder="0" style="border:none!important;background:transparent!important;height:100%;flex:1;border-radius:0;padding:0 10px;font-size:13px">
       </div></div>
         <div class="aa-field"><div class="aa-lbl">Banked (NILGo cleared)</div>
       <div style="display:flex;align-items:center;border:1.5px solid #b3d4f5;border-radius:8px;background:#eef6ff;overflow:hidden;height:34px">
         <span style="padding:0 10px;font-size:13px;color:#2980b9;font-weight:600;border-right:1px solid #b3d4f5;height:100%;display:flex;align-items:center">$</span>
-        <input class="aa-inp" id="aa-banked" type="number" min="0" placeholder="0" style="border:none!important;background:transparent!important;height:100%;flex:1;border-radius:0;padding:0 10px;font-size:13px">
+        <input class="aa-inp" id="aa-banked" type="text" inputmode="decimal" min="0" placeholder="0" style="border:none!important;background:transparent!important;height:100%;flex:1;border-radius:0;padding:0 10px;font-size:13px">
       </div></div>
         <div class="aa-field"><div class="aa-lbl">Already Paid Out</div>
       <div style="display:flex;align-items:center;border:1.5px solid #b3d4f5;border-radius:8px;background:#eef6ff;overflow:hidden;height:34px">
         <span style="padding:0 10px;font-size:13px;color:#2980b9;font-weight:600;border-right:1px solid #b3d4f5;height:100%;display:flex;align-items:center">$</span>
-        <input class="aa-inp" id="aa-paid" type="number" min="0" placeholder="0" style="border:none!important;background:transparent!important;height:100%;flex:1;border-radius:0;padding:0 10px;font-size:13px">
+        <input class="aa-inp" id="aa-paid" type="text" inputmode="decimal" min="0" placeholder="0" style="border:none!important;background:transparent!important;height:100%;flex:1;border-radius:0;padding:0 10px;font-size:13px">
       </div></div>
       </div>
 
@@ -868,12 +869,12 @@ select.aa-inp{appearance:auto}
         <div class="aa-field"><div class="aa-lbl">RS Contract Value</div>
       <div style="display:flex;align-items:center;border:1.5px solid #f5c6d0;border-radius:8px;background:#fff5f7;overflow:hidden;height:34px">
         <span style="padding:0 10px;font-size:13px;color:#c0392b;font-weight:600;border-right:1px solid #f5c6d0;height:100%;display:flex;align-items:center">$</span>
-        <input class="aa-inp" id="aa-rs-contract" type="number" min="0" placeholder="0" style="border:none!important;background:transparent!important;height:100%;flex:1;border-radius:0;padding:0 10px;font-size:13px;color:#c0392b!important">
+        <input class="aa-inp" id="aa-rs-contract" type="text" inputmode="decimal" min="0" placeholder="0" style="border:none!important;background:transparent!important;height:100%;flex:1;border-radius:0;padding:0 10px;font-size:13px;color:#c0392b!important">
       </div></div>
         <div class="aa-field"><div class="aa-lbl">RS Already Paid Out</div>
       <div style="display:flex;align-items:center;border:1.5px solid #f5c6d0;border-radius:8px;background:#fff5f7;overflow:hidden;height:34px">
         <span style="padding:0 10px;font-size:13px;color:#c0392b;font-weight:600;border-right:1px solid #f5c6d0;height:100%;display:flex;align-items:center">$</span>
-        <input class="aa-inp" id="aa-rs-paid" type="number" min="0" placeholder="0" style="border:none!important;background:transparent!important;height:100%;flex:1;border-radius:0;padding:0 10px;font-size:13px;color:#c0392b!important">
+        <input class="aa-inp" id="aa-rs-paid" type="text" inputmode="decimal" min="0" placeholder="0" style="border:none!important;background:transparent!important;height:100%;flex:1;border-radius:0;padding:0 10px;font-size:13px;color:#c0392b!important">
       </div></div>
       </div>
 
@@ -3390,6 +3391,28 @@ function runScenarioCalc(){
 }
 
 
+// ===== CURRENCY INPUT HELPERS =====
+function currencyInput(el){
+  el.addEventListener('focus',function(){
+    // Strip formatting on focus so user can type freely
+    this.value=this.value.replace(/[$,]/g,'');
+    this.type='number';
+  });
+  el.addEventListener('blur',function(){
+    this.type='text';
+    const n=parseFloat(this.value.replace(/[$,]/g,''))||0;
+    this.value=n>0?'$'+n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}):'';
+  });
+}
+function getCurrencyVal(id){
+  const el=document.getElementById(id);
+  if(!el) return 0;
+  return parseFloat((el.value||'').replace(/[$,]/g,''))||0;
+}
+function initCurrencyInputs(...ids){
+  ids.forEach(id=>{const el=document.getElementById(id);if(el) currencyInput(el);});
+}
+
 // ===== ADD ATHLETE =====
 function openAddAthlete(){
   // Build month grid
@@ -3400,17 +3423,19 @@ function openAddAthlete(){
       <div style="font-size:9px;color:#2980b9;font-weight:600;margin-bottom:3px">NIL Payment</div>
       <div style="display:flex;align-items:center;border:1.5px solid #b3d4f5;border-radius:6px;background:#eef6ff;overflow:hidden;height:28px">
         <span style="padding:0 7px;font-size:11px;color:#2980b9;font-weight:700;border-right:1px solid #b3d4f5;height:100%;display:flex;align-items:center">$</span>
-        <input class="aa-mo-inp" id="aa-mo-${m}" type="number" min="0" placeholder="0" style="border:none!important;background:transparent!important;flex:1;height:100%;padding:0 6px;font-size:11px;-moz-appearance:textfield">
+        <input class="aa-mo-inp" id="aa-mo-${m}" type="text" inputmode="decimal" placeholder="0" style="border:none!important;background:transparent!important;flex:1;height:100%;padding:0 6px;font-size:11px" onfocus="this.select()" onblur="const n=parseFloat(this.value.replace(/[^0-9.]/g,''))||0;this.value=n>0?n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}):''">
       </div>
       <label class="aa-paid-chk"><input type="checkbox" id="aa-paid-${m}"> Paid</label>
       <div style="font-size:9px;color:#c0392b;font-weight:600;margin-top:8px;margin-bottom:3px">Rev Share</div>
       <div style="display:flex;align-items:center;border:1.5px solid #f5c6d0;border-radius:6px;background:#fff5f7;overflow:hidden;height:28px">
         <span style="padding:0 7px;font-size:11px;color:#c0392b;font-weight:700;border-right:1px solid #f5c6d0;height:100%;display:flex;align-items:center">$</span>
-        <input class="aa-mo-inp" id="aa-rs-${m}" type="number" min="0" placeholder="0" style="border:none!important;background:transparent!important;flex:1;height:100%;padding:0 6px;font-size:11px;color:#c0392b!important;-webkit-text-fill-color:#c0392b!important;-moz-appearance:textfield">
+        <input class="aa-mo-inp" id="aa-rs-${m}" type="text" inputmode="decimal" placeholder="0" style="border:none!important;background:transparent!important;flex:1;height:100%;padding:0 6px;font-size:11px;color:#c0392b!important;-webkit-text-fill-color:#c0392b!important" onfocus="this.select()" onblur="const n=parseFloat(this.value.replace(/[^0-9.]/g,''))||0;this.value=n>0?n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}):''">
       </div>
     </div>
   `).join('');
   document.getElementById('aa-error').style.display='none';
+  // Init currency formatting
+  setTimeout(()=>initCurrencyInputs('aa-contract','aa-banked','aa-paid','aa-rs-contract','aa-rs-paid'),50);
   // Clear fields
   ['aa-fname','aa-ln','aa-contract','aa-banked','aa-paid','aa-rs-contract','aa-rs-paid'].forEach(id=>{
     const el=document.getElementById(id);
@@ -3435,11 +3460,11 @@ async function saveNewAthlete(){
   const pos=document.getElementById('aa-pos').value;
   const sport=document.getElementById('aa-sport').value;
   const rank=null;
-  const contract=parseFloat(document.getElementById('aa-contract').value)||0;
-  const banked=parseFloat(document.getElementById('aa-banked').value)||0;
-  const paid=parseFloat(document.getElementById('aa-paid').value)||0;
-  const rsContract=parseFloat(document.getElementById('aa-rs-contract').value)||0;
-  const rsPaid=parseFloat(document.getElementById('aa-rs-paid').value)||0;
+  const contract=getCurrencyVal('aa-contract');
+  const banked=getCurrencyVal('aa-banked');
+  const paid=getCurrencyVal('aa-paid');
+  const rsContract=getCurrencyVal('aa-rs-contract');
+  const rsPaid=getCurrencyVal('aa-rs-paid');
 
   // Validate
   const errs=[];
@@ -3488,7 +3513,7 @@ async function saveNewAthlete(){
     // Insert payment schedule rows
     const schedRows=MO.map(m=>({
       athlete_id:newA.id,month:m,year:2026,
-      amount:parseFloat(document.getElementById('aa-mo-'+m)?.value)||0,
+      amount:parseFloat((document.getElementById('aa-mo-'+m)?.value||'').replace(/[^0-9.]/g,''))||0,
       is_paid:document.getElementById('aa-paid-'+m)?.checked||false,
       sources:[]
     })).filter(r=>r.amount>0||r.is_paid);
