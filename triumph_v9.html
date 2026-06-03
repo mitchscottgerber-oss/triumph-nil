@@ -3520,13 +3520,12 @@ function openAddAthlete(){
       <div style="font-size:9px;color:#2980b9;font-weight:600;margin-bottom:3px">NIL Payment</div>
       <div style="display:flex;align-items:center;border:1.5px solid #b3d4f5;border-radius:6px;background:#eef6ff;overflow:hidden;height:28px">
         <span style="padding:0 7px;font-size:11px;color:#2980b9;font-weight:700;border-right:1px solid #b3d4f5;height:100%;display:flex;align-items:center">$</span>
-        <input class="aa-mo-inp" id="aa-mo-${m}" type="text" inputmode="decimal" placeholder="0" style="border:none!important;background:transparent!important;flex:1;height:100%;padding:0 6px;font-size:11px" onfocus="this.select()" onblur="const n=parseFloat(this.value.replace(/[^0-9.]/g,''))||0;this.value=n>0?n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}):''">
-      </div>
+        <input class="aa-mo-inp" id="aa-mo-${m}" type="text" inputmode="decimal" placeholder="" style="border:none!important;background:transparent!important;flex:1;height:100%;padding:0 6px;font-size:11px" onfocus="this.select()" onblur="const n=parseFloat(this.value.replace(/[^0-9.]/g,''))||0;this.value=n>0?n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}):''">
       <label class="aa-paid-chk"><input type="checkbox" id="aa-paid-${m}"> Paid</label>
       <div style="font-size:9px;color:#c0392b;font-weight:600;margin-top:8px;margin-bottom:3px">Rev Share</div>
       <div style="display:flex;align-items:center;border:1.5px solid #f5c6d0;border-radius:6px;background:#fff5f7;overflow:hidden;height:28px">
         <span style="padding:0 7px;font-size:11px;color:#c0392b;font-weight:700;border-right:1px solid #f5c6d0;height:100%;display:flex;align-items:center">$</span>
-        <input class="aa-mo-inp" id="aa-rs-${m}" type="text" inputmode="decimal" placeholder="0" style="border:none!important;background:transparent!important;flex:1;height:100%;padding:0 6px;font-size:11px;color:#c0392b!important;-webkit-text-fill-color:#c0392b!important" onfocus="this.select()" onblur="const n=parseFloat(this.value.replace(/[^0-9.]/g,''))||0;this.value=n>0?n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}):''">
+        <input class="aa-mo-inp" id="aa-rs-${m}" type="text" inputmode="decimal" placeholder="" style="border:none!important;background:transparent!important;flex:1;height:100%;padding:0 6px;font-size:11px;color:#c0392b!important;-webkit-text-fill-color:#c0392b!important" onfocus="this.select()" onblur="const n=parseFloat(this.value.replace(/[^0-9.]/g,''))||0;this.value=n>0?n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}):''">
       </div>
     </div>
   `).join('');
@@ -3536,7 +3535,7 @@ function openAddAthlete(){
   // Clear fields
   ['aa-fname','aa-ln','aa-contract','aa-banked','aa-paid','aa-rs-contract','aa-rs-paid'].forEach(id=>{
     const el=document.getElementById(id);
-    if(el) el.value='';
+    if(el){el.value='';el.type='text';}
   });
   document.getElementById('aa-pos').value='';
   document.getElementById('aa-sport').value='Football';
