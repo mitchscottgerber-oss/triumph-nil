@@ -638,11 +638,11 @@ select.aa-inp{appearance:auto}
   <div class="sb-ft"><div class="sb-user"><div class="u-av">JM</div><div><div class="u-name">Jordan Mills</div><div class="u-role">Senior Agent</div></div></div></div>
 </div>
 <div class="main">
-  <div class="topbar"><div><div class="top-title" id="top-title">Dashboard</div><div class="top-sub" id="top-sub">2026 Virginia Tech Football</div></div><div id="top-actions"></div></div>
+  <div class="topbar"><div><div class="top-title" id="top-title">Dashboard</div><div class="top-sub" id="top-sub"></div></div><div id="top-actions"></div></div>
   <div class="page on" id="page-dash">
     <div class="dash-bar">
       <span class="dash-lbl">Month:</span>
-      <select class="fsel" id="dash-mo" onchange="buildDash()"><option>Jan</option><option>Feb</option><option>Mar</option><option>Apr</option><option selected>May</option><option>Jun</option><option>Jul</option><option>Aug</option><option>Sep</option><option>Oct</option><option>Nov</option><option>Dec</option></select>
+      <select class="fsel" id="dash-mo" onchange="buildDash()"><option value="all">All months</option><option>Jan</option><option>Feb</option><option>Mar</option><option>Apr</option><option>May</option><option selected>Jun</option><option>Jul</option><option>Aug</option><option>Sep</option><option>Oct</option><option>Nov</option><option>Dec</option></select>
       <span class="dash-lbl" style="margin-left:10px">Sport:</span>
       <select class="fsel" id="dash-sport" onchange="buildDash()"><option value="all">All sports</option><option value="Football">Football</option><option value="Basketball">Basketball</option><option value="Baseball">Baseball</option><option value="Soccer">Soccer</option></select>
     </div>
@@ -1265,7 +1265,7 @@ function nav(page,el){
   if(el) el.classList.add('on');
   document.getElementById('page-'+page).classList.add('on');
   const T={dash:'Dashboard',athletes:'Athletes',companies:'Companies',reports:'Reports',settings:'Settings',gm:'General Manager'};
-  const S={dash:'2026 Virginia Tech Football',athletes:'Active athletes',companies:'6 active sponsors — Virginia Tech Football',reports:'Generate and export program reports',settings:'PIN protection and app configuration',gm:'Scenario planning & AI roster strategy'};
+  const S={dash:'',athletes:'Active athletes',companies:'6 active sponsors — Virginia Tech Football',reports:'Generate and export program reports',settings:'PIN protection and app configuration',gm:'Scenario planning & AI roster strategy'};
   document.getElementById('top-title').textContent=T[page]||page;
   document.getElementById('top-sub').textContent=S[page]||'';
   if(page==='dash') buildDash();
@@ -1286,7 +1286,8 @@ function buildDash(){
   const tb=list.reduce((s,a)=>s+a.banked,0);
   const tp=list.reduce((s,a)=>s+a.paid,0);
   const to=list.reduce((s,a)=>s+a.sch.reduce((t,x)=>t+x.a,0),0);
-  const mp=list.reduce((s,a)=>s+gma(a,mo),0);
+  const mp=mo==='all'?to:list.reduce((s,a)=>s+gma(a,mo),0);
+  const moLabel=mo==='all'?'Full Year':mo;
   const allD=list.flatMap(a=>a.deals);
   const clD=allD.filter(d=>(d.s1+d.s2)>0).length;
   const peD=allD.length-clD;
@@ -1299,9 +1300,9 @@ function buildDash(){
     <div class="sbox cg"><div class="slbl">NIL paid out (YTD)</div><div class="sval g">${f(tp)}</div><div class="ssub">${to>0?Math.round(tp/to*100):0}% of total owed</div></div>
     <div class="sbox ca"><div class="slbl">Total NIL banked</div><div class="sval a">${f(tb)}</div><div class="ssub">NILGo cleared funds</div></div>
   </div>
-  <div class="dsec">${mo} payments + athletes</div>
+  <div class="dsec">${moLabel} payments + athletes</div>
   <div class="sg sg4">
-    <div class="sbox cw"><div class="slbl">Total ${mo} payment</div><div class="sval">${f(mp)}</div><div class="ssub">All athletes combined</div></div>
+    <div class="sbox cw"><div class="slbl">Total ${moLabel} payment</div><div class="sval">${f(mp)}</div><div class="ssub">All athletes combined</div></div>
     <div class="sbox cp"><div class="slbl">Total athletes</div><div class="sval p">${list.length}</div><div class="ssub">${sport==='all'?'All sports':'VT '+sport}</div></div>
     <div class="sbox cb"><div class="slbl">NILGo deals cleared</div><div class="sval b">${clD}</div><div class="ssub">of ${allD.length} total deals entered</div></div>
     <div class="sbox cw"><div class="slbl">NILGo deals pending</div><div class="sval">${peD}</div><div class="ssub">Approved, awaiting first draw</div></div>
@@ -1312,7 +1313,7 @@ function buildDash(){
     <div class="sbox cb"><div class="slbl">Deals cleared</div><div class="sval b">${clD}</div><div class="ssub">Active wallets with draws</div></div>
     <div class="sbox cr"><div class="slbl">Deals pending</div><div class="sval r">${peD}</div><div class="ssub">Approved, no draws yet</div></div>
   </div>
-  <div class="dsec">${mo} payment by company</div>
+  <div class="dsec">${moLabel} payment by company</div>
   <div class="sg sgco">`;
   CO.forEach((c,i)=>{const s=moSpent(c,mo);h+=`<div class="csbox"><div class="cspri">Priority #${i+1}</div><div class="csname">${c.name}</div><div class="csval">${s>0?f(s):'$0'}</div></div>`;});
   h+='</div>';
@@ -1512,14 +1513,19 @@ function oProf(key){
   document.getElementById('a-body').style.display='none';
   document.getElementById('prof').classList.add('on');
   document.getElementById('top-title').textContent=a.f+' '+a.l;
-  document.getElementById('top-sub').textContent=a.pos+' — Virginia Tech Football';
+  document.getElementById('top-sub').textContent=a.pos+' · Virginia Tech';
   const rem=a.banked-a.paid,nf=isNF(a,CUR),mo=getMo()==='all'?CUR:getMo(),mp=gma(a,mo),rv=getRev(a,mo),rvYTD=getRevYTD(a);
   document.getElementById('pc').innerHTML=
     '<div class="hero">'
       +'<div class="herot"><div class="heroav">'+ini(a.f,a.l)+'</div>'
-      +'<div><div class="heroname">'+a.f+' '+a.l+'</div>'
-      +'<div class="herosub">'+a.pos+' — Virginia Tech Football</div>'
-      +'<div class="herobdgs"><span class="badge bb">NILGo Active</span>'+(nf?'<span class="badge br">Short this month</span>':'<span class="badge bg">Funded</span>')+(rvYTD>0?'<span class="badge" style="background:#f0ebff;color:#8e44ad;-webkit-text-fill-color:#8e44ad">Rev Share</span>':'')+'</div></div></div>'
+      +'<div style="flex:1"><div class="heroname">'+a.f+' '+a.l+'</div>'
+      +'<div class="herosub">'+a.pos+' · Virginia Tech</div>'
+      +'<div class="herobdgs"><span class="badge bb">NILGo Active</span>'+(nf?'<span class="badge br">Short this month</span>':'<span class="badge bg">Funded</span>')+(rvYTD>0?'<span class="badge" style="background:#f0ebff;color:#8e44ad;-webkit-text-fill-color:#8e44ad">Rev Share</span>':'')+'</div></div>'
+      +'<div style="display:flex;gap:7px;align-items:center">'
+        +'<button class="btn btn-outline btn-sm" onclick="openEditAthlete(\''+key+'\')" style="display:flex;align-items:center;gap:4px"><i class="ti ti-edit" style="font-size:12px"></i> Edit</button>'
+        +'<button class="btn btn-sm" onclick="deleteAthlete(\''+key+'\')" style="background:#fff0f3;color:#e34040;-webkit-text-fill-color:#e34040;border:1.5px solid #f5c6d0;display:flex;align-items:center;gap:4px"><i class="ti ti-trash" style="font-size:12px"></i> Delete</button>'
+      +'</div>'
+      +'</div></div>'
       +'<div class="krow" style="grid-template-columns:repeat(5,1fr)">'
         +'<div class="kpi"><div class="kl">NIL contract</div><div class="kv">'+f(a.contract)+'</div></div>'
         +'<div class="kpi"><div class="kl">Total paid out</div><div class="kv g">'+f(a.paid)+'</div></div>'
@@ -1533,6 +1539,116 @@ function oProf(key){
       +'<button class="tab" onclick="sT(\'receipt\',\''+key+'\',this)">Monthly receipt</button>'
     +'</div>'
     +'<div class="tabbody" id="tb">'+bSched(a)+'</div>';
+}
+
+// ===== DELETE ATHLETE =====
+function deleteAthlete(key){
+  const a=A.find(x=>x.f+'_'+x.l===key);if(!a) return;
+  if(!confirm('Remove '+a.f+' '+a.l+' from the roster?\n\nThis cannot be undone.')) return;
+  const idx=A.indexOf(a);
+  A.splice(idx,1);
+  delete revShare[key];
+  showRoster();
+  aF();
+}
+
+// ===== MARK PAID =====
+function markPaid(key,mo){
+  const a=A.find(x=>x.f+'_'+x.l===key);if(!a) return;
+  const s=a.sch.find(x=>x.mo===mo);if(!s||s.a===0) return;
+  s.p=!s.p;
+  if(s.p) a.paid=(a.paid||0)+s.a;
+  else a.paid=Math.max(0,(a.paid||0)-s.a);
+  oProf(key);
+  const list=getAthletesBySport(activeSport);
+  rAnnual(list);
+}
+
+// ===== EDIT ATHLETE =====
+function openEditAthlete(key){
+  const a=A.find(x=>x.f+'_'+x.l===key);if(!a) return;
+  const existing=document.getElementById('edit-athlete-overlay');
+  if(existing) existing.remove();
+  const ov=document.createElement('div');
+  ov.id='edit-athlete-overlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1200;display:flex;align-items:center;justify-content:center';
+  const moCells=MO.map(m=>{
+    const s=a.sch.find(x=>x.mo===m)||{a:0,p:false};
+    const rv=getRev(a,m);
+    return`<div style="background:#f9f9f9;border:1.5px solid #e5e5ea;border-radius:8px;padding:8px 10px${m===CUR?';border-color:#b7791f;background:#fffbe6':''}">
+      <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:${m===CUR?'#b7791f':'#8e8e93'};margin-bottom:5px">${m}</div>
+      <div style="font-size:8px;color:#2980b9;font-weight:600;margin-bottom:2px">NIL</div>
+      <input style="width:100%;height:26px;padding:0 6px;border:1.5px solid #b3d4f5;border-radius:5px;font-size:11px;background:#eef6ff;color:#1d1d1f;font-family:inherit;outline:none;text-align:right;box-sizing:border-box" id="em-nil-${m}" type="number" min="0" value="${s.a||''}">
+      <label style="display:flex;align-items:center;gap:4px;font-size:9px;color:#8e8e93;margin-top:3px;cursor:pointer">
+        <input type="checkbox" id="em-paid-${m}" ${s.p?'checked':''}> Paid
+      </label>
+      <div style="font-size:8px;color:#c0392b;font-weight:600;margin-top:5px;margin-bottom:2px">Rev Share</div>
+      <input style="width:100%;height:26px;padding:0 6px;border:1.5px solid #f5c6d0;border-radius:5px;font-size:11px;background:#fff5f7;color:#c0392b;font-family:inherit;outline:none;text-align:right;box-sizing:border-box" id="em-rs-${m}" type="number" min="0" value="${rv||''}">
+    </div>`;
+  }).join('');
+  ov.innerHTML=`<div style="background:#fff;border-radius:18px;width:700px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.25);overflow:hidden">
+    <div style="background:#1d1d1f;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <div><div style="font-size:15px;font-weight:700;color:#fff">Edit Athlete</div><div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px">${a.f} ${a.l}</div></div>
+      <button onclick="document.getElementById('edit-athlete-overlay').remove()" style="background:rgba(255,255,255,.12);border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;color:#fff;-webkit-text-fill-color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+    <div style="padding:18px 22px;overflow-y:auto;flex:1">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8e8e93;border-bottom:1px solid #f2f2f7;padding-bottom:6px;margin-bottom:12px">Identity</div>
+      <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:130px"><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">First Name</div><input id="em-fn" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none" value="${a.f}"></div>
+        <div style="flex:1;min-width:130px"><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Last Name</div><input id="em-ln" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none" value="${a.l}"></div>
+        <div style="flex:0 0 80px"><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Position</div><input id="em-pos" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none" value="${a.pos}"></div>
+        <div style="flex:0 0 70px"><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Rank</div><input id="em-rank" type="number" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none" value="${a.rank||''}"></div>
+      </div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8e8e93;border-bottom:1px solid #f2f2f7;padding-bottom:6px;margin-bottom:12px;margin-top:4px">NIL Contract</div>
+      <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+        <div style="flex:1;min-width:120px"><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Contract Value</div><input id="em-contract" type="number" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none" value="${a.contract||''}"></div>
+        <div style="flex:1;min-width:120px"><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Banked (NILGo)</div><input id="em-banked" type="number" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none" value="${a.banked||''}"></div>
+        <div style="flex:1;min-width:120px"><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Paid Out</div><input id="em-paid" type="number" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none" value="${a.paid||''}"></div>
+      </div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8e8e93;border-bottom:1px solid #f2f2f7;padding-bottom:6px;margin-bottom:10px">Monthly Schedule</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">${moCells}</div>
+    </div>
+    <div style="padding:14px 22px;border-top:1px solid #f2f2f7;display:flex;justify-content:space-between;background:#fafafa;flex-shrink:0">
+      <button onclick="document.getElementById('edit-athlete-overlay').remove()" style="height:32px;padding:0 16px;border-radius:8px;border:1.5px solid #e5e5ea;background:#fff;color:#1d1d1f;-webkit-text-fill-color:#1d1d1f;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Cancel</button>
+      <button onclick="saveEditAthlete('${key}')" style="height:32px;padding:0 18px;border-radius:8px;border:none;background:#1d1d1f;color:#fff;-webkit-text-fill-color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Save Changes</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+
+function saveEditAthlete(key){
+  const a=A.find(x=>x.f+'_'+x.l===key);if(!a) return;
+  const fn=(document.getElementById('em-fn').value||'').trim();
+  const ln=(document.getElementById('em-ln').value||'').trim();
+  if(!fn||!ln){alert('Name is required');return;}
+  // Remove old revShare key, update athlete
+  const oldKey=key;
+  const newKey=fn+'_'+ln;
+  a.f=fn;a.l=ln;
+  a.pos=document.getElementById('em-pos').value||a.pos;
+  a.rank=parseInt(document.getElementById('em-rank').value)||null;
+  a.contract=parseFloat(document.getElementById('em-contract').value)||0;
+  a.banked=parseFloat(document.getElementById('em-banked').value)||0;
+  a.paid=parseFloat(document.getElementById('em-paid').value)||0;
+  // Update schedule
+  MO.forEach(m=>{
+    let s=a.sch.find(x=>x.mo===m);
+    if(!s){s={mo:m,a:0,p:false,s:[]};a.sch.push(s);}
+    s.a=parseFloat(document.getElementById('em-nil-'+m)?.value)||0;
+    s.p=document.getElementById('em-paid-'+m)?.checked||false;
+    const rv=parseFloat(document.getElementById('em-rs-'+m)?.value)||0;
+    if(!revShare[newKey]) revShare[newKey]={};
+    revShare[newKey][m]=rv;
+  });
+  // Migrate revShare key if name changed
+  if(oldKey!==newKey&&revShare[oldKey]){
+    revShare[newKey]=revShare[oldKey];
+    delete revShare[oldKey];
+  }
+  document.getElementById('edit-athlete-overlay').remove();
+  oProf(newKey);
+  const list=getAthletesBySport(activeSport);
+  rAnnual(list);
 }
 
 /* Payment schedule with clickable month dropdown */
@@ -1549,6 +1665,8 @@ function bSched(a){
       +'<div class="mcmo'+(iC?' c':'')+'">'+s.mo+'</div>'
       +'<div class="mcamt'+(iC?' c':'')+'">'+( s.a>0?f(s.a):'-')+'</div>'
       +(s.p&&!iC?'<div class="mc-paid-badge">✓ Paid</div>':iC?'<div class="mcst c">Due now</div>':s.a>0?'<div class="mcst due">Upcoming</div>':'<div class="mcst up">—</div>')
+      +(s.a>0&&!s.p&&!iC?'<button onclick="event.stopPropagation();markPaid(\''+key+'\',\''+s.mo+'\')" style="margin-top:5px;font-size:9px;font-weight:600;color:#1d9e75;-webkit-text-fill-color:#1d9e75;background:#e8f8f2;border:none;border-radius:6px;padding:2px 7px;cursor:pointer;font-family:inherit;width:100%">Mark Paid</button>':'')
+      +(s.p?'<button onclick="event.stopPropagation();markPaid(\''+key+'\',\''+s.mo+'\')" style="margin-top:5px;font-size:9px;font-weight:600;color:#e34040;-webkit-text-fill-color:#e34040;background:#fff0f3;border:none;border-radius:6px;padding:2px 7px;cursor:pointer;font-family:inherit;width:100%">Undo Paid</button>':'')
       +(srcs.length>1&&!iC?'<div class="mchint">Tap to expand</div>':'')
     +'</div>';
   }).join('');
