@@ -636,7 +636,7 @@ select.aa-inp{appearance:auto}
     <div class="sb-sec">Settings</div>
     <button class="sbi" id="nav-settings" onclick="nav('settings',this)">Settings</button>
   </div>
-  <div class="sb-ft"><div class="sb-user"><div class="u-av">JM</div><div><div class="u-name">Jordan Mills</div><div class="u-role">Senior Agent</div></div></div></div>
+  <div class="sb-ft"><div class="sb-user" id="sb-user-area"><div class="u-av" id="u-av">...</div><div style="flex:1"><div class="u-name" id="u-name">Loading...</div><div class="u-role" id="u-role">Triumph NIL</div></div><button onclick="doSignOut()" title="Sign out" style="background:none;border:none;cursor:pointer;color:#8e8e93;font-size:13px;padding:2px 4px;border-radius:4px;line-height:1" title="Sign out"><i class="ti ti-logout"></i></button></div></div>
 </div>
 <div class="main">
   <div class="topbar"><div><div class="top-title" id="top-title">Dashboard</div><div class="top-sub" id="top-sub"></div></div><div id="top-actions"></div></div>
@@ -974,7 +974,21 @@ const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 async function checkAuth(){
   const {data:{session}} = await sb.auth.getSession();
   if(!session){ window.location.href='/'; return false; }
+  // Populate sidebar user
+  const email = session.user.email||'';
+  const initials = email.slice(0,2).toUpperCase();
+  const avEl=document.getElementById('u-av');
+  const nameEl=document.getElementById('u-name');
+  const roleEl=document.getElementById('u-role');
+  if(avEl) avEl.textContent=initials;
+  if(nameEl) nameEl.textContent=email;
+  if(roleEl) roleEl.textContent='Triumph NIL';
   return true;
+}
+
+async function doSignOut(){
+  await sb.auth.signOut();
+  window.location.href='/';
 }
 
 // Show sync status in topbar
