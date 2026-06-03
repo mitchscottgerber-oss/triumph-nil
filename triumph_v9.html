@@ -2151,7 +2151,8 @@ function bWallets(a){
         +(status==='denied'?'<div style="font-size:11px;color:#e34040;padding:4px 0 8px;font-weight:500"><i class="ti ti-alert-circle" style="font-size:11px"></i> This deal has been denied by NILGo</div>':'')
         +'<div class="wcbody'+(status==='denied'?' denied-deal':'')+'">'
           +'<div class="wcnums">'
-            +'<div><div class="wnl">Submitted</div><div class="wnv mu">'+d.sub+'</div></div>'
+            +'<div><div class="wnl">Signed SOW</div><div class="wnv mu">'+(d.sow||'—')+'</div></div>'
+            +'<div><div class="wnl">Submitted to NILGo</div><div class="wnv mu">'+(d.sub||'—')+'</div></div>'
             +'<div><div class="wnl">Deal total</div><div class="wnv">'+f(d.t)+'</div></div>'
             +(status!=='denied'?'<div><div class="wnl">Total spent</div><div class="wnv g">'+f(used)+'</div></div>'
               +'<div><div class="wnl">Remaining</div><div class="wnv'+(emp?' r':low?'':' b')+'">'+(emp?'No funds':f(rem))+'</div></div>'
@@ -2192,17 +2193,25 @@ function openAddDeal(key){
         <button onclick="document.getElementById('add-deal-overlay').remove()" style="background:rgba(255,255,255,.12);border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center">✕</button>
       </div>
       <div style="padding:20px 22px;overflow-y:auto;flex:1">
-        <div style="display:flex;gap:12px;margin-bottom:12px">
-          <div style="flex:1"><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Deal / Company Name *</div>
-            <input id="nd-name" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none" placeholder="599 Packet #3">
+        <div style="margin-bottom:12px">
+          <div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Deal / Company Name *</div>
+          <input id="nd-name" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none" placeholder="">
+        </div>
+        <div style="margin-bottom:12px">
+          <div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Deal Total *</div>
+          <div style="display:flex;align-items:center;border:1.5px solid #b3d4f5;border-radius:8px;background:#eef6ff;overflow:hidden;height:34px">
+            <span style="padding:0 11px;font-size:13px;color:#2980b9;font-weight:700;border-right:1px solid #b3d4f5;height:100%;display:flex;align-items:center">$</span>
+            <input id="nd-total" type="text" inputmode="decimal" placeholder="" style="border:none!important;background:transparent!important;flex:1;height:100%;padding:0 11px;font-size:13px;font-family:inherit;outline:none" onfocus="this.select()" onblur="const n=parseFloat(this.value.replace(/[^0-9.]/g,''))||0;this.value=n>0?n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}):''">
           </div>
         </div>
         <div style="display:flex;gap:12px;margin-bottom:12px">
-          <div style="flex:1"><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Deal Total *</div>
-            <input id="nd-total" type="number" min="0" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none" placeholder="10000">
+          <div style="flex:1">
+            <div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Signed SOW Date</div>
+            <input id="nd-sow" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none" placeholder="e.g. Jun 1">
           </div>
-          <div style="flex:1"><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Submitted Date</div>
-            <input id="nd-sub" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none" placeholder="Jun 2">
+          <div style="flex:1">
+            <div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Submitted to NILGo</div>
+            <input id="nd-sub" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none" placeholder="e.g. Jun 2">
           </div>
         </div>
         <div style="margin-bottom:12px"><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Status</div>
@@ -2235,13 +2244,14 @@ function openAddDeal(key){
 function saveDeal(key){
   const a=A.find(x=>x.f+'_'+x.l===key);if(!a) return;
   const name=(document.getElementById('nd-name').value||'').trim();
-  const total=parseFloat(document.getElementById('nd-total').value)||0;
-  const sub=(document.getElementById('nd-sub').value||'').trim()||CUR+' 2';
+  const total=parseFloat((document.getElementById('nd-total').value||'').replace(/[^0-9.]/g,''))||0;
+  const sow=(document.getElementById('nd-sow').value||'').trim();
+  const sub=(document.getElementById('nd-sub').value||'').trim();
   const status=document.querySelector('input[name="nd-status"]:checked')?.value||'pending';
   const errEl=document.getElementById('nd-err');
   if(!name){errEl.textContent='Deal name is required';errEl.style.display='block';return;}
   if(!total){errEl.textContent='Deal total is required';errEl.style.display='block';return;}
-  a.deals.push({n:name,sub,t:total,s1:0,s2:0,hist:[],status});
+  a.deals.push({n:name,sow,sub,t:total,s1:0,s2:0,hist:[],status});
   document.getElementById('add-deal-overlay').remove();
   document.getElementById('tb').innerHTML=bWallets(a);
 }
@@ -3769,4 +3779,3 @@ document.addEventListener('click', function(e){
 </script>
 </body>
 </html>
-<!-- build: Wed Jun  3 21:55:07 UTC 2026 -->
