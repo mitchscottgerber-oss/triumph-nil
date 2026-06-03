@@ -1349,6 +1349,89 @@ let CO=[];
 
 const gma=(a,mo)=>{const s=a.sch.find(x=>x.mo===mo);return s?s.a:0;};
 const isNF=(a,mo)=>{const mp=gma(a,mo),rem=a.banked-a.paid;return mp>0&&rem<mp;};
+// ===== ADD COMPANY =====
+function openAddCompany(){
+  const existing=document.getElementById('add-co-overlay');
+  if(existing) existing.remove();
+  const ov=document.createElement('div');
+  ov.id='add-co-overlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1200;display:flex;align-items:center;justify-content:center';
+  const athleteList=A.map(a=>`
+    <label style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1.5px solid #e5e5ea;border-radius:8px;cursor:pointer;font-size:12px;font-weight:500">
+      <input type="checkbox" class="co-ath-chk" value="${a.f}_${a.l}" style="cursor:pointer">
+      <span>${a.f} ${a.l}</span>
+      <span style="font-size:10px;background:#f2f2f7;padding:1px 5px;border-radius:4px;color:#8e8e93;margin-left:auto">${a.pos}</span>
+    </label>`).join('');
+  ov.innerHTML=`<div style="background:#fff;border-radius:18px;width:520px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.25);overflow:hidden">
+    <div style="background:#1d1d1f;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <div><div style="font-size:15px;font-weight:700;color:#fff">Add Company</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px">New sponsor or partner</div></div>
+      <button onclick="document.getElementById('add-co-overlay').remove()" style="background:rgba(255,255,255,.12);border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;color:#fff;-webkit-text-fill-color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+    <div style="padding:20px 22px;overflow-y:auto;flex:1">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8e8e93;border-bottom:1px solid #f2f2f7;padding-bottom:6px;margin-bottom:12px">Company Info</div>
+      <div style="margin-bottom:12px">
+        <div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Company Name *</div>
+        <input id="co-name" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none" placeholder="e.g. Follett Autograph">
+      </div>
+      <div style="margin-bottom:16px">
+        <div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Total Committed *</div>
+        <div style="display:flex;align-items:center;border:1.5px solid #b3d4f5;border-radius:8px;background:#eef6ff;overflow:hidden;height:34px">
+          <span style="padding:0 11px;font-size:13px;color:#2980b9;font-weight:700;border-right:1px solid #b3d4f5;height:100%;display:flex;align-items:center">$</span>
+          <input id="co-committed" type="text" inputmode="decimal" placeholder="0" style="border:none!important;background:transparent!important;flex:1;height:100%;padding:0 11px;font-size:13px;font-family:inherit;outline:none" onfocus="this.select()" onblur="const n=parseFloat(this.value.replace(/[^0-9.]/g,''))||0;this.value=n>0?n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}):''">
+        </div>
+      </div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8e8e93;border-bottom:1px solid #f2f2f7;padding-bottom:6px;margin-bottom:10px">Athletes in this deal</div>
+      ${A.length===0?'<div style="color:#8e8e93;font-size:12px;padding:10px 0">No athletes added yet — add athletes first</div>':'<div style="display:flex;flex-direction:column;gap:6px">'+athleteList+'</div>'}
+      <div id="co-err" style="display:none;margin-top:12px;padding:10px 14px;background:#fff0f3;border-radius:8px;font-size:12px;color:#e34040"></div>
+    </div>
+    <div style="padding:14px 22px;border-top:1px solid #f2f2f7;display:flex;justify-content:space-between;background:#fafafa;flex-shrink:0">
+      <button onclick="document.getElementById('add-co-overlay').remove()" style="height:32px;padding:0 16px;border-radius:8px;border:1.5px solid #e5e5ea;background:#fff;color:#1d1d1f;-webkit-text-fill-color:#1d1d1f;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Cancel</button>
+      <button onclick="saveNewCompany()" id="save-co-btn" style="height:32px;padding:0 18px;border-radius:8px;border:none;background:#1d1d1f;color:#fff;-webkit-text-fill-color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Add Company</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  setTimeout(()=>document.getElementById('co-name').focus(),100);
+}
+
+async function saveNewCompany(){
+  const name=(document.getElementById('co-name').value||'').trim();
+  const committed=parseFloat((document.getElementById('co-committed').value||'').replace(/[^0-9.]/g,''))||0;
+  const errEl=document.getElementById('co-err');
+  const btn=document.getElementById('save-co-btn');
+  errEl.style.display='none';
+  if(!name){errEl.textContent='Company name is required';errEl.style.display='block';return;}
+  if(!committed){errEl.textContent='Committed amount is required';errEl.style.display='block';return;}
+  if(CO.find(c=>c.name===name)){errEl.textContent='A company with this name already exists';errEl.style.display='block';return;}
+  const selectedKeys=[...document.querySelectorAll('.co-ath-chk:checked')].map(el=>el.value);
+  btn.disabled=true;btn.textContent='Saving...';
+  try{
+    const {data:newCo,error:ce}=await sb.from('companies').insert({
+      name,logo_initial:name[0].toUpperCase(),rank_number:CO.length+1
+    }).select().single();
+    if(ce) throw ce;
+    if(selectedKeys.length){
+      const perAth=selectedKeys.length>0?Math.round(committed/selectedKeys.length):0;
+      const links=selectedKeys.map(key=>{
+        const a=A.find(x=>x.f+'_'+x.l===key);
+        return a?{company_id:newCo.id,athlete_id:a.id,deal_amount:perAth}:null;
+      }).filter(Boolean);
+      if(links.length){const {error:le}=await sb.from('company_athletes').insert(links);if(le) throw le;}
+    }
+    CO.push({id:newCo.id,name,committed,athletes:selectedKeys.map(key=>{
+      const a=A.find(x=>x.f+'_'+x.l===key);
+      return a?{n:a.f+' '+a.l,pos:a.pos,deal:Math.round(committed/(selectedKeys.length||1)),hist:[]}:null;
+    }).filter(Boolean)});
+    document.getElementById('add-co-overlay').remove();
+    renderCos();
+    syncStatus('Company added ✓');
+  }catch(e){
+    errEl.textContent='Save failed: '+e.message;
+    errEl.style.display='block';
+    btn.disabled=false;btn.textContent='Add Company';
+  }
+}
+
 const coSpent=c=>c.athletes.reduce((s,a)=>s+a.hist.reduce((t,h)=>t+h.amt,0),0);
 const moSpent=(c,mo)=>c.athletes.reduce((s,a)=>{const h=a.hist.find(x=>x.mo===mo);return s+(h?h.amt:0);},0);
 const getMo=()=>{const s=document.getElementById('sel-mo');return s?s.value:'May';};
@@ -2421,13 +2504,17 @@ function renderCos(){
   document.getElementById('co-body').innerHTML=
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
       +'<div style="font-size:10px;color:#aeaeb2;display:flex;align-items:center;gap:5px"><i class="ti ti-grip-vertical"></i> Drag to reorder priority</div>'
-      +'<div style="display:flex;background:#f2f2f7;border:1.5px solid #d1d1d6;border-radius:8px;padding:3px;gap:2px">'
-        +'<button class="vb on" id="co-vb-g" onclick="setCOMode(\'grid\')"><i class="ti ti-layout-grid"></i></button>'
-        +'<button class="vb" id="co-vb-l" onclick="setCOMode(\'list\')"><i class="ti ti-list"></i></button>'
+      +'<div style="display:flex;align-items:center;gap:8px">'
+        +'<div style="display:flex;background:#f2f2f7;border:1.5px solid #d1d1d6;border-radius:8px;padding:3px;gap:2px">'
+          +'<button class="vb on" id="co-vb-g" onclick="setCOMode(\'grid\')"><i class="ti ti-layout-grid"></i></button>'
+          +'<button class="vb" id="co-vb-l" onclick="setCOMode(\'list\')"><i class="ti ti-list"></i></button>'
+        +'</div>'
+        +'<button class="btn btn-dark" onclick="openAddCompany()" style="height:30px;font-size:11px;display:flex;align-items:center;gap:4px"><i class="ti ti-building-store"></i> Add Company</button>'
       +'</div>'
     +'</div>'
-    +'<div class="cogrid" id="co-drag-grid">'+CO.map((c,i)=>coCardHtml(c,i)).join('')+'</div>';
-  initDrag();
+    +(CO.length===0?'<div style="text-align:center;padding:60px 20px;color:#8e8e93"><div style="font-size:32px;margin-bottom:12px">🏢</div><div style="font-size:14px;font-weight:600;color:#1d1d1f;margin-bottom:4px">No companies yet</div><div style="font-size:12px">Click Add Company to get started</div></div>'
+      :'<div class="cogrid" id="co-drag-grid">'+CO.map((c,i)=>coCardHtml(c,i)).join('')+'</div>');
+  if(CO.length>0) initDrag();
 }
 function setCOMode(v){
   coGridMode=v;
