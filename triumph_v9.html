@@ -3381,7 +3381,6 @@ function openAddAthlete(){
   });
   document.getElementById('aa-pos').value='';
   document.getElementById('aa-sport').value='Football';
-  document.getElementById('aa-rank').value='';
   document.getElementById('add-athlete-overlay').classList.add('open');
   setTimeout(()=>document.getElementById('aa-fname').focus(),100);
 }
@@ -3398,7 +3397,7 @@ async function saveNewAthlete(){
   const lname=(document.getElementById('aa-lname').value||'').trim();
   const pos=document.getElementById('aa-pos').value;
   const sport=document.getElementById('aa-sport').value;
-  const rank=parseInt(document.getElementById('aa-rank').value)||null;
+  const rank=null;
   const contract=parseFloat(document.getElementById('aa-contract').value)||0;
   const banked=parseFloat(document.getElementById('aa-banked').value)||0;
   const paid=parseFloat(document.getElementById('aa-paid').value)||0;
