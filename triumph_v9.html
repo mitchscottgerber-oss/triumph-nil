@@ -804,7 +804,7 @@ select.aa-inp{appearance:auto}
       </div>
     </div>
   </div>
-  <div class="page" id="page-companies"><div class="scroll" id="co-body"></div></div>
+  <div class="page" id="page-companies"><div class="scroll" id="co-body" style="padding:20px 24px"></div></div>
   <div class="page" id="page-reports"><div class="scroll" id="rpt-body"></div></div>
 </div>
 </div>
@@ -1451,12 +1451,12 @@ function nav(page,el){
   if(el) el.classList.add('on');
   document.getElementById('page-'+page).classList.add('on');
   const T={dash:'Dashboard',athletes:'Athletes',companies:'Companies',reports:'Reports',settings:'Settings',gm:'General Manager'};
-  const S={dash:'',athletes:'Active athletes',companies:'6 active sponsors — Virginia Tech Football',reports:'Generate and export program reports',settings:'PIN protection and app configuration',gm:'Scenario planning & AI roster strategy'};
+  const S={dash:'',athletes:'Active athletes',companies:'',reports:'Generate and export program reports',settings:'PIN protection and app configuration',gm:'Scenario planning & AI roster strategy'};
   document.getElementById('top-title').textContent=T[page]||page;
   document.getElementById('top-sub').textContent=S[page]||'';
   if(page==='dash') buildDash();
   if(page==='athletes'){showRoster();doSwitchSport(activeSport);}
-  if(page==='companies') renderCos();
+  if(page==='companies'){renderCos();document.getElementById('top-sub').textContent=CO.length+' active sponsors';}
   if(page==='reports') buildReports();
   if(page==='settings') buildSettings();
   if(page==='gm') initGMPage();
