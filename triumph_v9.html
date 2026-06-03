@@ -3527,6 +3527,11 @@ function openAddAthlete(){
         <span style="padding:0 7px;font-size:11px;color:#c0392b;font-weight:700;border-right:1px solid #f5c6d0;height:100%;display:flex;align-items:center">$</span>
         <input class="aa-mo-inp" id="aa-rs-${m}" type="text" inputmode="decimal" placeholder="" style="border:none!important;background:transparent!important;flex:1;height:100%;padding:0 6px;font-size:11px;color:#c0392b!important;-webkit-text-fill-color:#c0392b!important" onfocus="this.select()" onblur="const n=parseFloat(this.value.replace(/[^0-9.]/g,''))||0;this.value=n>0?n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}):''">
       </div>
+      <div style="font-size:9px;color:#e34040;font-weight:600;margin-top:6px;margin-bottom:3px">Moved to RS <span style="font-weight:400;color:#aeaeb2">(shortfall)</span></div>
+      <div style="display:flex;align-items:center;border:1.5px solid #f5c6d0;border-radius:6px;background:#fff0f3;overflow:hidden;height:28px">
+        <span style="padding:0 7px;font-size:11px;color:#e34040;font-weight:700;border-right:1px solid #f5c6d0;height:100%;display:flex;align-items:center">$</span>
+        <input class="aa-mo-inp" id="aa-sf-${m}" type="text" inputmode="decimal" placeholder="" style="border:none!important;background:transparent!important;flex:1;height:100%;padding:0 6px;font-size:11px;color:#e34040!important;-webkit-text-fill-color:#e34040!important" onfocus="this.select()" onblur="const n=parseFloat(this.value.replace(/[^0-9.]/g,''))||0;this.value=n>0?n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}):''">
+      </div>
     </div>
   `).join('');
   document.getElementById('aa-error').style.display='none';
@@ -3611,8 +3616,11 @@ async function saveNewAthlete(){
       athlete_id:newA.id,month:m,year:2026,
       amount:parseFloat((document.getElementById('aa-mo-'+m)?.value||'').replace(/[^0-9.]/g,''))||0,
       is_paid:document.getElementById('aa-paid-'+m)?.checked||false,
+      nil_cleared:parseFloat((document.getElementById('aa-mo-'+m)?.value||'').replace(/[^0-9.]/g,''))||0,
+      shortfall:parseFloat((document.getElementById('aa-sf-'+m)?.value||'').replace(/[^0-9.]/g,''))||0,
+      rs_paid:false,
       sources:[]
-    })).filter(r=>r.amount>0||r.is_paid);
+    })).filter(r=>r.amount>0||r.shortfall>0||r.is_paid);
     if(schedRows.length){const {error:se}=await sb.from('payment_schedule').insert(schedRows);if(se) throw se;}
 
     // Insert rev share rows
