@@ -1581,15 +1581,13 @@ function rAnnual(list){
   const totalNIL=moNIL.reduce((s,v)=>s+v,0);
   const totalRS=moRS.reduce((s,v)=>s+v,0);
   const totalBanked=list.reduce((s,a)=>s+(a.banked-a.paid),0);
-  const totalNILRem=list.reduce((s,a)=>s+(a.contract-a.paid),0);
+  const totalOwed=list.reduce((s,a)=>s+(a.contract-a.paid),0);
   const totalRSRem=list.reduce((s,a)=>s+Math.max(0,(a.rsContract||0)-(a.rsPaid||0)),0);
-
-  const colSpan=4+cols.length+2;
 
   let html='<thead><tr>'
     +'<th style="text-align:left;min-width:140px;position:sticky;left:0;z-index:3;background:#f9f9f9">Athlete</th>'
     +'<th style="text-align:right;min-width:90px;background:#e8f8f2;color:#1d9e75">Banked</th>'
-    +'<th style="text-align:right;min-width:90px;background:#eef6ff;color:#2980b9">NIL Rem</th>'
+    +'<th style="text-align:right;min-width:110px;background:#eef6ff;color:#2980b9;cursor:pointer" title="Click any cell to expand detail">Money Owed ▾</th>'
     +cols.map(({mo,yr},i)=>{
       const isCur=mo===CUR&&yr===2026;
       const label=yr===2027?mo+' \'27':mo;
@@ -1610,6 +1608,9 @@ function rAnnual(list){
     const rsRem=Math.max(0,(a.rsContract||0)-(a.rsPaid||0));
     const isBankLow=banked<(a.sch.find(x=>x.mo===CUR&&(x.yr||2026)===2026)?.a||0);
     const key=a.f+'_'+a.l;
+    const nilExpId='nil-exp-'+idx;
+    const rsExpId='rs-exp-'+idx;
+    const totalCols=4+cols.length+2;
 
     // NIL row (blue)
     html+='<tr class="athlete-nil-row" style="cursor:pointer;background:#eef6ff" onclick="oProf(\'' + key + '\')">'
@@ -1621,7 +1622,10 @@ function rAnnual(list){
         +'</div>'
       +'</td>'
       +'<td style="text-align:right;background:#e8f8f2"><span style="font-size:12px;font-weight:600;color:'+(isBankLow?'#e34040':'#1d9e75')+'">'+f(banked)+'</span></td>'
-      +'<td style="text-align:right;background:#eef6ff"><span style="font-size:12px;font-weight:600;color:#2980b9">'+f(nilRem)+'</span></td>'
+      +'<td style="text-align:right;background:#eef6ff;cursor:pointer" onclick="event.stopPropagation();raToggle(\'' + nilExpId + '\',\'' + rsExpId + '\',\'nil\',' + idx + ')">'
+        +'<div style="font-weight:600;color:#2980b9;font-size:12px">'+f(nilRem)+'</div>'
+        +'<div style="font-size:9px;color:#aeaeb2;margin-top:1px" id="nh-'+idx+'">▼ detail</div>'
+      +'</td>'
       +cols.map(({mo,yr})=>{
         const s=a.sch.find(x=>x.mo===mo&&(x.yr||2026)===yr);
         const iC=mo===CUR&&yr===2026;
@@ -1629,19 +1633,32 @@ function rAnnual(list){
         if(!s||s.a===0) return'<td class="'+(iC?'curbg':'')+'" style="'+bg+'"><span style="color:#e5e5ea">-</span></td>';
         return'<td class="'+(iC?'curbg':'')+'" style="'+bg+'">'
           +'<div style="font-size:11.5px;font-weight:500'+(s.p?';color:#8e8e93':'')+'">'+f(s.a)+'</div>'
-          +(s.p?'<div class="mc-paid-badge">✓ Paid</div>':'')
+          +(s.p?'<div class="mc-paid-badge">✓</div>':'')
         +'</td>';
       }).join('')
       +'<td style="text-align:right;font-weight:700;font-size:12px;color:#2980b9;background:#eef6ff">'+f(nilTot)+'</td>'
       +'<td style="background:#fff0f3"></td>'
     +'</tr>';
 
-    // RS row (pink) — always shown
+    // NIL expand row
+    html+='<tr id="'+nilExpId+'" style="display:none">'
+      +'<td colspan="'+totalCols+'" style="padding:10px 16px 12px;background:#f0f6ff;border-top:0.5px solid #b3d4f5;border-bottom:0.5px solid #b3d4f5">'
+        +'<div style="display:flex;gap:36px;font-size:12px">'
+          +'<div><div style="font-size:9px;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">NIL Contract</div><div style="font-weight:600;color:#1d1d1f;font-size:13px">'+f(a.contract)+'</div></div>'
+          +'<div><div style="font-size:9px;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Paid Out</div><div style="font-weight:600;color:#1d9e75;font-size:13px">'+f(a.paid)+'</div></div>'
+          +'<div><div style="font-size:9px;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Money Owed</div><div style="font-weight:700;color:#2980b9;font-size:13px">'+f(nilRem)+'</div></div>'
+        +'</div>'
+      +'</td>'
+    +'</tr>';
+
+    // RS row (pink)
     html+='<tr style="background:#fff5f7;cursor:pointer" onclick="oProf(\'' + key + '\')">'
       +'<td style="padding:3px 10px 8px 22px;font-size:9px;color:#c0392b;font-weight:600;text-transform:uppercase;letter-spacing:.05em;position:sticky;left:0;background:#fff5f7;border-right:1px solid #f5c6d0">↳ Rev Share</td>'
       +'<td style="background:#fff5f7"></td>'
-      +'<td style="text-align:right;background:#fff0f3">'
-        +((a.rsContract||0)>0?'<span style="font-size:12px;font-weight:600;color:#c0392b">'+f(rsRem)+'</span>':'<span style="color:#d1d1d6;font-size:11px">—</span>')
+      +'<td style="text-align:right;background:#fff0f3;cursor:pointer" onclick="event.stopPropagation();raToggle(\'' + rsExpId + '\',\'' + nilExpId + '\',\'rs\',' + idx + ')">'
+        +((a.rsContract||0)>0
+          ?'<div style="font-weight:600;color:#c0392b;font-size:12px">'+f(rsRem)+'</div><div style="font-size:9px;color:#aeaeb2;margin-top:1px" id="rh-'+idx+'">▼ detail</div>'
+          :'<span style="color:#d1d1d6;font-size:11px">—</span>')
       +'</td>'
       +cols.map(({mo,yr})=>{const rv=getRev(a,mo);const iC=mo===CUR&&yr===2026;const bg=yr===2027?'background:#fff0f8!important;':'background:#fff5f7;';
         return'<td class="'+(iC?'curbg':'')+'" style="text-align:center;'+bg+'">'+(rv>0?'<span style="font-size:11px;font-weight:600;color:#c0392b">'+f(rv)+'</span>':'<span style="color:#e5e5ea;font-size:10px">—</span>')+'</td>';
@@ -1649,13 +1666,24 @@ function rAnnual(list){
       +'<td style="background:#fff5f7"></td>'
       +'<td style="text-align:right;font-size:11px;font-weight:700;color:'+(rvTot>0?'#c0392b':'#d1d1d6')+';background:#fff0f3">'+(rvTot>0?f(rvTot):'—')+'</td>'
     +'</tr>';
+
+    // RS expand row
+    html+='<tr id="'+rsExpId+'" style="display:none">'
+      +'<td colspan="'+totalCols+'" style="padding:10px 16px 12px;background:#fff5f7;border-top:0.5px solid #f5c6d0;border-bottom:0.5px solid #f5c6d0">'
+        +'<div style="display:flex;gap:36px;font-size:12px">'
+          +'<div><div style="font-size:9px;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">RS Contract</div><div style="font-weight:600;color:#1d1d1f;font-size:13px">'+f(a.rsContract||0)+'</div></div>'
+          +'<div><div style="font-size:9px;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">RS Paid Out</div><div style="font-weight:600;color:#1d9e75;font-size:13px">'+f(a.rsPaid||0)+'</div></div>'
+          +'<div><div style="font-size:9px;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">RS Remaining</div><div style="font-weight:700;color:#c0392b;font-size:13px">'+f(rsRem)+'</div></div>'
+        +'</div>'
+      +'</td>'
+    +'</tr>';
   });
 
-  // Totals row
+  // Totals rows
   html+='<tr style="background:#f2f2f7;border-top:2px solid #1d1d1f">'
     +'<td style="font-weight:700;font-size:12px;padding:10px;position:sticky;left:0;background:#f2f2f7;border-right:1px solid #e5e5ea">NIL Totals</td>'
     +'<td style="text-align:right;font-weight:700;color:#1d9e75">'+f(totalBanked)+'</td>'
-    +'<td style="text-align:right;font-weight:700;color:#2980b9;background:#eef6ff">'+f(totalNILRem)+'</td>'
+    +'<td style="text-align:right;font-weight:700;color:#2980b9;background:#eef6ff">'+f(totalOwed)+'</td>'
     +cols.map(({mo,yr},i)=>'<td style="text-align:center;font-weight:700;font-size:12px;color:'+(moNIL[i]>0?'#1d1d1f':'#d1d1d6')+'">'+(moNIL[i]>0?f(moNIL[i]):'—')+'</td>').join('')
     +'<td style="text-align:right;font-weight:700;font-size:13px;color:#2980b9;background:#eef6ff">'+f(totalNIL)+'</td>'
     +'<td style="background:#fff0f3"></td>'
@@ -1672,6 +1700,21 @@ function rAnnual(list){
 
   html+='</tbody>';
   document.getElementById('atbl').innerHTML=html;
+}
+
+function raToggle(showId, hideId, type, idx){
+  const showRow=document.getElementById(showId);
+  const hideRow=document.getElementById(hideId);
+  if(!showRow) return;
+  const isOpen=showRow.style.display!=='none';
+  // Close all
+  document.querySelectorAll('[id^="nil-exp-"],[id^="rs-exp-"]').forEach(r=>r.style.display='none');
+  document.querySelectorAll('[id^="nh-"],[id^="rh-"]').forEach(h=>{if(h)h.textContent='▼ detail';});
+  if(!isOpen){
+    showRow.style.display='table-row';
+    const hint=document.getElementById((type==='nil'?'nh-':'rh-')+idx);
+    if(hint) hint.textContent='▲ close';
+  }
 }
 
 
