@@ -1057,7 +1057,9 @@ async function loadFromSupabase(){
       MO.forEach(mo=>{if(!sch.find(x=>x.mo===mo&&x.yr===2026)) sch.push({mo,yr:2026,a:0,p:false,s:[],cleared:0,shortfall:0,rs_paid:false});});
       A.push({id:a.id,f:a.first_name,l:a.last_name,pos:a.position,sport:a.sport||'Football',
         rank:a.rank_priority,contract:a.contract||0,banked:a.banked||0,paid:a.paid_out||0,
-        rsContract:a.rs_contract||0,rsPaid:a.rs_paid||0,deals:[],sch});
+        rsContract:a.rs_contract||0,rsPaid:a.rs_paid||0,
+        agent:a.agent||'',agency:a.agency||'',email:a.email||'',phone:a.phone||'',notes:a.notes||'',
+        deals:[],sch});
     });
 
     // Build revShare map
@@ -1642,7 +1644,7 @@ function rAnnual(list){
 
     // NIL expand row
     html+='<tr id="'+nilExpId+'" style="display:none">'
-      +'<td colspan="'+totalCols+'" style="padding:10px 16px 12px;background:#f5f0ff;border-top:0.5px solid #c4a8e8;border-bottom:0.5px solid #c4a8e8">'
+      +'<td colspan="'+totalCols+'" style="padding:10px 16px 12px;background:#f0f6ff;border-top:0.5px solid #b3d4f5;border-bottom:0.5px solid #b3d4f5">'
         +'<div style="display:flex;gap:36px;font-size:12px">'
           +'<div><div style="font-size:9px;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">NIL Contract</div><div style="font-weight:600;color:#1d1d1f;font-size:13px">'+f(a.contract)+'</div></div>'
           +'<div><div style="font-size:9px;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Paid Out</div><div style="font-weight:600;color:#1d9e75;font-size:13px">'+f(a.paid)+'</div></div>'
@@ -2002,6 +2004,16 @@ function openEditAthlete(key){
         <div style="flex:1;min-width:120px"><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Banked (NILGo)</div><input id="em-banked" type="number" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none" value="${a.banked||''}"></div>
         <div style="flex:1;min-width:120px"><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Paid Out</div><input id="em-paid" type="number" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none" value="${a.paid||''}"></div>
       </div>
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8e8e93;border-bottom:1px solid #f2f2f7;padding-bottom:6px;margin-bottom:12px;margin-top:4px">Agent / Parent Contact</div>
+      <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:150px"><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Agent / Parent Name</div><input id="em-agent" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none" placeholder="" value="${a.agent||''}"></div>
+        <div style="flex:1;min-width:150px"><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Agency</div><input id="em-agency" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none" placeholder="" value="${a.agency||''}"></div>
+      </div>
+      <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:150px"><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Email</div><input id="em-email" type="email" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none" placeholder="" value="${a.email||''}"></div>
+        <div style="flex:1;min-width:150px"><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Phone</div><input id="em-phone" type="tel" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none" placeholder="" value="${a.phone||''}"></div>
+      </div>
+      <div style="margin-bottom:16px"><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Notes</div><textarea id="em-notes" style="width:100%;height:72px;padding:9px 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none;resize:vertical;line-height:1.5" placeholder="">${a.notes||''}</textarea></div>
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8e8e93;border-bottom:1px solid #f2f2f7;padding-bottom:6px;margin-bottom:10px">Monthly Schedule</div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">${moCells}</div>
     </div>
@@ -2027,6 +2039,11 @@ async function saveEditAthlete(key){
   a.contract=parseFloat(document.getElementById('em-contract').value)||0;
   a.banked=parseFloat(document.getElementById('em-banked').value)||0;
   a.paid=parseFloat(document.getElementById('em-paid').value)||0;
+  a.agent=(document.getElementById('em-agent').value||'').trim();
+  a.agency=(document.getElementById('em-agency').value||'').trim();
+  a.email=(document.getElementById('em-email').value||'').trim();
+  a.phone=(document.getElementById('em-phone').value||'').trim();
+  a.notes=(document.getElementById('em-notes').value||'').trim();
   // Update schedule
   MO.forEach(m=>{
     let s=a.sch.find(x=>x.mo===m);
@@ -2046,7 +2063,8 @@ async function saveEditAthlete(key){
   try{
     const {error:ae}=await sb.from('athletes').update({
       first_name:a.f,last_name:a.l,position:a.pos,
-      rank_priority:a.rank,contract:a.contract,banked:a.banked,paid_out:a.paid
+      rank_priority:a.rank,contract:a.contract,banked:a.banked,paid_out:a.paid,
+      agent:a.agent,agency:a.agency,email:a.email,phone:a.phone,notes:a.notes
     }).eq('id',a.id);
     if(ae) throw ae;
 
