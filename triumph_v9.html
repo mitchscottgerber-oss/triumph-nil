@@ -3733,10 +3733,10 @@ async function saveNewAthlete(){
     return;
   }
 
-  // Build schedule from month inputs
+  // Build schedule from month inputs (legacy local object - used before Supabase save)
   const sch=MO.map(m=>{
-    const amt=parseFloat(document.getElementById('aa-mo-'+m)?.value)||0;
-    const isPaid=document.getElementById('aa-paid-'+m)?.checked||false;
+    const amt=parseFloat((document.getElementById('aa-mo-'+m+'_2026')?.value||'').replace(/[^0-9.]/g,''))||0;
+    const isPaid=document.getElementById('aa-paid-'+m+'_2026')?.checked||false;
     return{mo:m,a:amt,p:isPaid,s:[]};
   });
 
