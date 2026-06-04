@@ -3618,7 +3618,9 @@ function openAddAthlete(){
   const isBaseball=sport==='Baseball';
   const months=[];
   MO.forEach(m=>months.push({mo:m,yr:2026}));
+  const isBball=sport==='Basketball-M'||sport==='Basketball-W';
   if(isBaseball) ['Jan','Feb','Mar','Apr','May','Jun'].forEach(m=>months.push({mo:m,yr:2027}));
+  if(isBball) ['Jan','Feb','Mar','Apr'].forEach(m=>months.push({mo:m,yr:2027}));
 
   grid.innerHTML=months.map(({mo,yr})=>{
     const key=mo+'_'+yr;
@@ -3724,8 +3726,10 @@ async function saveNewAthlete(){
     // Insert payment schedule rows
     // Build months list same as openAddAthlete
     const isBaseball2=newA.sport==='Baseball';
+    const isBball2=newA.sport==='Basketball-M'||newA.sport==='Basketball-W';
     const allMonths=[...MO.map(m=>({mo:m,yr:2026}))];
     if(isBaseball2) ['Jan','Feb','Mar','Apr','May','Jun'].forEach(m=>allMonths.push({mo:m,yr:2027}));
+    if(isBball2) ['Jan','Feb','Mar','Apr'].forEach(m=>allMonths.push({mo:m,yr:2027}));
 
     const schedRows=allMonths.map(({mo,yr})=>{
       const key=mo+'_'+yr;
