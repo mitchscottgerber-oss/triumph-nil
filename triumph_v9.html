@@ -3612,29 +3612,38 @@ function initCurrencyInputs(...ids){
 
 // ===== ADD ATHLETE =====
 function openAddAthlete(){
-  // Build month grid
+  // Build month grid — 18 months for Baseball (Jan 2026–Jun 2027), 12 for others
   const grid=document.getElementById('aa-mo-grid');
-  grid.innerHTML=MO.map(m=>`
-    <div class="aa-mo-card${m===CUR?' cur-mo':''}">
-      <div class="aa-mo-lbl${m===CUR?' cur':'\"'}">${m} 2026</div>
+  const sport=document.getElementById('aa-sport')?.value||'Football';
+  const isBaseball=sport==='Baseball';
+  const months=[];
+  MO.forEach(m=>months.push({mo:m,yr:2026}));
+  if(isBaseball) ['Jan','Feb','Mar','Apr','May','Jun'].forEach(m=>months.push({mo:m,yr:2027}));
+
+  grid.innerHTML=months.map(({mo,yr})=>{
+    const key=mo+'_'+yr;
+    const isCur=mo===CUR&&yr===2026;
+    return`
+    <div class="aa-mo-card${isCur?' cur-mo':''}">
+      <div class="aa-mo-lbl${isCur?' cur':''}">${mo} ${yr}</div>
       <div style="font-size:9px;color:#2980b9;font-weight:600;margin-bottom:3px">NIL Payment</div>
       <div style="display:flex;align-items:center;border:1.5px solid #b3d4f5;border-radius:6px;background:#eef6ff;overflow:hidden;height:28px">
         <span style="padding:0 7px;font-size:11px;color:#2980b9;font-weight:700;border-right:1px solid #b3d4f5;height:100%;display:flex;align-items:center">$</span>
-        <input class="aa-mo-inp" id="aa-mo-${m}" type="text" inputmode="decimal" placeholder="" style="border:none!important;background:transparent!important;flex:1;height:100%;padding:0 6px;font-size:11px" onfocus="this.select()" onblur="const n=parseFloat(this.value.replace(/[^0-9.]/g,''))||0;this.value=n>0?n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}):''">
+        <input class="aa-mo-inp" id="aa-mo-${key}" type="text" inputmode="decimal" placeholder="" style="border:none!important;background:transparent!important;flex:1;height:100%;padding:0 6px;font-size:11px" onfocus="this.select()" onblur="const n=parseFloat(this.value.replace(/[^0-9.]/g,''))||0;this.value=n>0?n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}):''">
       </div>
-      <label class="aa-paid-chk"><input type="checkbox" id="aa-paid-${m}"> Paid</label>
-      <div style="font-size:9px;color:#c0392b;font-weight:600;margin-top:8px;margin-bottom:3px">Rev Share</div>
+      <label class="aa-paid-chk"><input type="checkbox" id="aa-paid-${key}"> Paid</label>
+      <div style="font-size:9px;color:#c0392b;font-weight:600;margin-top:6px;margin-bottom:3px">Rev Share</div>
       <div style="display:flex;align-items:center;border:1.5px solid #f5c6d0;border-radius:6px;background:#fff5f7;overflow:hidden;height:28px">
         <span style="padding:0 7px;font-size:11px;color:#c0392b;font-weight:700;border-right:1px solid #f5c6d0;height:100%;display:flex;align-items:center">$</span>
-        <input class="aa-mo-inp" id="aa-rs-${m}" type="text" inputmode="decimal" placeholder="" style="border:none!important;background:transparent!important;flex:1;height:100%;padding:0 6px;font-size:11px;color:#c0392b!important;-webkit-text-fill-color:#c0392b!important" onfocus="this.select()" onblur="const n=parseFloat(this.value.replace(/[^0-9.]/g,''))||0;this.value=n>0?n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}):''">
+        <input class="aa-mo-inp" id="aa-rs-${key}" type="text" inputmode="decimal" placeholder="" style="border:none!important;background:transparent!important;flex:1;height:100%;padding:0 6px;font-size:11px;color:#c0392b!important;-webkit-text-fill-color:#c0392b!important" onfocus="this.select()" onblur="const n=parseFloat(this.value.replace(/[^0-9.]/g,''))||0;this.value=n>0?n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}):''">
       </div>
-      <div style="font-size:9px;color:#e34040;font-weight:600;margin-top:6px;margin-bottom:3px">Moved to RS <span style="font-weight:400;color:#aeaeb2">(shortfall)</span></div>
+      <div style="font-size:9px;color:#e34040;font-weight:600;margin-top:6px;margin-bottom:3px">Moved to RS <span style="font-weight:400;color:#aeaeb2;font-size:8px">(shortfall)</span></div>
       <div style="display:flex;align-items:center;border:1.5px solid #f5c6d0;border-radius:6px;background:#fff0f3;overflow:hidden;height:28px">
         <span style="padding:0 7px;font-size:11px;color:#e34040;font-weight:700;border-right:1px solid #f5c6d0;height:100%;display:flex;align-items:center">$</span>
-        <input class="aa-mo-inp" id="aa-sf-${m}" type="text" inputmode="decimal" placeholder="" style="border:none!important;background:transparent!important;flex:1;height:100%;padding:0 6px;font-size:11px;color:#e34040!important;-webkit-text-fill-color:#e34040!important" onfocus="this.select()" onblur="const n=parseFloat(this.value.replace(/[^0-9.]/g,''))||0;this.value=n>0?n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}):''">
+        <input class="aa-mo-inp" id="aa-sf-${key}" type="text" inputmode="decimal" placeholder="" style="border:none!important;background:transparent!important;flex:1;height:100%;padding:0 6px;font-size:11px;color:#e34040!important;-webkit-text-fill-color:#e34040!important" onfocus="this.select()" onblur="const n=parseFloat(this.value.replace(/[^0-9.]/g,''))||0;this.value=n>0?n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}):''">
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
   document.getElementById('aa-error').style.display='none';
   // Init currency formatting
   setTimeout(()=>initCurrencyInputs('aa-contract','aa-banked','aa-paid','aa-rs-contract','aa-rs-paid'),50);
@@ -3713,22 +3722,30 @@ async function saveNewAthlete(){
     if(ae) throw ae;
 
     // Insert payment schedule rows
-    const schedRows=MO.map(m=>({
-      athlete_id:newA.id,month:m,year:2026,
-      amount:parseFloat((document.getElementById('aa-mo-'+m)?.value||'').replace(/[^0-9.]/g,''))||0,
-      is_paid:document.getElementById('aa-paid-'+m)?.checked||false,
-      nil_cleared:parseFloat((document.getElementById('aa-mo-'+m)?.value||'').replace(/[^0-9.]/g,''))||0,
-      shortfall:parseFloat((document.getElementById('aa-sf-'+m)?.value||'').replace(/[^0-9.]/g,''))||0,
-      rs_paid:false,
-      sources:[]
-    })).filter(r=>r.amount>0||r.shortfall>0||r.is_paid);
+    // Build months list same as openAddAthlete
+    const isBaseball2=newA.sport==='Baseball';
+    const allMonths=[...MO.map(m=>({mo:m,yr:2026}))];
+    if(isBaseball2) ['Jan','Feb','Mar','Apr','May','Jun'].forEach(m=>allMonths.push({mo:m,yr:2027}));
+
+    const schedRows=allMonths.map(({mo,yr})=>{
+      const key=mo+'_'+yr;
+      return{
+        athlete_id:newA.id,month:mo,year:yr,
+        amount:parseFloat((document.getElementById('aa-mo-'+key)?.value||'').replace(/[^0-9.]/g,''))||0,
+        is_paid:document.getElementById('aa-paid-'+key)?.checked||false,
+        nil_cleared:parseFloat((document.getElementById('aa-mo-'+key)?.value||'').replace(/[^0-9.]/g,''))||0,
+        shortfall:parseFloat((document.getElementById('aa-sf-'+key)?.value||'').replace(/[^0-9.]/g,''))||0,
+        rs_paid:false,sources:[]
+      };
+    }).filter(r=>r.amount>0||r.shortfall>0||r.is_paid);
     if(schedRows.length){const {error:se}=await sb.from('payment_schedule').insert(schedRows);if(se) throw se;}
 
     // Insert rev share rows
-    const rsRows=MO.map(m=>({
-      athlete_id:newA.id,month:m,year:2026,
-      amount:parseFloat(document.getElementById('aa-rs-'+m)?.value)||0
-    })).filter(r=>r.amount>0);
+    const rsRows=allMonths.map(({mo,yr})=>{
+      const key=mo+'_'+yr;
+      return{athlete_id:newA.id,month:mo,year:yr,
+        amount:parseFloat((document.getElementById('aa-rs-'+key)?.value||'').replace(/[^0-9.]/g,''))||0};
+    }).filter(r=>r.amount>0);
     if(rsRows.length){const {error:re}=await sb.from('rev_share').insert(rsRows);if(re) throw re;}
 
     closeAddAthlete();
