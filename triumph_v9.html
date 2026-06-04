@@ -1058,7 +1058,7 @@ async function loadFromSupabase(){
       A.push({id:a.id,f:a.first_name,l:a.last_name,pos:a.position,sport:a.sport||'Football',
         rank:a.rank_priority,contract:a.contract||0,banked:a.banked||0,paid:a.paid_out||0,
         rsContract:a.rs_contract||0,rsPaid:a.rs_paid||0,
-        agent:a.agent||'',agency:a.agency||'',email:a.email||'',phone:a.phone||'',notes:a.notes||'',
+        agent:a.agent||'',agency:a.agency||'',contact_email:a.email||'',phone:a.phone||'',notes:a.notes||'',
         deals:[],sch});
     });
 
@@ -2042,7 +2042,7 @@ async function saveEditAthlete(key){
   a.paid=parseFloat(document.getElementById('em-paid').value)||0;
   a.agent=(document.getElementById('em-agent').value||'').trim();
   a.agency=(document.getElementById('em-agency').value||'').trim();
-  a.email=(document.getElementById('em-email').value||'').trim();
+  a.email=(document.getElementById('em-email').value||'').trim();  // stored as contact_email in DB
   a.phone=(document.getElementById('em-phone').value||'').trim();
   a.notes=(document.getElementById('em-notes').value||'').trim();
   // Update schedule
@@ -2065,7 +2065,7 @@ async function saveEditAthlete(key){
     const {error:ae}=await sb.from('athletes').update({
       first_name:a.f,last_name:a.l,position:a.pos,
       rank_priority:a.rank,contract:a.contract,banked:a.banked,paid_out:a.paid,
-      agent:a.agent,agency:a.agency,email:a.email,phone:a.phone,notes:a.notes
+      agent:a.agent,agency:a.agency,contact_email:a.email,phone:a.phone,notes:a.notes
     }).eq('id',a.id);
     if(ae) throw ae;
 
