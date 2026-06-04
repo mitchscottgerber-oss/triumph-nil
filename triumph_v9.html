@@ -837,7 +837,7 @@ select.aa-inp{appearance:auto}
           </select>
         </div>
         <div class="aa-field"><div class="aa-lbl">Sport</div>
-          <select class="aa-inp" id="aa-sport">
+          <select class="aa-inp" id="aa-sport" onchange="rebuildMoGrid()">
             <option value="Football">Football</option>
             <option value="Basketball-M">Men's Basketball</option>
             <option value="Basketball-W">Women's Basketball</option>
@@ -1072,9 +1072,9 @@ async function loadFromSupabase(){
 
 // ===== SPORT TABS & PIN SYSTEM =====
 // PINs stored in memory (set via Settings)
-let sportPins = {Football:'', MBB:'', WBB:''};
+let sportPins = {Football:'', MBB:'', WBB:'', Baseball:''};
 // Unlocked state: Football unlocked by default
-let sportUnlocked = {Football:true, MBB:false, WBB:false};
+let sportUnlocked = {Football:true, MBB:false, WBB:false, Baseball:true};
 let activeSport = 'Football'; // current active sport tab
 let pinTarget = null; // which sport we're unlocking
 let pinEntered = '';
@@ -1221,6 +1221,7 @@ function buildSettings() {
     {key:'Football', label:'Football', icon:'football', note:'Unlocked by default'},
     {key:'MBB', label:"Men's Basketball", icon:'ti-ball-basketball', note:'Requires PIN if set'},
     {key:'WBB', label:"Women's Basketball", icon:'ti-ball-basketball', note:'Requires PIN if set'},
+    {key:'Baseball', label:'Baseball', icon:'ti-ball-baseball', note:'Unlocked by default'},
   ];
 
   sports.forEach(s => {
@@ -1242,8 +1243,8 @@ function buildSettings() {
   h += '<div class="set-sec-title">Rev Share Pools</div>';
   h += '<div class="set-sec-sub">Set the monthly Rev Share pool for each sport. This is the total amount available to distribute across all athletes in that sport each month.</div>';
 
-  const sportKeys = ['Football','MBB','WBB'];
-  const sportLabels = {Football:'Football',MBB:"Men's Basketball",WBB:"Women's Basketball"};
+  const sportKeys = ['Football','MBB','WBB','Baseball'];
+  const sportLabels = {Football:'Football',MBB:"Men's Basketball",WBB:"Women's Basketball",Baseball:'Baseball'};
 
   sportKeys.forEach(sp => {
     h += '<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:600;color:#1d1d1f;margin-bottom:8px">'+sportLabels[sp]+'</div>';
@@ -3610,6 +3611,42 @@ function initCurrencyInputs(...ids){
   ids.forEach(id=>{const el=document.getElementById(id);if(el) currencyInput(el);});
 }
 
+function rebuildMoGrid(){
+  // Save current sport selection and rebuild just the month grid
+  const grid=document.getElementById('aa-mo-grid');
+  if(!grid) return;
+  const sport=document.getElementById('aa-sport')?.value||'Football';
+  const isBaseball=sport==='Baseball';
+  const isBball=sport==='Basketball-M'||sport==='Basketball-W';
+  const months=[];
+  MO.forEach(m=>months.push({mo:m,yr:2026}));
+  if(isBaseball) ['Jan','Feb','Mar','Apr','May','Jun'].forEach(m=>months.push({mo:m,yr:2027}));
+  if(isBball) ['Jan','Feb','Mar','Apr'].forEach(m=>months.push({mo:m,yr:2027}));
+  grid.innerHTML=months.map(({mo,yr})=>{
+    const key=mo+'_'+yr;
+    const isCur=mo===CUR&&yr===2026;
+    return`<div class="aa-mo-card${isCur?' cur-mo':''}">
+      <div class="aa-mo-lbl${isCur?' cur':''}">${mo} ${yr}</div>
+      <div style="font-size:9px;color:#2980b9;font-weight:600;margin-bottom:3px">NIL Payment</div>
+      <div style="display:flex;align-items:center;border:1.5px solid #b3d4f5;border-radius:6px;background:#eef6ff;overflow:hidden;height:28px">
+        <span style="padding:0 7px;font-size:11px;color:#2980b9;font-weight:700;border-right:1px solid #b3d4f5;height:100%;display:flex;align-items:center">$</span>
+        <input class="aa-mo-inp" id="aa-mo-${key}" type="text" inputmode="decimal" placeholder="" style="border:none!important;background:transparent!important;flex:1;height:100%;padding:0 6px;font-size:11px" onfocus="this.select()" onblur="const n=parseFloat(this.value.replace(/[^0-9.]/g,''))||0;this.value=n>0?n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}):''">
+      </div>
+      <label class="aa-paid-chk"><input type="checkbox" id="aa-paid-${key}"> Paid</label>
+      <div style="font-size:9px;color:#c0392b;font-weight:600;margin-top:6px;margin-bottom:3px">Rev Share</div>
+      <div style="display:flex;align-items:center;border:1.5px solid #f5c6d0;border-radius:6px;background:#fff5f7;overflow:hidden;height:28px">
+        <span style="padding:0 7px;font-size:11px;color:#c0392b;font-weight:700;border-right:1px solid #f5c6d0;height:100%;display:flex;align-items:center">$</span>
+        <input class="aa-mo-inp" id="aa-rs-${key}" type="text" inputmode="decimal" placeholder="" style="border:none!important;background:transparent!important;flex:1;height:100%;padding:0 6px;font-size:11px;color:#c0392b!important;-webkit-text-fill-color:#c0392b!important" onfocus="this.select()" onblur="const n=parseFloat(this.value.replace(/[^0-9.]/g,''))||0;this.value=n>0?n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}):''">
+      </div>
+      <div style="font-size:9px;color:#e34040;font-weight:600;margin-top:6px;margin-bottom:3px">Moved to RS <span style="font-weight:400;color:#aeaeb2;font-size:8px">(shortfall)</span></div>
+      <div style="display:flex;align-items:center;border:1.5px solid #f5c6d0;border-radius:6px;background:#fff0f3;overflow:hidden;height:28px">
+        <span style="padding:0 7px;font-size:11px;color:#e34040;font-weight:700;border-right:1px solid #f5c6d0;height:100%;display:flex;align-items:center">$</span>
+        <input class="aa-mo-inp" id="aa-sf-${key}" type="text" inputmode="decimal" placeholder="" style="border:none!important;background:transparent!important;flex:1;height:100%;padding:0 6px;font-size:11px;color:#e34040!important;-webkit-text-fill-color:#e34040!important" onfocus="this.select()" onblur="const n=parseFloat(this.value.replace(/[^0-9.]/g,''))||0;this.value=n>0?n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}):''">
+      </div>
+    </div>`;
+  }).join('');
+}
+
 // ===== ADD ATHLETE =====
 function openAddAthlete(){
   // Build month grid — 18 months for Baseball (Jan 2026–Jun 2027), 12 for others
@@ -3656,6 +3693,7 @@ function openAddAthlete(){
   });
   document.getElementById('aa-pos').value='';
   document.getElementById('aa-sport').value='Football';
+  rebuildMoGrid();
   document.getElementById('add-athlete-overlay').classList.add('open');
   setTimeout(()=>document.getElementById('aa-fname').focus(),100);
 }
