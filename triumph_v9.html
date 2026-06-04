@@ -669,6 +669,7 @@ select.aa-inp{appearance:auto}
         <option value="Football">Football</option>
         <option value="MBB">Men's Basketball</option>
         <option value="WBB">Women's Basketball</option>
+        <option value="Baseball">Baseball</option>
       </select>
       <select class="fsel" id="sel-pos" onchange="aF()" style="display:none"><option value="">All positions</option><option>CB</option><option>DE</option><option>LB</option><option>QB</option><option>RB</option><option>TE</option><option>WR</option></select>
       <select class="fsel" id="sel-mo" onchange="aF()"><option value="all">All months</option><option>Jan</option><option>Feb</option><option>Mar</option><option>Apr</option><option selected>May</option><option>Jun</option><option>Jul</option><option>Aug</option><option>Sep</option><option>Oct</option><option>Nov</option><option>Dec</option></select>
@@ -700,6 +701,7 @@ select.aa-inp{appearance:auto}
         <option value="Football">Football</option>
         <option value="MBB">Men's Basketball</option>
         <option value="WBB">Women's Basketball</option>
+        <option value="Baseball">Baseball</option>
       </select>
       <select class="fsel" id="gm-pos-sel" onchange="gmRenderTable()"><option value="">All positions</option><option>CB</option><option>DE</option><option>LB</option><option>QB</option><option>RB</option><option>TE</option><option>WR</option></select>
       <select class="fsel" id="gm-mo-sel" onchange="gmRenderTable()">
@@ -839,6 +841,7 @@ select.aa-inp{appearance:auto}
             <option value="Football">Football</option>
             <option value="Basketball-M">Men's Basketball</option>
             <option value="Basketball-W">Women's Basketball</option>
+            <option value="Baseball">Baseball</option>
           </select>
         </div>
       </div>
@@ -1076,7 +1079,7 @@ let activeSport = 'Football'; // current active sport tab
 let pinTarget = null; // which sport we're unlocking
 let pinEntered = '';
 
-const SPORT_NAMES = {Football:'Football', MBB:"Men's Basketball", WBB:"Women's Basketball"};
+const SPORT_NAMES = {Football:'Football', MBB:"Men's Basketball", WBB:"Women's Basketball", Baseball:'Baseball'};
 const SPORT_ICONS = {Football:'football', MBB:'ti-ball-basketball', WBB:'ti-ball-basketball'};
 
 // ===== SPORT SELECTION (dropdown) =====
@@ -1122,7 +1125,7 @@ function doSwitchSport(sport) {
 // After PIN success, also update the dropdown - handled in checkPin()
 
 function getAthletesBySport(sport) {
-  const sMap = {Football:'Football', MBB:'Basketball-M', WBB:'Basketball-W'};
+  const sMap = {Football:'Football', MBB:'Basketball-M', WBB:'Basketball-W', Baseball:'Baseball'};
   return A.filter(a => (a.sport||'Football') === (sMap[sport]||sport) || (sport==='Football' && (!a.sport||a.sport==='Football')));
 }
 
