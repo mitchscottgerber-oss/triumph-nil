@@ -833,7 +833,8 @@ select.aa-inp{appearance:auto}
           <select class="aa-inp" id="aa-pos">
             <option value="">Select position...</option>
             <optgroup label="Football"><option>CB</option><option>DE</option><option>DT</option><option>LB</option><option>OC</option><option>OGC</option><option>OT</option><option>QB</option><option>RB</option><option>TE</option><option>WR</option></optgroup>
-            <optgroup label="Basketball"><option>G</option><option>F</option><option>C</option><option>PG</option><option>SG</option><option>SF</option><option>PF</option></optgroup>
+            <optgroup label="Basketball"><option>PG</option><option>SG</option><option>SF</option><option>PF</option><option>C</option></optgroup>
+            <optgroup label="Baseball"><option>BSB</option></optgroup>
           </select>
         </div>
         <div class="aa-field"><div class="aa-lbl">Sport</div>
@@ -3616,6 +3617,12 @@ function rebuildMoGrid(){
   const grid=document.getElementById('aa-mo-grid');
   if(!grid) return;
   const sport=document.getElementById('aa-sport')?.value||'Football';
+  // Auto-set position based on sport
+  const posEl=document.getElementById('aa-pos');
+  if(posEl){
+    if(sport==='Baseball'){posEl.value='BSB';}
+    else if(sport==='Football'){if(posEl.value==='BSB') posEl.value='';}
+  }
   const isBaseball=sport==='Baseball';
   const isBball=sport==='Basketball-M'||sport==='Basketball-W';
   const months=[];
@@ -3708,7 +3715,8 @@ async function saveNewAthlete(){
 
   const fname=(document.getElementById('aa-fname').value||'').trim();
   const lname=(document.getElementById('aa-lname').value||'').trim();
-  const pos=document.getElementById('aa-pos').value||(sport==='Baseball'?'Baseball':'');
+  const posRaw=document.getElementById('aa-pos').value;
+  const pos=posRaw||(sport==='Baseball'?'BSB':sport.includes('Basketball')?'Player':'');
   const sport=document.getElementById('aa-sport').value;
   const rank=null;
   const contract=getCurrencyVal('aa-contract');
@@ -3721,7 +3729,7 @@ async function saveNewAthlete(){
   const errs=[];
   if(!fname) errs.push('First name is required');
   if(!lname) errs.push('Last name is required');
-  if(!pos && sport!=='Baseball') errs.push('Position is required');
+  if(!pos && sport==='Football') errs.push('Position is required');
   if(!contract) errs.push('Contract value is required');
   if(!banked&&banked!==0) errs.push('Banked amount is required');
   if(A.find(a=>a.f.toLowerCase()===fname.toLowerCase()&&a.l.toLowerCase()===lname.toLowerCase())){
