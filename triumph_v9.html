@@ -1039,17 +1039,22 @@ async function loadFromSupabase(){
   try {
     const [{data:athletes,error:ae},{data:schedules},{data:revShareData}] = await Promise.all([
       sb.from('athletes').select('*').eq('active',true).order('rank_priority',{ascending:true,nullsFirst:false}),
-      sb.from('payment_schedule').select('*').eq('year',2026),
-      sb.from('rev_share').select('*').eq('year',2026)
+      sb.from('payment_schedule').select('*').in('year',[2026,2027]),
+      sb.from('rev_share').select('*').in('year',[2026,2027])
     ]);
     if(ae) throw ae;
 
     A.length=0;
     (athletes||[]).forEach(a=>{
-      const sch=MO.map(mo=>{
-        const s=(schedules||[]).find(x=>x.athlete_id===a.id&&x.month===mo);
-        return{mo,a:s?.amount||0,p:s?.is_paid||false,s:s?.sources||[],_sid:s?.id,cleared:s?.nil_cleared||0,shortfall:s?.shortfall||0,rs_paid:s?.rs_paid||false};
-      });
+      // Build sch from ALL schedule entries (2026 + 2027)
+      const athSch=(schedules||[]).filter(x=>x.athlete_id===a.id);
+      const sch=athSch.map(s=>({
+        mo:s.month,yr:s.year||2026,a:s.amount||0,p:s.is_paid||false,
+        s:s.sources||[],_sid:s.id,cleared:s.nil_cleared||0,
+        shortfall:s.shortfall||0,rs_paid:s.rs_paid||false
+      }));
+      // Ensure all 2026 months exist
+      MO.forEach(mo=>{if(!sch.find(x=>x.mo===mo&&x.yr===2026)) sch.push({mo,yr:2026,a:0,p:false,s:[],cleared:0,shortfall:0,rs_paid:false});});
       A.push({id:a.id,f:a.first_name,l:a.last_name,pos:a.position,sport:a.sport||'Football',
         rank:a.rank_priority,contract:a.contract||0,banked:a.banked||0,paid:a.paid_out||0,
         rsContract:a.rs_contract||0,rsPaid:a.rs_paid||0,deals:[],sch});
@@ -1633,7 +1638,7 @@ function rAnnual(list){
       +cols.map(({mo,yr})=>{const rv=getRev(a,mo);const iC=mo===CUR&&yr===2026;
         return'<td class="'+(iC?'curbg':'')+'" style="text-align:center">'+(rv>0?'<span style="font-size:11px;font-weight:600;color:#c0392b">'+f(rv)+'</span>':'<span style="color:#e5e5ea;font-size:10px">—</span>')+'</td>';
       }).join('')
-      +'<td style="text-align:right;font-size:11px;font-weight:600;color:'+(rvTot>0?'#c0392b':'#d1d1d6')+'">'+(rvTot>0?f(rvTot):'—')+'</td>'
+      +'<td></td>'
       +'<td style="text-align:right;font-size:11px;font-weight:600;color:'+(rvTot>0?'#c0392b':'#d1d1d6')+';background:#fff0f3!important">'+(rvTot>0?f(rvTot):'—')+'</td></tr>';
   });
 
