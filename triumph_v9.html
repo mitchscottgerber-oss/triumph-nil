@@ -3888,7 +3888,6 @@ async function saveNewAthlete(){
   if(!lname) errs.push('Last name is required');
   if(!pos && sport==='Football') errs.push('Position is required');
   if(!contract) errs.push('Contract value is required');
-  if(!banked&&banked!==0) errs.push('Banked amount is required');
   if(A.find(a=>a.f.toLowerCase()===fname.toLowerCase()&&a.l.toLowerCase()===lname.toLowerCase())){
     errs.push('An athlete with this name already exists');
   }
