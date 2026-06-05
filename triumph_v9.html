@@ -1069,7 +1069,7 @@ async function loadFromSupabase(){
       if(!a) return;
       const k=a.f+'_'+a.l;
       if(!revShare[k]) revShare[k]={};
-      revShare[k][r.month]=r.amount;
+      revShare[k][r.month+'_'+(r.year||2026)]=r.amount;
     });
 
     syncStatus('Synced ✓');
@@ -1349,9 +1349,13 @@ let revPools={
   WBB:{Jan:0,Feb:0,Mar:0,Apr:0,May:0,Jun:0,Jul:0,Aug:0,Sep:0,Oct:0,Nov:0,Dec:0}
 };
 let revShare={};
-function getRev(a,mo){const k=a.f+'_'+a.l;return(revShare[k]&&revShare[k][mo])||0;}
+function getRev(a,mo,yr){yr=yr||2026;const k=a.f+'_'+a.l;const rk=mo+'_'+yr;return(revShare[k]&&revShare[k][rk])||0;}
 function setRev(a,mo,amt){const k=a.f+'_'+a.l;if(!revShare[k])revShare[k]={};revShare[k][mo]=amt;const key=k;setTimeout(()=>oProf(key),0);}
-function getRevYTD(a){return MO.reduce((s,m)=>s+getRev(a,m),0);}
+function getRevYTD(a){
+  const k=a.f+'_'+a.l;
+  if(!revShare[k]) return 0;
+  return Object.values(revShare[k]).reduce((s,v)=>s+(v||0),0);
+}
 function sportRevAssigned(sport,mo){return A.filter(x=>(x.sport||'Football')===sport).reduce((s,a)=>s+getRev(a,mo),0);}
 function poolRemaining(sport,mo){return(revPools[sport]&&revPools[sport][mo]||0)-sportRevAssigned(sport,mo);}
 
@@ -1579,7 +1583,7 @@ function rAnnual(list){
   }
 
   const moNIL=cols.map(({mo,yr})=>list.reduce((s,a)=>{const sc=a.sch.find(x=>x.mo===mo&&(x.yr||2026)===yr);return s+(sc?sc.a:0);},0));
-  const moRS=cols.map(({mo})=>list.reduce((s,a)=>s+getRev(a,mo),0));
+  const moRS=cols.map(({mo,yr})=>list.reduce((s,a)=>s+getRev(a,mo,yr),0));
   const totalNIL=moNIL.reduce((s,v)=>s+v,0);
   const totalRS=moRS.reduce((s,v)=>s+v,0);
   const totalBanked=list.reduce((s,a)=>s+(a.banked-a.paid),0);
@@ -1662,7 +1666,7 @@ function rAnnual(list){
           ?'<div style="font-weight:600;color:#c0392b;font-size:12px">'+f(rsRem)+'</div><div style="font-size:9px;color:#aeaeb2;margin-top:1px" id="rh-'+idx+'">▼ detail</div>'
           :'<span style="color:#d1d1d6;font-size:11px">—</span>')
       +'</td>'
-      +cols.map(({mo,yr})=>{const rv=getRev(a,mo);const iC=mo===CUR&&yr===2026;const bg='background:#fff0f3!important;';
+      +cols.map(({mo,yr})=>{const rv=getRev(a,mo,yr);const iC=mo===CUR&&yr===2026;const bg='background:#fff0f3!important;';
         return'<td class="'+(iC?'curbg':'')+'" style="text-align:center;'+bg+'">'+(rv>0?'<span style="font-size:11px;font-weight:600;color:#c0392b">'+f(rv)+'</span>':'<span style="color:#e5e5ea;font-size:10px">—</span>')+'</td>';
       }).join('')
       +'<td style="background:#fff5f7"></td>'
@@ -1754,7 +1758,7 @@ async function saveRevInline(key,mo){
   const a=A.find(x=>x.f+'_'+x.l===key);
   if(!a) return;
   if(!revShare[key]) revShare[key]={};
-  revShare[key][mo]=val;
+  revShare[key][mo+'_2026']=val;
   try{
     await sb.from('rev_share').upsert(
       {athlete_id:a.id,month:mo,year:2026,amount:val},
@@ -1972,18 +1976,24 @@ function openEditAthlete(key){
   const ov=document.createElement('div');
   ov.id='edit-athlete-overlay';
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1200;display:flex;align-items:center;justify-content:center';
-  const moCells=MO.map(m=>{
-    const s=a.sch.find(x=>x.mo===m)||{a:0,p:false};
-    const rv=getRev(a,m);
-    return`<div style="background:#f9f9f9;border:1.5px solid #e5e5ea;border-radius:8px;padding:8px 10px${m===CUR?';border-color:#b7791f;background:#fffbe6':''}">
-      <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:${m===CUR?'#b7791f':'#8e8e93'};margin-bottom:5px">${m}</div>
+  const editSport=a.sport||'Football';
+  const editMonths=[...MO.map(m=>({mo:m,yr:2026}))];
+  if(editSport==='Baseball') ['Jan','Feb','Mar','Apr','May','Jun'].forEach(m=>editMonths.push({mo:m,yr:2027}));
+  if(editSport==='Basketball-M'||editSport==='Basketball-W') ['Jan','Feb','Mar','Apr'].forEach(m=>editMonths.push({mo:m,yr:2027}));
+  const moCells=editMonths.map(({mo:m,yr})=>{
+    const s=a.sch.find(x=>x.mo===m&&(x.yr||2026)===yr)||{a:0,p:false};
+    const rv=getRev(a,m,yr);
+    const isCurCell=m===CUR&&yr===2026;
+    const moLabel=m+(yr===2027?' \'27':' \'26');
+    return`<div style="background:#f9f9f9;border:1.5px solid #e5e5ea;border-radius:8px;padding:8px 10px${isCurCell?';border-color:#b7791f;background:#fffbe6':''}">
+      <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:${isCurCell?'#b7791f':'#8e8e93'};margin-bottom:5px">${moLabel}</div>
       <div style="font-size:8px;color:#2980b9;font-weight:600;margin-bottom:2px">NIL</div>
-      <input style="width:100%;height:26px;padding:0 6px;border:1.5px solid #b3d4f5;border-radius:5px;font-size:11px;background:#eef6ff;color:#1d1d1f;font-family:inherit;outline:none;text-align:right;box-sizing:border-box" id="em-nil-${m}" type="number" min="0" value="${s.a||''}">
+      <input style="width:100%;height:26px;padding:0 6px;border:1.5px solid #b3d4f5;border-radius:5px;font-size:11px;background:#eef6ff;color:#1d1d1f;font-family:inherit;outline:none;text-align:right;box-sizing:border-box" id="em-nil-${m}_${yr}" type="number" min="0" value="${s.a||''}">
       <label style="display:flex;align-items:center;gap:4px;font-size:9px;color:#8e8e93;margin-top:3px;cursor:pointer">
-        <input type="checkbox" id="em-paid-${m}" ${s.p?'checked':''}> Paid
+        <input type="checkbox" id="em-paid-${m}_${yr}" ${s.p?'checked':''}> Paid
       </label>
       <div style="font-size:8px;color:#c0392b;font-weight:600;margin-top:5px;margin-bottom:2px">Rev Share</div>
-      <input style="width:100%;height:26px;padding:0 6px;border:1.5px solid #f5c6d0;border-radius:5px;font-size:11px;background:#fff5f7;color:#c0392b;font-family:inherit;outline:none;text-align:right;box-sizing:border-box" id="em-rs-${m}" type="number" min="0" value="${rv||''}">
+      <input style="width:100%;height:26px;padding:0 6px;border:1.5px solid #f5c6d0;border-radius:5px;font-size:11px;background:#fff5f7;color:#c0392b;font-family:inherit;outline:none;text-align:right;box-sizing:border-box" id="em-rs-${m}_${yr}" type="number" min="0" value="${rv||''}">
     </div>`;
   }).join('');
   ov.innerHTML=`<div style="background:#fff;border-radius:18px;width:700px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.25);overflow:hidden">
@@ -2036,14 +2046,17 @@ async function saveEditAthlete(key){
   a.phone=(document.getElementById('em-phone').value||'').trim();
   a.notes=(document.getElementById('em-notes').value||'').trim();
   // Update schedule
-  MO.forEach(m=>{
-    let s=a.sch.find(x=>x.mo===m);
+  const editMonths2=[...MO.map(m=>({mo:m,yr:2026}))];
+  if((a.sport||'Football')==='Baseball') ['Jan','Feb','Mar','Apr','May','Jun'].forEach(m=>editMonths2.push({mo:m,yr:2027}));
+  if(a.sport==='Basketball-M'||a.sport==='Basketball-W') ['Jan','Feb','Mar','Apr'].forEach(m=>editMonths2.push({mo:m,yr:2027}));
+  editMonths2.forEach(({mo:m,yr})=>{
+    let s=a.sch.find(x=>x.mo===m&&(x.yr||2026)===yr);
     if(!s){s={mo:m,a:0,p:false,s:[]};a.sch.push(s);}
-    s.a=parseFloat(document.getElementById('em-nil-'+m)?.value)||0;
-    s.p=document.getElementById('em-paid-'+m)?.checked||false;
-    const rv=parseFloat(document.getElementById('em-rs-'+m)?.value)||0;
+    s.a=parseFloat(document.getElementById('em-nil-'+m+'_'+yr)?.value)||0;
+    s.p=document.getElementById('em-paid-'+m+'_'+yr)?.checked||false;
+    const rv=parseFloat(document.getElementById('em-rs-'+m+'_'+yr)?.value)||0;
     if(!revShare[newKey]) revShare[newKey]={};
-    revShare[newKey][m]=rv;
+    revShare[newKey][m+'_'+yr]=rv;
   });
   // Migrate revShare key if name changed
   if(oldKey!==newKey&&revShare[oldKey]){
@@ -2058,21 +2071,18 @@ async function saveEditAthlete(key){
     }).eq('id',a.id);
     if(ae) throw ae;
 
-    // Upsert payment schedule — only update months that exist in the edit modal (2026 only)
-    // Don't touch 2027 rows — they're managed separately
-    const schedRows=MO.map(m=>{
-      const s=a.sch.find(x=>x.mo===m&&(x.yr||2026)===2026);
-      return{athlete_id:a.id,month:m,year:2026,
+    const schedRows=editMonths2.map(({mo:m,yr})=>{
+      const s=a.sch.find(x=>x.mo===m&&(x.yr||2026)===yr);
+      return{athlete_id:a.id,month:m,year:yr,
         amount:s?.a||0,is_paid:s?.p||false,sources:s?.s||[],
         nil_cleared:s?.cleared||0,shortfall:s?.shortfall||0,rs_paid:s?.rs_paid||false};
     });
     const {error:se}=await sb.from('payment_schedule').upsert(schedRows,{onConflict:'athlete_id,month,year'});
     if(se) throw se;
 
-    // Upsert rev share — 2026 only
-    const rsRows=MO.map(m=>({
-      athlete_id:a.id,month:m,year:2026,
-      amount:revShare[newKey]?.[m]||0
+    const rsRows=editMonths2.map(({mo:m,yr})=>({
+      athlete_id:a.id,month:m,year:yr,
+      amount:revShare[newKey]?.[m+'_'+yr]||0
     }));
     const {error:re}=await sb.from('rev_share').upsert(rsRows,{onConflict:'athlete_id,month,year'});
     if(re) throw re;
@@ -2121,7 +2131,7 @@ function bSched(a){
 
   // ===== RS CARDS (pink — with Mark Paid) =====
   let rsCards=MO.map(m=>{
-    const rv=getRev(a,m);
+    const rv=getRev(a,m,2026);
     const iC=m===mo;
     const sc=a.sch.find(x=>x.mo===m);
     const displaced=sc?.shortfall||0;
