@@ -1016,6 +1016,9 @@ async function checkAuth(){
   if(avEl) avEl.textContent=initials;
   if(nameEl) nameEl.textContent=displayName;
   if(roleEl) roleEl.textContent='Triumph NIL';
+  // Apply role from user metadata
+  const userRole=(meta.role||'admin');
+  applyRole(userRole);
   return true;
 }
 
@@ -1815,24 +1818,24 @@ function oProf(key){
       +'<div class="herosub">'+a.pos+' · Virginia Tech</div>'
       +'<div class="herobdgs"><span class="badge bb">NILGo Active</span>'+(nf?'<span class="badge br">Short this month</span>':'<span class="badge bg">Funded</span>')+(rvYTD>0?'<span class="badge" style="background:#f0ebff;color:#8e44ad;-webkit-text-fill-color:#8e44ad">Rev Share</span>':'')+'</div></div>'
       +'<div style="display:flex;gap:7px;align-items:center">'
-        +'<button class="btn btn-outline btn-sm" onclick="openEditAthlete(\''+key+'\')" style="display:flex;align-items:center;gap:4px"><i class="ti ti-edit" style="font-size:12px"></i> Edit</button>'
-        +'<button class="btn btn-sm" onclick="deleteAthlete(\''+key+'\')" style="background:#fff0f3;color:#e34040;-webkit-text-fill-color:#e34040;border:1.5px solid #f5c6d0;display:flex;align-items:center;gap:4px"><i class="ti ti-trash" style="font-size:12px"></i> Delete</button>'
+        +(USER_ROLE!=='activation'?'<button class="btn btn-outline btn-sm" onclick="openEditAthlete(\''+key+'\')" style="display:flex;align-items:center;gap:4px"><i class="ti ti-edit" style="font-size:12px"></i> Edit</button>':'')
+        +(USER_ROLE!=='activation'?'<button class="btn btn-sm" onclick="deleteAthlete(\''+key+'\')" style="background:#fff0f3;color:#e34040;-webkit-text-fill-color:#e34040;border:1.5px solid #f5c6d0;display:flex;align-items:center;gap:4px"><i class="ti ti-trash" style="font-size:12px"></i> Delete</button>':'')
       +'</div>'
       +'</div></div>'
-      +'<div class="krow" style="grid-template-columns:repeat(5,1fr)">'
+      +(USER_ROLE!=='activation'?'<div class="krow" style="grid-template-columns:repeat(5,1fr)">'
         +'<div class="kpi"><div class="kl">NIL contract</div><div class="kv">'+f(a.contract)+'</div></div>'
         +'<div class="kpi"><div class="kl">Total paid out</div><div class="kv g">'+f(a.paid)+'</div></div>'
         +'<div class="kpi"><div class="kl">Bank remaining</div><div class="kv'+(rem<=0?' r':'')+'">'+(rem<=0?'No funds':f(rem))+'</div></div>'
         +'<div class="kpi"><div class="kl">'+mo+' NIL</div><div class="kv'+(nf&&mp>0?' r':'')+'">'+(mp>0?f(mp):'-')+'</div></div>'
         +'<div class="kpi"><div class="kl">Rev Share YTD</div><div class="kv" style="color:'+(rvYTD>0?'#8e44ad':'#1d1d1f')+';-webkit-text-fill-color:'+(rvYTD>0?'#8e44ad':'#1d1d1f')+'">'+(rvYTD>0?f(rvYTD):'-')+'</div></div>'
-      +'</div></div>'
+      +'</div>':'')+'</div>'
     +'<div class="tabs">'
-      +'<button class="tab on" onclick="sT(\'sched\',\''+key+'\',this)">Payment schedule</button>'
-      +'<button class="tab" onclick="sT(\'wallets\',\''+key+'\',this)">NILGo wallets</button>'
+      +(USER_ROLE!=='activation'?'<button class="tab on" onclick="sT(\'sched\',\''+key+'\',this)">Payment schedule</button>':'')
+      +'<button class="tab'+(USER_ROLE==='activation'?' on':'')+'" onclick="sT(\'wallets\',\''+key+'\',this)">NILGo wallets</button>'
       +'<button class="tab" onclick="sT(\'receipt\',\''+key+'\',this)">Monthly receipt</button>'
-      +'<button class="tab" onclick="sT(\'contact\',\''+key+'\',this)">Contact & Notes</button>'
+      +(USER_ROLE!=='activation'?'<button class="tab" onclick="sT(\'contact\',\''+key+'\',this)">Contact & Notes</button>':'')
     +'</div>'
-    +'<div class="tabbody" id="tb">'+bSched(a)+'</div>';
+    +'<div class="tabbody" id="tb">'+(USER_ROLE==='activation'?bWallets(a):bSched(a))+'</div>';
 }
 
 // ===== DELETE ATHLETE =====
@@ -2266,9 +2269,11 @@ function bWallets(a){
         +'<div class="wchd">'
           +'<div class="wcname">'+d.n+'</div>'
           +'<div style="display:flex;align-items:center;gap:6px">'
+            +(d.pow?'<span style="font-size:10px;background:#e8f8f0;color:#1d9e75;padding:2px 7px;border-radius:5px;font-weight:600;display:flex;align-items:center;gap:3px"><i class="ti ti-paperclip" style="font-size:9px"></i> Proof</span>':'')
             +'<span class="'+statusCfg.cls+'" style="cursor:pointer;display:flex;align-items:center;gap:3px" onclick="cycleDealStatus(\''+key+'\','+di+')" title="Click to change status">'
               +'<i class="ti '+statusCfg.icon+'" style="font-size:9px"></i> '+statusCfg.label
             +'</span>'
+            +'<button onclick="togglePOW(\''+key+'\','+di+')" title="'+(d.pow?'Remove proof of work':'Mark proof of work delivered')+'" style="background:'+(d.pow?'#e8f8f0':'#f2f2f7')+';border:none;border-radius:6px;width:26px;height:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:'+(d.pow?'#1d9e75':'#8e8e93')+';font-size:12px"><i class="ti ti-'+(d.pow?'check':'plus')+'""></i></button>'
           +'</div>'
         +'</div>'
         +(status==='denied'?'<div style="font-size:11px;color:#e34040;padding:4px 0 8px;font-weight:500"><i class="ti ti-alert-circle" style="font-size:11px"></i> This deal has been denied by NILGo</div>':'')
@@ -2289,13 +2294,34 @@ function bWallets(a){
     }).join('')+'</div>';
 }
 
+function togglePOW(key,di){
+  const a=A.find(x=>x.f+'_'+x.l===key);if(!a||!a.deals[di]) return;
+  a.deals[di].pow=!a.deals[di].pow;
+  document.getElementById('tb').innerHTML=bWallets(a);
+}
+
 function cycleDealStatus(key,di){
   const a=A.find(x=>x.f+'_'+x.l===key);if(!a||!a.deals[di]) return;
   const cycle={pending:'approved',approved:'denied',denied:'no-submission','no-submission':'pending'};
   const cur=a.deals[di].status||'approved';
   a.deals[di].status=cycle[cur];
-  // Re-render wallets tab
   document.getElementById('tb').innerHTML=bWallets(a);
+}
+
+// ===== ROLE-BASED ACCESS =====
+let USER_ROLE='admin';
+
+function applyRole(role){
+  USER_ROLE=role;
+  if(role==='activation'){
+    ['nav-dash','nav-gm','nav-companies','nav-reports','nav-settings'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.style.display='none';
+    });
+    const addBtn=document.getElementById('add-athlete-btn');
+    if(addBtn) addBtn.style.display='none';
+    nav('athletes',document.getElementById('nav-athletes'));
+  }
 }
 
 // ===== ADD DEAL MODAL =====
@@ -2456,38 +2482,54 @@ function bReceipt(a,mo){
   mo=mo||(getMo()==='all'?CUR:getMo());
   rcptKey=a.f+'_'+a.l;rcptMo=mo;
   const key=a.f+'_'+a.l;
+  // Build month buttons including 2027 for baseball/basketball
+  const rcptSport=a.sport||'Football';
+  const rcptMos=[...MO];
+  if(rcptSport==='Baseball') ['Jan','Feb','Mar','Apr','May','Jun'].forEach(m=>{if(!rcptMos.includes(m+'27'))rcptMos.push(m);});
   const btns='<button class="rmobtn'+(mo==='all'?' on':'')+'" data-rcpt-key="'+key+'" data-rcpt-mo="all">All</button>'
-    +MO.map(m=>'<button class="rmobtn'+(m===mo?' on':'')+'" data-rcpt-key="'+key+'" data-rcpt-mo="'+m+'">'+m+'</button>').join('');
+    +a.sch.filter(x=>x.a>0).sort((x,y)=>(x.yr||2026)-(y.yr||2026)||MO.indexOf(x.mo)-MO.indexOf(y.mo))
+      .map(x=>{const ml=x.mo+(( x.yr||2026)===2027?'\'27':'\'26');return'<button class="rmobtn'+(x.mo===mo?' on':'')+'" data-rcpt-key="'+key+'" data-rcpt-mo="'+x.mo+'">'+ml+'</button>';}).join('');
   const dateStr=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
 
   function shell(id,inner){
-    return '<div id="'+id+'" style="background:#fafaf8;border:0.5px solid #e8e6e0;border-radius:12px;overflow:hidden">'
-      +inner
-    +'</div>';
+    return'<div id="'+id+'" style="background:#fff;border:0.5px solid #e5e5ea;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06)">'
+      +inner+'</div>';
   }
   function hd(name,pos,period,ref){
-    return '<div style="padding:22px 24px 18px;border-bottom:2px dashed #e2e0d8;display:flex;justify-content:space-between;align-items:flex-start">'
+    return'<div style="padding:20px 22px 16px;border-bottom:1px solid #f2f2f7;display:flex;justify-content:space-between;align-items:flex-start">'
       +'<div>'
-        +'<div style="font-size:10px;font-weight:500;letter-spacing:.1em;color:#aaa;text-transform:uppercase;margin-bottom:8px">NIL Payment Receipt</div>'
-        +'<div style="font-size:20px;font-weight:600;color:#1a1a1a;letter-spacing:-.3px">'+name+'</div>'
-        +'<div style="font-size:12px;color:#aaa;margin-top:3px">'+pos+' · Virginia Tech</div>'
+        +'<div style="font-size:10px;font-weight:600;letter-spacing:.09em;color:#aeaeb2;text-transform:uppercase;margin-bottom:7px">Triumph NIL · Receipt</div>'
+        +'<div style="font-size:19px;font-weight:700;color:#1d1d1f;letter-spacing:-.4px">'+name+'</div>'
+        +'<div style="font-size:12px;color:#8e8e93;margin-top:3px">'+pos+' · Virginia Tech</div>'
       +'</div>'
       +'<div style="text-align:right">'
-        +'<div style="font-size:15px;font-weight:600;color:#1a1a1a">Triumph</div>'
-        +'<div style="font-size:12px;color:#bbb;margin-top:2px">'+period+'</div>'
+        +'<div style="font-size:13px;font-weight:600;color:#1d1d1f">'+period+'</div>'
+        +'<div style="font-size:11px;color:#aeaeb2;margin-top:3px;font-family:monospace">'+ref+'</div>'
       +'</div>'
     +'</div>';
   }
-  function line(name,sub,amt,color){
-    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 24px;border-bottom:1px solid #eeece6">'
-      +'<div><div style="font-size:13px;color:#1a1a1a">'+name+'</div>'+(sub?'<div style="font-size:11px;color:#bbb;margin-top:2px">'+sub+'</div>':'')+'</div>'
-      +'<div style="font-size:13px;font-weight:500;color:'+(color||'#1a1a1a')+'">'+amt+'</div>'
+  function line(name,sub,amt,color,icon){
+    return'<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 22px;border-bottom:0.5px solid #f2f2f7">'
+      +'<div style="display:flex;align-items:center;gap:8px">'
+        +(icon?'<div style="width:28px;height:28px;border-radius:7px;background:#f2f2f7;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">'+icon+'</div>':'')
+        +'<div>'
+          +'<div style="font-size:13px;color:#1d1d1f;font-weight:500">'+name+'</div>'
+          +(sub?'<div style="font-size:11px;color:#aeaeb2;margin-top:1px">'+sub+'</div>':'')
+        +'</div>'
+      +'</div>'
+      +'<div style="font-size:13px;font-weight:600;color:'+(color||'#1d1d1f')+'">'+amt+'</div>'
     +'</div>';
   }
   function ft(ref,date,total){
-    return '<div style="border-top:2px dashed #e2e0d8;padding:16px 24px 18px;display:flex;justify-content:space-between;align-items:flex-end">'
-      +'<div><div style="font-size:11px;color:#bbb;font-family:monospace">'+ref+'</div><div style="font-size:11px;color:#bbb;margin-top:2px">'+date+'</div></div>'
-      +'<div style="font-size:24px;font-weight:600;color:#1a1a1a;letter-spacing:-.5px">'+total+'</div>'
+    return'<div style="padding:14px 22px;display:flex;justify-content:space-between;align-items:center;background:#f9f9f9;border-top:1px solid #f2f2f7">'
+      +'<div>'
+        +'<div style="font-size:11px;color:#aeaeb2;font-family:monospace">'+ref+'</div>'
+        +'<div style="font-size:11px;color:#aeaeb2;margin-top:1px">'+date+'</div>'
+      +'</div>'
+      +'<div>'
+        +'<div style="font-size:11px;color:#8e8e93;text-align:right;margin-bottom:2px">Total</div>'
+        +'<div style="font-size:22px;font-weight:700;color:#1d1d1f;letter-spacing:-.4px">'+total+'</div>'
+      +'</div>'
     +'</div>';
   }
 
