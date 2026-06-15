@@ -1343,6 +1343,8 @@ function switchRole(role){
     // Restore all nav + controls
     ['nav-dash','nav-gm','nav-companies','nav-reports','nav-settings'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='';});
     ['add-athlete-btn','fbar-all','fbar-short','fbar-div1','fbar-div2','sel-mo','fbar-vtog','fbar-export'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='';});
+    // Also restore nav
+    ['nav-dash','nav-gm','nav-companies','nav-reports','nav-settings'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='';});
     // Refresh athlete grid to show numbers
     if(document.getElementById('page-athletes')?.classList.contains('on')){
       doSwitchSport(activeSport);
@@ -1613,6 +1615,10 @@ function aF(){
 
   // Activation role — show name-only clean list, no money
   if(USER_ROLE==='activation'){
+    // Hide fbar items not needed
+    ['add-athlete-btn','fbar-all','fbar-short','fbar-div1','fbar-div2','sel-mo','fbar-vtog','fbar-export'].forEach(id=>{
+      const el=document.getElementById(id);if(el)el.style.display='none';
+    });
     document.getElementById('a-strip').style.display='none';
     document.getElementById('cv').style.display='none';
     document.getElementById('av').style.display='block';
@@ -2396,13 +2402,13 @@ function openEditDeal(key,di){
     {v:'autograph',icon:'ti-signature',color:'#b7791f',label:'Autograph Signing'},
   ];
 
-  ov.innerHTML=`<div style="background:#fff;border-radius:18px;width:480px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.25);overflow:hidden">
-    <div style="background:#1d1d1f;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+  ov.innerHTML=`<div style="background:#fff;border-radius:18px;width:520px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.25);overflow:hidden">
+    <div style="background:#1d1d1f;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
       <div><div style="font-size:15px;font-weight:700;color:#fff">Edit Deal</div>
       <div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px">${d.n}</div></div>
       <button onclick="document.getElementById('edit-deal-overlay').remove()" style="background:rgba(255,255,255,.12);border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;color:#fff;-webkit-text-fill-color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center">✕</button>
     </div>
-    <div style="padding:20px 22px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:12px">
+    <div style="padding:16px 20px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:10px">
       <div>
         <div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Deal / Company Name</div>
         <input id="ed-name" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none" value="${d.n||''}">
@@ -2427,7 +2433,7 @@ function openEditDeal(key,di){
           <div style="display:flex;flex-direction:column;gap:6px">
             ${['pending','approved','denied','no-submission'].map(s=>{
               const cfg={pending:{label:'Pending',icon:'ti-clock',color:'#f59e0b'},approved:{label:'Approved',icon:'ti-check',color:'#1d9e75'},denied:{label:'Denied',icon:'ti-x',color:'#e34040'},'no-submission':{label:'No Submission Req.',icon:'ti-circle-off',color:'#8e8e93'}}[s];
-              return`<label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:7px 10px;border:1.5px solid ${(d.status||'pending')===s?'#1d1d1f':'#e5e5ea'};border-radius:8px;font-size:12px;font-weight:500;background:${(d.status||'pending')===s?'#f9f9f9':'#fff'}">
+              return`<label style="display:flex;align-items:center;gap:5px;cursor:pointer;padding:5px 10px;border:1.5px solid ${(d.status||'pending')===s?'#1d1d1f':'#e5e5ea'};border-radius:8px;font-size:12px;font-weight:500;background:${(d.status||'pending')===s?'#f9f9f9':'#fff'}">
                 <input type="radio" name="ed-status" value="${s}" ${(d.status||'pending')===s?'checked':''} style="cursor:pointer">
                 <i class="ti ${cfg.icon}" style="font-size:12px;color:${cfg.color}"></i> ${cfg.label}
               </label>`;
@@ -2436,14 +2442,14 @@ function openEditDeal(key,di){
         </div>
         <div>
           <div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Completion</div>
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 12px;border:1.5px solid ${d.completed?'#1d9e75':'#e5e5ea'};border-radius:8px;background:${d.completed?'#e8f8f2':'#fff'}">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 10px;border:1.5px solid ${d.completed?'#1d9e75':'#e5e5ea'};border-radius:8px;background:${d.completed?'#e8f8f2':'#fff'}">
             <input type="checkbox" id="ed-completed" ${d.completed?'checked':''} style="cursor:pointer;width:16px;height:16px">
             <div>
               <div style="font-size:12px;font-weight:600;color:#1d1d1f">Mark Completed</div>
               <div style="font-size:10px;color:#8e8e93;margin-top:1px">Deal fully delivered</div>
             </div>
           </label>
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 12px;border:1.5px solid ${d.pow?'#1d9e75':'#e5e5ea'};border-radius:8px;background:${d.pow?'#e8f8f2':'#fff'};margin-top:6px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 10px;border:1.5px solid ${d.pow?'#1d9e75':'#e5e5ea'};border-radius:8px;background:${d.pow?'#e8f8f2':'#fff'};margin-top:5px">
             <input type="checkbox" id="ed-pow" ${d.pow?'checked':''} style="cursor:pointer;width:16px;height:16px">
             <div>
               <div style="font-size:12px;font-weight:600;color:#1d1d1f">Proof of Work</div>
@@ -2452,7 +2458,7 @@ function openEditDeal(key,di){
           </label>
         </div>
       </div>
-        <textarea id="ed-notes" style="width:100%;height:80px;padding:9px 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none;resize:vertical;line-height:1.5" placeholder="Notes about this activation...">${d.notes||''}</textarea>
+        <textarea id="ed-notes" style="width:100%;height:56px;padding:7px 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none;resize:none;line-height:1.4" placeholder="Notes about this activation...">${d.notes||''}</textarea>
       </div>
       <div>
         <div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Proof of Work URL</div>
@@ -2501,22 +2507,6 @@ function cycleDealStatus(key,di){
 
 function applyRole(role){
   USER_ROLE=role;
-  if(role==='activation'){
-    ['nav-dash','nav-gm','nav-companies','nav-reports','nav-settings'].forEach(id=>{
-      const el=document.getElementById(id);if(el) el.style.display='none';
-    });
-    ['add-athlete-btn','fbar-all','fbar-short','fbar-div1','fbar-div2','sel-mo','sel-pos','fbar-vtog','fbar-export'].forEach(id=>{
-      const el=document.getElementById(id);if(el) el.style.display='none';
-    });
-    nav('athletes',document.getElementById('nav-athletes'));
-  } else {
-    ['nav-dash','nav-gm','nav-companies','nav-reports','nav-settings'].forEach(id=>{
-      const el=document.getElementById(id);if(el) el.style.display='';
-    });
-    ['add-athlete-btn','fbar-all','fbar-short','fbar-div1','fbar-div2','sel-mo','fbar-vtog','fbar-export'].forEach(id=>{
-      const el=document.getElementById(id);if(el) el.style.display='';
-    });
-  }
 }
 
 // ===== ADD DEAL MODAL =====
