@@ -2346,11 +2346,10 @@ function bWallets(a){
         denied:        {label:'Denied',               cls:'badge-denied',  icon:'ti-x'},
         'no-submission':{label:'No Submission Req.',  cls:'badge-nosub',   icon:'ti-circle-off'}
       }[status]||{label:'Approved',cls:'badge bg',icon:'ti-check'};
-      return'<div class="wc'+(emp?' empty':'')+'">'
+      return'<div class="wc'+(emp?' empty':'')+'" style="'+(status==='approved'?'background:#f0faf5;border-color:#9fd6b8!important;':'')+(status==='denied'?'opacity:.7;':'')+'">'
         +'<div class="wchd">'
           +'<div class="wcname">'+d.n+'</div>'
           +'<div style="display:flex;align-items:center;gap:6px">'
-            // Deal type icons
             +((d.types||[]).includes('social')?'<span title="Social Post" style="font-size:13px;color:#e1306c"><i class="ti ti-brand-instagram"></i></span>':'')
             +((d.types||[]).includes('appearance')?'<span title="Appearance" style="font-size:13px;color:#2980b9"><i class="ti ti-users"></i></span>':'')
             +((d.types||[]).includes('content')?'<span title="Content Creation" style="font-size:13px;color:#8e44ad"><i class="ti ti-video"></i></span>':'')
@@ -2369,13 +2368,13 @@ function bWallets(a){
             +'<div><div class="wnl">Signed SOW</div><div class="wnv mu">'+(d.sow||'—')+'</div></div>'
             +'<div><div class="wnl">Submitted to NILGo</div><div class="wnv mu">'+(d.sub||'—')+'</div></div>'
             +'<div><div class="wnl">Deal total</div><div class="wnv">'+f(d.t)+'</div></div>'
-            +(status!=='denied'?'<div><div class="wnl">Total spent</div><div class="wnv g">'+f(used)+'</div></div>'
+            +(USER_ROLE!=='activation'&&status!=='denied'?'<div><div class="wnl">Total spent</div><div class="wnv g">'+f(used)+'</div></div>'
               +'<div><div class="wnl">Remaining</div><div class="wnv'+(emp?' r':low?'':' b')+'">'+(emp?'No funds':f(rem))+'</div></div>'
               +'<div><div class="wnl">Used</div><div class="wnv">'+pct+'%</div></div>':'')
           +'</div>'
-          +(status!=='denied'&&d.hist&&d.hist.length?'<div class="wchist"><div class="wchlbl">Month-by-month spend</div>'+d.hist.map(h=>'<div class="wchr"><span>'+h.mo+' 2026</span><span class="g">'+f(h.amt)+'</span></div>').join('')+'</div>':'')
-          +(status!=='denied'?'<div class="wcbar"><div class="wcbf'+(emp?' emp':low?' low':'')+'" style="width:'+pct+'%"></div></div>':'')
-          +(emp&&status!=='denied'?'<div class="wcnf"><i class="ti ti-alert-triangle"></i> No funds remaining</div>':'')
+          +(USER_ROLE!=='activation'&&status!=='denied'&&d.hist&&d.hist.length?'<div class="wchist"><div class="wchlbl">Month-by-month spend</div>'+d.hist.map(h=>'<div class="wchr"><span>'+h.mo+' 2026</span><span class="g">'+f(h.amt)+'</span></div>').join('')+'</div>':'')
+          +(USER_ROLE!=='activation'&&status!=='denied'?'<div class="wcbar"><div class="wcbf'+(emp?' emp':low?' low':'')+'" style="width:'+pct+'%"></div></div>':'')
+          +(USER_ROLE!=='activation'&&emp&&status!=='denied'?'<div class="wcnf"><i class="ti ti-alert-triangle"></i> No funds remaining</div>':'')
         +'</div>'
       +'</div>';
     }).join('')+'</div>';
@@ -2778,7 +2777,6 @@ function bReceipt(a,mo){
   if(nilTotal>0||srcs.length>0){
     if(srcs.length>0){
       srcs.forEach(src=>{
-        // Find matching deal for this source to get type icons
         const deal=a.deals.find(d=>d.n===src.name);
         const typeIcons=(deal?.types||[]).map(t=>({
           social:'<i class="ti ti-brand-instagram" style="color:#e1306c;font-size:11px"></i>',
@@ -2786,9 +2784,10 @@ function bReceipt(a,mo){
           content:'<i class="ti ti-video" style="color:#8e44ad;font-size:11px"></i>',
           autograph:'<i class="ti ti-signature" style="color:#b7791f;font-size:11px"></i>'
         }[t]||'')).join(' ');
-        const powBadge=deal?.pow?'<span style="font-size:10px;background:#e8f8f0;color:#1d9e75;padding:1px 5px;border-radius:4px;font-weight:600;margin-left:4px">✓ POW</span>':'';
-        const subLabel='NILGo · '+mo+' 2026'+(typeIcons?' · '+typeIcons:'');
-        inner+=line(src.name,subLabel,src.amt,null,deal?.pow?'✓':'📋');
+        const powBadge=deal?.pow?'<span style="font-size:10px;background:#e8f8f0;color:#1d9e75;padding:1px 6px;border-radius:4px;font-weight:600;margin-left:6px"><i class="ti ti-paperclip" style="font-size:9px"></i> POW on file</span>':'';
+        const nilgoStatus=deal?.status==='approved'?'<span style="font-size:10px;color:#1d9e75;font-weight:600;margin-left:4px">✓ NILGo Approved</span>':'<span style="font-size:10px;color:#f59e0b;font-weight:600;margin-left:4px">Pending NILGo</span>';
+        const subLabel='<span style="font-size:11px;color:#aeaeb2">'+mo+' · '+nilgoStatus+(typeIcons?' · '+typeIcons:'')+'</span>'+powBadge;
+        inner+=line(src.name,subLabel,src.amt,null,deal?.status==='approved'?'✓':'📋');
       });
     } else {
       inner+=line('NIL Payment',mo+' 2026',f(nilTotal));
