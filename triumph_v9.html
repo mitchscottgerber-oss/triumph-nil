@@ -669,10 +669,10 @@ select.aa-inp{appearance:auto}
     </div>
     <div class="fbar" id="fbar">
       <div class="sw"><i class="ti ti-search"></i><input type="text" id="si" placeholder="Search athlete..." oninput="aF()"></div>
-      <div class="fdiv"></div>
-      <button class="pill on" onclick="sP('all',this)">All</button>
-      <button class="pill s" onclick="sP('short',this)">Short</button>
-      <div class="fdiv"></div>
+      <div class="fdiv" id="fbar-div1"></div>
+      <button class="pill on" id="fbar-all" onclick="sP('all',this)">All</button>
+      <button class="pill s" id="fbar-short" onclick="sP('short',this)">Short</button>
+      <div class="fdiv" id="fbar-div2"></div>
       <select class="fsel" id="sel-sport" onchange="onSportChange()">
         <option value="Football">Football</option>
         <option value="MBB">Men's Basketball</option>
@@ -681,9 +681,9 @@ select.aa-inp{appearance:auto}
       </select>
       <select class="fsel" id="sel-pos" onchange="aF()" style="display:none"><option value="">All positions</option><option>CB</option><option>DE</option><option>LB</option><option>QB</option><option>RB</option><option>TE</option><option>WR</option></select>
       <select class="fsel" id="sel-mo" onchange="aF()"><option value="all">All months</option><option>Jan</option><option>Feb</option><option>Mar</option><option>Apr</option><option selected>May</option><option>Jun</option><option>Jul</option><option>Aug</option><option>Sep</option><option>Oct</option><option>Nov</option><option>Dec</option></select>
-      <div class="vtog"><button class="vb" id="vg" onclick="sV('cards')"><i class="ti ti-layout-grid"></i></button><button class="vb on" id="vl" onclick="sV('annual')"><i class="ti ti-table"></i></button></div>
-      <button class="btn btn-outline" style="padding:4px 12px;font-size:11px;height:28px;display:flex;align-items:center;gap:4px;white-space:nowrap" onclick="exportExcel()"><i class="ti ti-file-spreadsheet" style="font-size:13px"></i> Export</button>
-      <button class="btn btn-dark" style="padding:4px 14px;font-size:11px;height:28px;display:flex;align-items:center;gap:4px;white-space:nowrap" onclick="openAddAthlete()"><i class="ti ti-user-plus" style="font-size:13px"></i> Add Athlete</button>
+      <div class="vtog" id="fbar-vtog"><button class="vb" id="vg" onclick="sV('cards')"><i class="ti ti-layout-grid"></i></button><button class="vb on" id="vl" onclick="sV('annual')"><i class="ti ti-table"></i></button></div>
+      <button class="btn btn-outline" id="fbar-export" style="padding:4px 12px;font-size:11px;height:28px;display:flex;align-items:center;gap:4px;white-space:nowrap" onclick="exportExcel()"><i class="ti ti-file-spreadsheet" style="font-size:13px"></i> Export</button>
+      <button class="btn btn-dark" id="add-athlete-btn" style="padding:4px 14px;font-size:11px;height:28px;display:flex;align-items:center;gap:4px;white-space:nowrap" onclick="openAddAthlete()"><i class="ti ti-user-plus" style="font-size:13px"></i> Add Athlete</button>
     </div>
     <div class="scroll" id="a-body">
       <div id="roster"><div class="cntlbl" id="cnt"><b>14</b> athletes</div><div id="cv" class="acgrid" style="display:none"></div><div id="av" class="twrap"><table class="atbl" id="atbl"></table></div></div>
@@ -1341,7 +1341,7 @@ function switchRole(role){
     });
     const addBtn=document.getElementById('add-athlete-btn');
     if(addBtn) addBtn.style.display='';
-    nav('dash',document.getElementById('nav-dash'));
+    // Stay on current page — just restore nav items
   }
   // Rebuild settings if open
   if(document.getElementById('page-settings')?.classList.contains('on')) buildSettings();
@@ -2340,6 +2340,11 @@ function bWallets(a){
         +'<div class="wchd">'
           +'<div class="wcname">'+d.n+'</div>'
           +'<div style="display:flex;align-items:center;gap:6px">'
+            // Deal type icons
+            +((d.types||[]).includes('social')?'<span title="Social Post" style="font-size:13px;color:#e1306c"><i class="ti ti-brand-instagram"></i></span>':'')
+            +((d.types||[]).includes('appearance')?'<span title="Appearance" style="font-size:13px;color:#2980b9"><i class="ti ti-users"></i></span>':'')
+            +((d.types||[]).includes('content')?'<span title="Content Creation" style="font-size:13px;color:#8e44ad"><i class="ti ti-video"></i></span>':'')
+            +((d.types||[]).includes('autograph')?'<span title="Autograph Signing" style="font-size:13px;color:#b7791f"><i class="ti ti-signature"></i></span>':'')
             +(d.pow?'<span style="font-size:10px;background:#e8f8f0;color:#1d9e75;padding:2px 7px;border-radius:5px;font-weight:600;display:flex;align-items:center;gap:3px"><i class="ti ti-paperclip" style="font-size:9px"></i> Proof</span>':'')
             +'<span class="'+statusCfg.cls+'" style="cursor:pointer;display:flex;align-items:center;gap:3px" onclick="cycleDealStatus(\''+key+'\','+di+')" title="Click to change status">'
               +'<i class="ti '+statusCfg.icon+'" style="font-size:9px"></i> '+statusCfg.label
@@ -2385,12 +2390,19 @@ function applyRole(role){
   USER_ROLE=role;
   if(role==='activation'){
     ['nav-dash','nav-gm','nav-companies','nav-reports','nav-settings'].forEach(id=>{
-      const el=document.getElementById(id);
-      if(el) el.style.display='none';
+      const el=document.getElementById(id);if(el) el.style.display='none';
     });
-    const addBtn=document.getElementById('add-athlete-btn');
-    if(addBtn) addBtn.style.display='none';
+    ['add-athlete-btn','fbar-all','fbar-short','fbar-div1','fbar-div2','sel-mo','sel-pos','fbar-vtog','fbar-export'].forEach(id=>{
+      const el=document.getElementById(id);if(el) el.style.display='none';
+    });
     nav('athletes',document.getElementById('nav-athletes'));
+  } else {
+    ['nav-dash','nav-gm','nav-companies','nav-reports','nav-settings'].forEach(id=>{
+      const el=document.getElementById(id);if(el) el.style.display='';
+    });
+    ['add-athlete-btn','fbar-all','fbar-short','fbar-div1','fbar-div2','sel-mo','fbar-vtog','fbar-export'].forEach(id=>{
+      const el=document.getElementById(id);if(el) el.style.display='';
+    });
   }
 }
 
@@ -2433,6 +2445,22 @@ function openAddDeal(key){
             <input id="nd-sub" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none" placeholder="e.g. Jun 2">
           </div>
         </div>
+        <div style="margin-bottom:12px"><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Deal Type</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:7px 12px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:12px;font-weight:500;flex:1;justify-content:center;min-width:110px">
+              <input type="checkbox" name="nd-type" value="social" style="cursor:pointer"> <i class="ti ti-brand-instagram" style="font-size:13px;color:#e1306c"></i> Social Post
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:7px 12px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:12px;font-weight:500;flex:1;justify-content:center;min-width:110px">
+              <input type="checkbox" name="nd-type" value="appearance" style="cursor:pointer"> <i class="ti ti-users" style="font-size:13px;color:#2980b9"></i> Appearance
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:7px 12px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:12px;font-weight:500;flex:1;justify-content:center;min-width:110px">
+              <input type="checkbox" name="nd-type" value="content" style="cursor:pointer"> <i class="ti ti-video" style="font-size:13px;color:#8e44ad"></i> Content
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:7px 12px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:12px;font-weight:500;flex:1;justify-content:center;min-width:110px">
+              <input type="checkbox" name="nd-type" value="autograph" style="cursor:pointer"> <i class="ti ti-signature" style="font-size:13px;color:#b7791f"></i> Autograph
+            </label>
+          </div>
+        </div>
         <div style="margin-bottom:12px"><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Status</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:7px 12px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:12px;font-weight:500;flex:1;justify-content:center;min-width:100px">
@@ -2466,11 +2494,12 @@ function saveDeal(key){
   const total=parseFloat((document.getElementById('nd-total').value||'').replace(/[^0-9.]/g,''))||0;
   const sow=(document.getElementById('nd-sow').value||'').trim();
   const sub=(document.getElementById('nd-sub').value||'').trim();
+  const types=[...document.querySelectorAll('input[name="nd-type"]:checked')].map(el=>el.value);
   const status=document.querySelector('input[name="nd-status"]:checked')?.value||'pending';
   const errEl=document.getElementById('nd-err');
   if(!name){errEl.textContent='Deal name is required';errEl.style.display='block';return;}
   if(!total){errEl.textContent='Deal total is required';errEl.style.display='block';return;}
-  a.deals.push({n:name,sow,sub,t:total,s1:0,s2:0,hist:[],status});
+  a.deals.push({n:name,sow,sub,t:total,s1:0,s2:0,hist:[],status,types,pow:false});
   document.getElementById('add-deal-overlay').remove();
   document.getElementById('tb').innerHTML=bWallets(a);
 }
@@ -2647,7 +2676,19 @@ function bReceipt(a,mo){
 
   if(nilTotal>0||srcs.length>0){
     if(srcs.length>0){
-      srcs.forEach(src=>{inner+=line(src.name,'NILGo · '+mo+' 2026',src.amt);});
+      srcs.forEach(src=>{
+        // Find matching deal for this source to get type icons
+        const deal=a.deals.find(d=>d.n===src.name);
+        const typeIcons=(deal?.types||[]).map(t=>({
+          social:'<i class="ti ti-brand-instagram" style="color:#e1306c;font-size:11px"></i>',
+          appearance:'<i class="ti ti-users" style="color:#2980b9;font-size:11px"></i>',
+          content:'<i class="ti ti-video" style="color:#8e44ad;font-size:11px"></i>',
+          autograph:'<i class="ti ti-signature" style="color:#b7791f;font-size:11px"></i>'
+        }[t]||'')).join(' ');
+        const powBadge=deal?.pow?'<span style="font-size:10px;background:#e8f8f0;color:#1d9e75;padding:1px 5px;border-radius:4px;font-weight:600;margin-left:4px">✓ POW</span>':'';
+        const subLabel='NILGo · '+mo+' 2026'+(typeIcons?' · '+typeIcons:'');
+        inner+=line(src.name,subLabel,src.amt,null,deal?.pow?'✓':'📋');
+      });
     } else {
       inner+=line('NIL Payment',mo+' 2026',f(nilTotal));
     }
