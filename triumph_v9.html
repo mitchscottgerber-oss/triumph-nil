@@ -2283,19 +2283,99 @@ function toggleSched(key,mo){
   const mc=document.getElementById('mc-'+key+'-'+mo);if(mc) mc.classList.add('open');
   const titleEl=document.getElementById('sdt-'+key);if(titleEl) titleEl.textContent=mo+' 2026 — NIL payment sources';
   const bodyEl=document.getElementById('sdb-'+key);
-  if(bodyEl){
-    const srcs=parseSrcs(s.s);
-    let html='';
-    if(srcs.length>0){
-      html+=srcs.map(src=>'<div class="scdrow"><span class="scdsrc">'+src.name+'</span><span class="scdamt">'+src.amt+'</span></div>').join('');
-    } else if(s.a>0){
-      html+='<div class="scdrow"><span class="scdsrc" style="color:#8e8e93">No wallet sources assigned</span><span class="scdamt">'+f(s.a)+'</span></div>';
-    } else {
-      html+='<div class="scdrow"><span class="scdsrc" style="color:#8e8e93">No NIL payment this month</span></div>';
-    }
+  if(!bodyEl) return;
+
+  const deals=a.deals||[];
+  const srcs=parseSrcs(s.s);
+
+  if(deals.length===0){
+    // No deals — just show total
+    let html='<div class="scdrow"><span class="scdsrc" style="color:#8e8e93">No NILGo deals added yet — go to NILGo Wallets to add deals</span><span class="scdamt">'+f(s.a)+'</span></div>';
     bodyEl.innerHTML=html;
+    drop.classList.add('open');
+    return;
   }
+
+  // Build editable source rows — one per deal
+  let html='<div style="font-size:11px;color:#8e8e93;margin-bottom:8px">Assign how much of this month\'s payment came from each deal:</div>';
+  deals.filter(d=>d.status!=='denied').forEach((d,di)=>{
+    const existing=srcs.find(x=>x.name===d.n);
+    const val=existing?.amt?parseFloat(existing.amt.replace(/[$,]/g,''))||0:0;
+    const isApproved=d.status==='approved';
+    html+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'
+      +'<div style="flex:1">'
+        +'<div style="font-size:12px;font-weight:600;color:#1d1d1f">'+d.n+'</div>'
+        +'<div style="font-size:10px;color:'+(isApproved?'#1d9e75':'#f59e0b')+';font-weight:500;margin-top:1px">'+(isApproved?'✓ NILGo Approved':'⏱ Pending NILGo')+'</div>'
+      +'</div>'
+      +'<div style="display:flex;align-items:center;border:1.5px solid #b3d4f5;border-radius:7px;background:#eef6ff;overflow:hidden;height:30px;width:110px;flex-shrink:0">'
+        +'<span style="padding:0 8px;font-size:12px;color:#2980b9;font-weight:700;border-right:1px solid #b3d4f5;height:100%;display:flex;align-items:center">$</span>'
+        +'<input id="src-inp-'+key+'-'+mo+'-'+di+'" type="number" min="0" value="'+(val||'')+'" placeholder="0" style="border:none;background:transparent;flex:1;height:100%;padding:0 8px;font-size:12px;font-family:inherit;outline:none" oninput="previewSrcTotal(\''+key+'\',\''+mo+'\')">'
+      +'</div>'
+    +'</div>';
+  });
+
+  // Running total
+  html+='<div id="src-total-'+key+'-'+mo+'" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid #e5e5ea;margin-top:4px">'
+    +'<span style="font-size:11px;color:#8e8e93">Total assigned</span>'
+    +'<span id="src-total-val-'+key+'-'+mo+'" style="font-size:13px;font-weight:700;color:#1d1d1f">'+f(srcs.reduce((t,x)=>t+(parseFloat((x.amt||'').replace(/[$,]/g,''))||0),0))+'</span>'
+  +'</div>'
+  +'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px">'
+    +'<span style="font-size:11px;color:#8e8e93">Month total</span>'
+    +'<span style="font-size:13px;font-weight:700;color:#2980b9">'+f(s.a)+'</span>'
+  +'</div>'
+  +'<button onclick="saveSrcs(\''+key+'\',\''+mo+'\')" style="margin-top:10px;width:100%;height:32px;background:#1d1d1f;color:#fff;-webkit-text-fill-color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Save Sources</button>';
+
+  bodyEl.innerHTML=html;
   drop.classList.add('open');
+}
+
+function previewSrcTotal(key,mo){
+  const a=A.find(x=>x.f+'_'+x.l===key);if(!a) return;
+  const deals=(a.deals||[]).filter(d=>d.status!=='denied');
+  let total=0;
+  deals.forEach((d,di)=>{
+    const inp=document.getElementById('src-inp-'+key+'-'+mo+'-'+di);
+    total+=parseFloat(inp?.value)||0;
+  });
+  const el=document.getElementById('src-total-val-'+key+'-'+mo);
+  if(el) el.textContent=f(total);
+}
+
+async function saveSrcs(key,mo){
+  const a=A.find(x=>x.f+'_'+x.l===key);if(!a) return;
+  const s=a.sch.find(x=>x.mo===mo);if(!s) return;
+  const deals=(a.deals||[]).filter(d=>d.status!=='denied');
+
+  // Build sources array
+  const newSrcs=deals.map((d,di)=>{
+    const val=parseFloat(document.getElementById('src-inp-'+key+'-'+mo+'-'+di)?.value)||0;
+    return val>0?{name:d.n,amt:'$'+val.toLocaleString('en-US')}:null;
+  }).filter(Boolean);
+
+  s.s=newSrcs.map(x=>x.name+'|'+x.amt);
+
+  // Update deal hist — track this month's spend per deal
+  deals.forEach((d,di)=>{
+    const val=parseFloat(document.getElementById('src-inp-'+key+'-'+mo+'-'+di)?.value)||0;
+    if(!d.hist) d.hist=[];
+    const existing=d.hist.find(h=>h.mo===mo);
+    if(existing) existing.amt=val;
+    else if(val>0) d.hist.push({mo,yr:2026,amt:val});
+  });
+
+  // Save to Supabase
+  try{
+    await sb.from('payment_schedule').upsert(
+      {athlete_id:a.id,month:mo,year:2026,amount:s.a,is_paid:s.p,sources:s.s,
+       nil_cleared:s.cleared||0,shortfall:s.shortfall||0,rs_paid:s.rs_paid||false},
+      {onConflict:'athlete_id,month,year'}
+    );
+    syncStatus('Sources saved ✓');
+  }catch(e){syncStatus('Save error: '+e.message,false);}
+
+  // Re-render
+  closeSched(key);
+  oProf(key);
 }
 function previewRev(key,mo){
   // live pool remaining update
