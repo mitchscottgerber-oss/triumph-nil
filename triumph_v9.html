@@ -1335,9 +1335,8 @@ function switchRole(role){
   if(actBtn){actBtn.style.background=role==='activation'?'#1d1d1f':'transparent';actBtn.style.color=role==='activation'?'#fff':'#8e8e93';actBtn.style.webkitTextFillColor=role==='activation'?'#fff':'#8e8e93';}
 
   if(role==='activation'){
-    // Hide nav + controls
+    // Hide nav only — fbar handled by aF()
     ['nav-dash','nav-gm','nav-companies','nav-reports','nav-settings'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
-    ['add-athlete-btn','fbar-all','fbar-short','fbar-div1','fbar-div2','sel-mo','fbar-vtog','fbar-export'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
     nav('athletes',document.getElementById('nav-athletes'));
   } else {
     // Restore all nav + controls
@@ -1613,12 +1612,15 @@ function aF(){
   if(q) list=list.filter(a=>(a.f+' '+a.l).toLowerCase().includes(q));
   document.getElementById('cnt').innerHTML='<b>'+list.length+'</b> athlete'+(list.length!==1?'s':'');
 
+  // Show/hide fbar elements based on role
+  const activationHide=['add-athlete-btn','fbar-all','fbar-short','fbar-div1','fbar-div2','sel-mo','fbar-vtog','fbar-export'];
+  activationHide.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.style.display=USER_ROLE==='activation'?'none':'';
+  });
+
   // Activation role — show name-only clean list, no money
   if(USER_ROLE==='activation'){
-    // Hide fbar items not needed
-    ['add-athlete-btn','fbar-all','fbar-short','fbar-div1','fbar-div2','sel-mo','fbar-vtog','fbar-export'].forEach(id=>{
-      const el=document.getElementById(id);if(el)el.style.display='none';
-    });
     document.getElementById('a-strip').style.display='none';
     document.getElementById('cv').style.display='none';
     document.getElementById('av').style.display='block';
