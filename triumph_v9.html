@@ -632,14 +632,22 @@ select.aa-inp{appearance:auto}
     <button class="sbi on" id="nav-dash" onclick="nav('dash',this)">Dashboard</button>
     <div class="sb-sec">Program</div>
     <button class="sbi" id="nav-athletes" onclick="nav('athletes',this)">Athletes</button>
-    <button class="sbi" id="nav-gm" onclick="nav('gm',this)">General Manager</button>
     <button class="sbi" id="nav-companies" onclick="nav('companies',this)">Companies</button>
     <div class="sb-sec">Tools</div>
+    <button class="sbi" id="nav-gm" onclick="nav('gm',this)">General Manager</button>
     <button class="sbi" id="nav-reports" onclick="nav('reports',this)">Reports</button>
     <div class="sb-sec">Settings</div>
     <button class="sbi" id="nav-settings" onclick="nav('settings',this)">Settings</button>
   </div>
-  <div class="sb-ft"><div class="sb-user" id="sb-user-area"><div class="u-av" id="u-av">...</div><div style="flex:1"><div class="u-name" id="u-name">Loading...</div><div class="u-role" id="u-role">Triumph NIL</div></div><button onclick="doSignOut()" title="Sign out" style="background:none;border:none;cursor:pointer;color:#8e8e93;font-size:13px;padding:2px 4px;border-radius:4px;line-height:1" title="Sign out"><i class="ti ti-logout"></i></button></div></div>
+  <div class="sb-ft">
+    <div style="padding:6px 10px 8px;border-top:1px solid #f2f2f7">
+      <div style="display:flex;background:#f2f2f7;border-radius:8px;padding:2px;gap:2px;margin-bottom:8px">
+        <button onclick="switchRole('admin')" id="sb-role-admin" style="flex:1;padding:4px 0;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;background:#1d1d1f;color:#fff;-webkit-text-fill-color:#fff">Admin</button>
+        <button onclick="switchRole('activation')" id="sb-role-activation" style="flex:1;padding:4px 0;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;background:transparent;color:#8e8e93;-webkit-text-fill-color:#8e8e93">Activation</button>
+      </div>
+    </div>
+    <div class="sb-user" id="sb-user-area"><div class="u-av" id="u-av">...</div><div style="flex:1"><div class="u-name" id="u-name">Loading...</div><div class="u-role" id="u-role">Triumph NIL</div></div><button onclick="doSignOut()" title="Sign out" style="background:none;border:none;cursor:pointer;color:#8e8e93;font-size:13px;padding:2px 4px;border-radius:4px;line-height:1"><i class="ti ti-logout"></i></button></div>
+  </div>
 </div>
 <div class="main">
   <div class="topbar"><div><div class="top-title" id="top-title">Dashboard</div><div class="top-sub" id="top-sub"></div></div><div id="top-actions"></div></div>
@@ -1320,8 +1328,11 @@ function buildSettings() {
 
 function switchRole(role){
   applyRole(role);
-  // Rebuild settings to reflect new role
-  buildSettings();
+  // Update sidebar toggle
+  const adminBtn=document.getElementById('sb-role-admin');
+  const actBtn=document.getElementById('sb-role-activation');
+  if(adminBtn){adminBtn.style.background=role==='admin'?'#1d1d1f':'transparent';adminBtn.style.color=role==='admin'?'#fff':'#8e8e93';adminBtn.style.webkitTextFillColor=role==='admin'?'#fff':'#8e8e93';}
+  if(actBtn){actBtn.style.background=role==='activation'?'#1d1d1f':'transparent';actBtn.style.color=role==='activation'?'#fff':'#8e8e93';actBtn.style.webkitTextFillColor=role==='activation'?'#fff':'#8e8e93';}
   // If switching back to admin, restore hidden nav items
   if(role==='admin'){
     ['nav-dash','nav-gm','nav-companies','nav-reports','nav-settings'].forEach(id=>{
@@ -1330,9 +1341,10 @@ function switchRole(role){
     });
     const addBtn=document.getElementById('add-athlete-btn');
     if(addBtn) addBtn.style.display='';
-    // Stay on settings
-    nav('settings',document.getElementById('nav-settings'));
+    nav('dash',document.getElementById('nav-dash'));
   }
+  // Rebuild settings if open
+  if(document.getElementById('page-settings')?.classList.contains('on')) buildSettings();
 }
 
 
