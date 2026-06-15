@@ -1070,7 +1070,7 @@ async function loadFromSupabase(){
         rank:a.rank_priority,contract:a.contract||0,banked:a.banked||0,paid:a.paid_out||0,
         rsContract:a.rs_contract||0,rsPaid:a.rs_paid||0,
         agent:a.agent||'',agency:a.agency||'',contact_email:a.email||'',phone:a.phone||'',notes:a.notes||'',
-        deals:[],sch});
+        deals:Array.isArray(a.deals)?a.deals:(a.deals?JSON.parse(a.deals):[]),sch});
     });
 
     // Build revShare map
@@ -1551,9 +1551,9 @@ function buildDash(){
   const mp=mo==='all'?to:list.reduce((s,a)=>s+gma(a,mo),0);
   const moLabel=mo==='all'?'Full Year':mo;
   const allD=list.flatMap(a=>a.deals);
-  const clD=allD.filter(d=>(d.s1+d.s2)>0).length;
+  const clD=allD.filter(d=>(d.hist||[]).length>0).length;
   const peD=allD.length-clD;
-  const clA=allD.reduce((s,d)=>s+(d.s1+d.s2),0);
+  const clA=allD.reduce((s,d)=>s+((d.hist||[]).reduce((t,h)=>t+(h.amt||0),0)),0);
 
   let h=`<div class="dsec">Program overview${sport!=='all'?' — '+sport:''}</div>
   <div class="sg sg4">
@@ -2346,25 +2346,29 @@ async function saveSrcs(key,mo){
   const s=a.sch.find(x=>x.mo===mo);if(!s) return;
   const deals=(a.deals||[]).filter(d=>d.status!=='denied');
 
-  // Build sources array
-  const newSrcs=deals.map((d,di)=>{
+  // Build sources array in parseSrcs format: [name, amt, name, amt, ...]
+  const newSrcs=[];
+  deals.forEach((d,di)=>{
     const val=parseFloat(document.getElementById('src-inp-'+key+'-'+mo+'-'+di)?.value)||0;
-    return val>0?{name:d.n,amt:'$'+val.toLocaleString('en-US')}:null;
-  }).filter(Boolean);
-
-  s.s=newSrcs.map(x=>x.name+'|'+x.amt);
+    if(val>0){
+      newSrcs.push(d.n,'$'+val.toLocaleString('en-US'));
+    }
+  });
+  s.s=newSrcs;
 
   // Update deal hist — track this month's spend per deal
   deals.forEach((d,di)=>{
     const val=parseFloat(document.getElementById('src-inp-'+key+'-'+mo+'-'+di)?.value)||0;
     if(!d.hist) d.hist=[];
-    const existing=d.hist.find(h=>h.mo===mo);
-    if(existing) existing.amt=val;
-    else if(val>0) d.hist.push({mo,yr:2026,amt:val});
+    const existing=d.hist.find(h=>h.mo===mo&&(h.yr||2026)===2026);
+    if(existing){existing.amt=val;}
+    else if(val>0){d.hist.push({mo,yr:2026,amt:val});}
+    else {d.hist=d.hist.filter(h=>!(h.mo===mo&&(h.yr||2026)===2026));}
   });
 
-  // Save to Supabase
+  // Save deals (hist) and sources to Supabase
   try{
+    await saveDealsToSupabase(a);
     await sb.from('payment_schedule').upsert(
       {athlete_id:a.id,month:mo,year:2026,amount:s.a,is_paid:s.p,sources:s.s,
        nil_cleared:s.cleared||0,shortfall:s.shortfall||0,rs_paid:s.rs_paid||false},
@@ -2418,7 +2422,7 @@ function bWallets(a){
     +'</div>'
     +(a.deals.length===0?'<div style="color:#8e8e93;font-size:12px;text-align:center;padding:24px 0">No deals yet — click <b>Add deal</b> to get started</div>':'')
     +'<div class="wlist">'+a.deals.map((d,di)=>{
-      const used=d.s1+d.s2,rem=d.t-used,pct=d.t>0?Math.round(used/d.t*100):0,emp=rem<=0,low=rem>0&&rem<d.t*0.25;
+      const used=(d.hist||[]).reduce((s,h)=>s+(h.amt||0),0),rem=d.t-used,pct=d.t>0?Math.round(used/d.t*100):0,emp=rem<=0,low=rem>0&&rem<d.t*0.25;
       const status=d.status||'approved';
       const statusCfg={
         pending:       {label:'Pending',              cls:'badge-pending', icon:'ti-clock'},
@@ -2562,6 +2566,7 @@ function saveEditDeal(key,di){
   d.completed=document.getElementById('ed-completed')?.checked||false;
   d.status=document.querySelector('input[name="ed-status"]:checked')?.value||d.status||'pending';
   d.types=[...document.querySelectorAll('input[name="ed-type"]:checked')].map(el=>el.value);
+  saveDealsToSupabase(a);
   document.getElementById('edit-deal-overlay').remove();
   document.getElementById('tb').innerHTML=bWallets(a);
 }
@@ -2577,6 +2582,7 @@ function cycleDealStatus(key,di){
   const cycle={pending:'approved',approved:'denied',denied:'no-submission','no-submission':'pending'};
   const cur=a.deals[di].status||'approved';
   a.deals[di].status=cycle[cur];
+  saveDealsToSupabase(a);
   document.getElementById('tb').innerHTML=bWallets(a);
 }
 
@@ -2668,6 +2674,12 @@ function openAddDeal(key){
   setTimeout(()=>document.getElementById('nd-name').focus(),100);
 }
 
+async function saveDealsToSupabase(a){
+  try{
+    await sb.from('athletes').update({deals:JSON.stringify(a.deals)}).eq('id',a.id);
+  }catch(e){console.warn('deals save:',e);}
+}
+
 function saveDeal(key){
   const a=A.find(x=>x.f+'_'+x.l===key);if(!a) return;
   const name=(document.getElementById('nd-name').value||'').trim();
@@ -2680,6 +2692,7 @@ function saveDeal(key){
   if(!name){errEl.textContent='Deal name is required';errEl.style.display='block';return;}
   if(!total){errEl.textContent='Deal total is required';errEl.style.display='block';return;}
   a.deals.push({n:name,sow,sub,t:total,s1:0,s2:0,hist:[],status,types,pow:false});
+  saveDealsToSupabase(a);
   document.getElementById('add-deal-overlay').remove();
   document.getElementById('tb').innerHTML=bWallets(a);
 }
@@ -3240,7 +3253,7 @@ function bRptCompany(){
 function bRptWallets(){
   return rH('NILGo Deal Wallets — 2026','Virginia Tech Football — All approved deals')
     +'<div class="rptbody"><table class="rpttbl"><thead><tr><th>Athlete</th><th>Sponsor</th><th class="r">Submitted</th><th class="r">Deal</th><th class="r">Drawn</th><th class="r">Remaining</th></tr></thead>'
-    +'<tbody>'+A.flatMap(a=>a.deals.map(d=>{const u=d.s1+d.s2,rm=d.t-u;return'<tr><td style="font-weight:500">'+a.f+' '+a.l+'</td><td style="color:#6c6c70">'+d.n+'</td><td class="r" style="font-size:11px;color:#6c6c70">'+d.sub+'</td><td class="r">'+f(d.t)+'</td><td class="r g">'+f(u)+'</td><td class="r'+(rm<=0?' red':'')+'">'+( rm<=0?'No funds':f(rm))+'</td></tr>';})).join('')
+    +'<tbody>'+A.flatMap(a=>a.deals.map(d=>{const u=(d.hist||[]).reduce((s,h)=>s+(h.amt||0),0),rm=d.t-u;return'<tr><td style="font-weight:500">'+a.f+' '+a.l+'</td><td style="color:#6c6c70">'+d.n+'</td><td class="r" style="font-size:11px;color:#6c6c70">'+d.sub+'</td><td class="r">'+f(d.t)+'</td><td class="r g">'+f(u)+'</td><td class="r'+(rm<=0?' red':'')+'">'+( rm<=0?'No funds':f(rm))+'</td></tr>';})).join('')
     +'</tbody></table></div>'+rF();
 }
 
