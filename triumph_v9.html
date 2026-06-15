@@ -1294,6 +1294,20 @@ function buildSettings() {
   h += '</div>';
 
   h += '<div class="set-section">';
+  h += '<div class="set-sec-title">View Mode</div>';
+  h += '<div class="set-sec-sub">Switch between Admin (full access) and Activation Manager (athletes + wallets + receipts only). Use this to preview what your employee sees.</div>';
+  h += '<div class="set-row" style="align-items:center">';
+  h += '<div>';
+  h += '<div class="set-lbl">Current view</div>';
+  h += '<div class="set-sub" id="role-status">' + (USER_ROLE==='admin'?'Admin — full access':'Activation Manager — limited view') + '</div>';
+  h += '</div>';
+  h += '<div style="display:flex;background:#f2f2f7;border-radius:10px;padding:3px;gap:2px">';
+  h += '<button id="role-btn-admin" onclick="switchRole(\'admin\')" style="padding:6px 14px;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;background:' + (USER_ROLE==='admin'?'#1d1d1f':'transparent') + ';color:' + (USER_ROLE==='admin'?'#fff':'#8e8e93') + '">Admin</button>';
+  h += '<button id="role-btn-activation" onclick="switchRole(\'activation\')" style="padding:6px 14px;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;background:' + (USER_ROLE==='activation'?'#1d1d1f':'transparent') + ';color:' + (USER_ROLE==='activation'?'#fff':'#8e8e93') + '">Activation</button>';
+  h += '</div>';
+  h += '</div></div>';
+
+  h += '<div class="set-section">';
   h += '<div class="set-sec-title">Lock All Sport Tabs</div>';
   h += '<div class="set-sec-sub">Re-lock all PIN-protected sport tabs for this session.</div>';
   h += '<div class="set-row"><div class="set-lbl">Lock all tabs now</div><button class="set-save-btn" style="background:#e34040!important" onclick="lockAllTabs()"><i class="ti ti-lock"></i> Lock all</button></div>';
@@ -1302,6 +1316,24 @@ function buildSettings() {
   h += '</div>';
   document.getElementById('settings-body').innerHTML = h;
 }
+
+function switchRole(role){
+  applyRole(role);
+  // Rebuild settings to reflect new role
+  buildSettings();
+  // If switching back to admin, restore hidden nav items
+  if(role==='admin'){
+    ['nav-dash','nav-gm','nav-companies','nav-reports','nav-settings'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.style.display='';
+    });
+    const addBtn=document.getElementById('add-athlete-btn');
+    if(addBtn) addBtn.style.display='';
+    // Stay on settings
+    nav('settings',document.getElementById('nav-settings'));
+  }
+}
+
 
 function savePin(sport) {
   const val = document.getElementById('pin-set-' + sport).value.trim();
