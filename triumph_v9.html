@@ -1519,7 +1519,16 @@ function nav(page,el){
   document.getElementById('top-title').textContent=T[page]||page;
   document.getElementById('top-sub').textContent=S[page]||'';
   if(page==='dash') buildDash();
-  if(page==='athletes'){showRoster();doSwitchSport(activeSport);}
+  if(page==='athletes'){
+    showRoster();
+    if(USER_ROLE==='activation'){
+      document.getElementById('fbar').style.display='none';
+      document.getElementById('a-strip').style.display='none';
+    } else {
+      document.getElementById('fbar').style.display='';
+    }
+    doSwitchSport(activeSport);
+  }
   if(page==='companies'){renderCos();document.getElementById('top-sub').textContent=CO.length+' active sponsors';}
   if(page==='reports') buildReports();
   if(page==='settings') buildSettings();
@@ -1597,6 +1606,23 @@ function aF(){
   if(pos) list=list.filter(a=>a.pos===pos);
   if(q) list=list.filter(a=>(a.f+' '+a.l).toLowerCase().includes(q));
   document.getElementById('cnt').innerHTML='<b>'+list.length+'</b> athlete'+(list.length!==1?'s':'');
+
+  // Activation role — show name-only clean list, no money
+  if(USER_ROLE==='activation'){
+    document.getElementById('a-strip').style.display='none';
+    document.getElementById('cv').style.display='none';
+    document.getElementById('av').style.display='block';
+    document.getElementById('atbl').innerHTML=list.length?
+      '<tbody>'+list.map(a=>'<tr onclick="oProf(\''+a.f+'_'+a.l+'\')" style="cursor:pointer">'
+        +'<td style="padding:14px 16px;position:sticky;left:0;background:#fff">'
+          +'<div style="font-weight:600;font-size:13px;color:#1d1d1f">'+a.f+' '+a.l+'</div>'
+          +'<div style="font-size:11px;color:#8e8e93;margin-top:2px">'+a.pos+' · Virginia Tech</div>'
+        +'</td>'
+      +'</tr>').join('')+'</tbody>'
+      :'<tbody><tr><td style="padding:40px;text-align:center;color:#8e8e93">No athletes found</td></tr></tbody>';
+    return;
+  }
+
   calcStrip(list);
   if(mo==='all'){rAnnual(list);document.getElementById('cv').style.display='none';document.getElementById('av').style.display='block';document.getElementById('vg').classList.remove('on');document.getElementById('vl').classList.add('on');}
   else{if(cv==='cards'){rC(list);document.getElementById('cv').style.display='grid';document.getElementById('av').style.display='none';}else{rAnnual(list);document.getElementById('cv').style.display='none';document.getElementById('av').style.display='block';}}
