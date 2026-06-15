@@ -1082,6 +1082,7 @@ async function loadFromSupabase(){
 }
 
 // ===== SPORT TABS & PIN SYSTEM =====
+let USER_ROLE='admin'; // 'admin' or 'activation'
 // PINs stored in memory (set via Settings)
 let sportPins = {Football:'', MBB:'', WBB:'', Baseball:''};
 // Unlocked state: Football unlocked by default
@@ -2341,7 +2342,6 @@ function cycleDealStatus(key,di){
 }
 
 // ===== ROLE-BASED ACCESS =====
-let USER_ROLE='admin';
 
 function applyRole(role){
   USER_ROLE=role;
