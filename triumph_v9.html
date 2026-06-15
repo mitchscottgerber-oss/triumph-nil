@@ -2350,10 +2350,11 @@ function bWallets(a){
             +((d.types||[]).includes('content')?'<span title="Content Creation" style="font-size:13px;color:#8e44ad"><i class="ti ti-video"></i></span>':'')
             +((d.types||[]).includes('autograph')?'<span title="Autograph Signing" style="font-size:13px;color:#b7791f"><i class="ti ti-signature"></i></span>':'')
             +(d.pow?'<span style="font-size:10px;background:#e8f8f0;color:#1d9e75;padding:2px 7px;border-radius:5px;font-weight:600;display:flex;align-items:center;gap:3px"><i class="ti ti-paperclip" style="font-size:9px"></i> Proof</span>':'')
+            +(d.completed?'<span style="font-size:10px;background:#e8f8f0;color:#1d9e75;padding:2px 7px;border-radius:5px;font-weight:600">✓ Done</span>':'')
             +'<span class="'+statusCfg.cls+'" style="cursor:pointer;display:flex;align-items:center;gap:3px" onclick="cycleDealStatus(\''+key+'\','+di+')" title="Click to change status">'
               +'<i class="ti '+statusCfg.icon+'" style="font-size:9px"></i> '+statusCfg.label
             +'</span>'
-            +'<button onclick="togglePOW(\''+key+'\','+di+')" title="'+(d.pow?'Remove proof of work':'Mark proof of work delivered')+'" style="background:'+(d.pow?'#e8f8f0':'#f2f2f7')+';border:none;border-radius:6px;width:26px;height:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:'+(d.pow?'#1d9e75':'#8e8e93')+';font-size:12px"><i class="ti ti-'+(d.pow?'check':'plus')+'""></i></button>'
+            +'<button onclick="event.stopPropagation();openEditDeal(\''+key+'\','+di+')" style="background:#f2f2f7;border:none;border-radius:6px;padding:3px 9px;cursor:pointer;font-size:11px;font-weight:600;color:#1d1d1f;-webkit-text-fill-color:#1d1d1f;font-family:inherit;display:flex;align-items:center;gap:3px"><i class="ti ti-edit" style="font-size:11px"></i> Edit</button>'
           +'</div>'
         +'</div>'
         +(status==='denied'?'<div style="font-size:11px;color:#e34040;padding:4px 0 8px;font-weight:500"><i class="ti ti-alert-circle" style="font-size:11px"></i> This deal has been denied by NILGo</div>':'')
@@ -2369,9 +2370,6 @@ function bWallets(a){
           +(status!=='denied'&&d.hist&&d.hist.length?'<div class="wchist"><div class="wchlbl">Month-by-month spend</div>'+d.hist.map(h=>'<div class="wchr"><span>'+h.mo+' 2026</span><span class="g">'+f(h.amt)+'</span></div>').join('')+'</div>':'')
           +(status!=='denied'?'<div class="wcbar"><div class="wcbf'+(emp?' emp':low?' low':'')+'" style="width:'+pct+'%"></div></div>':'')
           +(emp&&status!=='denied'?'<div class="wcnf"><i class="ti ti-alert-triangle"></i> No funds remaining</div>':'')
-          +'<div style="margin-top:8px;display:flex;gap:6px">'
-            +'<button onclick="event.stopPropagation();openEditDeal(\''+key+'\','+di+')" style="font-size:11px;font-weight:600;color:#2980b9;-webkit-text-fill-color:#2980b9;background:#eef6ff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px"><i class="ti ti-edit" style="font-size:11px"></i> Edit Deal</button>'
-          +'</div>'
         +'</div>'
       +'</div>';
     }).join('')+'</div>';
@@ -2423,19 +2421,42 @@ function openEditDeal(key,di){
         <div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Deal Type</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${types.map(typeCheck).join('')}</div>
       </div>
-      <div>
-        <div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Activation Notes</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Deal Status</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            ${['pending','approved','denied','no-submission'].map(s=>{
+              const cfg={pending:{label:'Pending',icon:'ti-clock',color:'#f59e0b'},approved:{label:'Approved',icon:'ti-check',color:'#1d9e75'},denied:{label:'Denied',icon:'ti-x',color:'#e34040'},'no-submission':{label:'No Submission Req.',icon:'ti-circle-off',color:'#8e8e93'}}[s];
+              return`<label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:7px 10px;border:1.5px solid ${(d.status||'pending')===s?'#1d1d1f':'#e5e5ea'};border-radius:8px;font-size:12px;font-weight:500;background:${(d.status||'pending')===s?'#f9f9f9':'#fff'}">
+                <input type="radio" name="ed-status" value="${s}" ${(d.status||'pending')===s?'checked':''} style="cursor:pointer">
+                <i class="ti ${cfg.icon}" style="font-size:12px;color:${cfg.color}"></i> ${cfg.label}
+              </label>`;
+            }).join('')}
+          </div>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Completion</div>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 12px;border:1.5px solid ${d.completed?'#1d9e75':'#e5e5ea'};border-radius:8px;background:${d.completed?'#e8f8f2':'#fff'}">
+            <input type="checkbox" id="ed-completed" ${d.completed?'checked':''} style="cursor:pointer;width:16px;height:16px">
+            <div>
+              <div style="font-size:12px;font-weight:600;color:#1d1d1f">Mark Completed</div>
+              <div style="font-size:10px;color:#8e8e93;margin-top:1px">Deal fully delivered</div>
+            </div>
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 12px;border:1.5px solid ${d.pow?'#1d9e75':'#e5e5ea'};border-radius:8px;background:${d.pow?'#e8f8f2':'#fff'};margin-top:6px">
+            <input type="checkbox" id="ed-pow" ${d.pow?'checked':''} style="cursor:pointer;width:16px;height:16px">
+            <div>
+              <div style="font-size:12px;font-weight:600;color:#1d1d1f">Proof of Work</div>
+              <div style="font-size:10px;color:#8e8e93;margin-top:1px">Deliverables confirmed</div>
+            </div>
+          </label>
+        </div>
+      </div>
         <textarea id="ed-notes" style="width:100%;height:80px;padding:9px 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none;resize:vertical;line-height:1.5" placeholder="Notes about this activation...">${d.notes||''}</textarea>
       </div>
       <div>
         <div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Proof of Work URL</div>
         <input id="ed-pow-url" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none" placeholder="Paste link to proof (Google Drive, Dropbox, etc.)" value="${d.powUrl||''}">
-        <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
-          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;cursor:pointer">
-            <input type="checkbox" id="ed-pow" ${d.pow?'checked':''} style="cursor:pointer">
-            <span style="color:#1d9e75;font-weight:600">✓ Mark proof of work delivered</span>
-          </label>
-        </div>
       </div>
     </div>
     <div style="padding:14px 22px;border-top:1px solid #f2f2f7;display:flex;justify-content:space-between;background:#fafafa;flex-shrink:0">
@@ -2454,7 +2475,9 @@ function saveEditDeal(key,di){
   d.sub=(document.getElementById('ed-sub').value||'').trim();
   d.notes=(document.getElementById('ed-notes').value||'').trim();
   d.powUrl=(document.getElementById('ed-pow-url').value||'').trim();
-  d.pow=document.getElementById('ed-pow').checked;
+  d.pow=document.getElementById('ed-pow')?.checked||false;
+  d.completed=document.getElementById('ed-completed')?.checked||false;
+  d.status=document.querySelector('input[name="ed-status"]:checked')?.value||d.status||'pending';
   d.types=[...document.querySelectorAll('input[name="ed-type"]:checked')].map(el=>el.value);
   document.getElementById('edit-deal-overlay').remove();
   document.getElementById('tb').innerHTML=bWallets(a);
