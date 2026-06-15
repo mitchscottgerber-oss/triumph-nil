@@ -1327,23 +1327,27 @@ function buildSettings() {
 }
 
 function switchRole(role){
-  applyRole(role);
+  USER_ROLE=role;
   // Update sidebar toggle
   const adminBtn=document.getElementById('sb-role-admin');
   const actBtn=document.getElementById('sb-role-activation');
   if(adminBtn){adminBtn.style.background=role==='admin'?'#1d1d1f':'transparent';adminBtn.style.color=role==='admin'?'#fff':'#8e8e93';adminBtn.style.webkitTextFillColor=role==='admin'?'#fff':'#8e8e93';}
   if(actBtn){actBtn.style.background=role==='activation'?'#1d1d1f':'transparent';actBtn.style.color=role==='activation'?'#fff':'#8e8e93';actBtn.style.webkitTextFillColor=role==='activation'?'#fff':'#8e8e93';}
-  // If switching back to admin, restore hidden nav items
-  if(role==='admin'){
-    ['nav-dash','nav-gm','nav-companies','nav-reports','nav-settings'].forEach(id=>{
-      const el=document.getElementById(id);
-      if(el) el.style.display='';
-    });
-    const addBtn=document.getElementById('add-athlete-btn');
-    if(addBtn) addBtn.style.display='';
-    // Stay on current page — just restore nav items
+
+  if(role==='activation'){
+    // Hide nav + controls
+    ['nav-dash','nav-gm','nav-companies','nav-reports','nav-settings'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+    ['add-athlete-btn','fbar-all','fbar-short','fbar-div1','fbar-div2','sel-mo','fbar-vtog','fbar-export'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+    nav('athletes',document.getElementById('nav-athletes'));
+  } else {
+    // Restore all nav + controls
+    ['nav-dash','nav-gm','nav-companies','nav-reports','nav-settings'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='';});
+    ['add-athlete-btn','fbar-all','fbar-short','fbar-div1','fbar-div2','sel-mo','fbar-vtog','fbar-export'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='';});
+    // Refresh athlete grid to show numbers
+    if(document.getElementById('page-athletes')?.classList.contains('on')){
+      doSwitchSport(activeSport);
+    }
   }
-  // Rebuild settings if open
   if(document.getElementById('page-settings')?.classList.contains('on')) buildSettings();
 }
 
@@ -2365,9 +2369,95 @@ function bWallets(a){
           +(status!=='denied'&&d.hist&&d.hist.length?'<div class="wchist"><div class="wchlbl">Month-by-month spend</div>'+d.hist.map(h=>'<div class="wchr"><span>'+h.mo+' 2026</span><span class="g">'+f(h.amt)+'</span></div>').join('')+'</div>':'')
           +(status!=='denied'?'<div class="wcbar"><div class="wcbf'+(emp?' emp':low?' low':'')+'" style="width:'+pct+'%"></div></div>':'')
           +(emp&&status!=='denied'?'<div class="wcnf"><i class="ti ti-alert-triangle"></i> No funds remaining</div>':'')
+          +'<div style="margin-top:8px;display:flex;gap:6px">'
+            +'<button onclick="event.stopPropagation();openEditDeal(\''+key+'\','+di+')" style="font-size:11px;font-weight:600;color:#2980b9;-webkit-text-fill-color:#2980b9;background:#eef6ff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px"><i class="ti ti-edit" style="font-size:11px"></i> Edit Deal</button>'
+          +'</div>'
         +'</div>'
       +'</div>';
     }).join('')+'</div>';
+}
+
+function openEditDeal(key,di){
+  const a=A.find(x=>x.f+'_'+x.l===key);if(!a||!a.deals[di]) return;
+  const d=a.deals[di];
+  const existing=document.getElementById('edit-deal-overlay');
+  if(existing) existing.remove();
+  const ov=document.createElement('div');
+  ov.id='edit-deal-overlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1200;display:flex;align-items:center;justify-content:center';
+
+  const typeCheck=t=>`<label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:9px 12px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:12px;font-weight:500">
+    <input type="checkbox" name="ed-type" value="${t.v}" ${(d.types||[]).includes(t.v)?'checked':''} style="cursor:pointer">
+    <i class="ti ${t.icon}" style="font-size:14px;color:${t.color}"></i> ${t.label}
+  </label>`;
+
+  const types=[
+    {v:'social',icon:'ti-brand-instagram',color:'#e1306c',label:'Social Post'},
+    {v:'appearance',icon:'ti-users',color:'#2980b9',label:'Appearance'},
+    {v:'content',icon:'ti-video',color:'#8e44ad',label:'Content Creation'},
+    {v:'autograph',icon:'ti-signature',color:'#b7791f',label:'Autograph Signing'},
+  ];
+
+  ov.innerHTML=`<div style="background:#fff;border-radius:18px;width:480px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.25);overflow:hidden">
+    <div style="background:#1d1d1f;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <div><div style="font-size:15px;font-weight:700;color:#fff">Edit Deal</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px">${d.n}</div></div>
+      <button onclick="document.getElementById('edit-deal-overlay').remove()" style="background:rgba(255,255,255,.12);border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;color:#fff;-webkit-text-fill-color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+    <div style="padding:20px 22px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:12px">
+      <div>
+        <div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Deal / Company Name</div>
+        <input id="ed-name" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none" value="${d.n||''}">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Signed SOW Date</div>
+          <input id="ed-sow" type="date" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none" value="${d.sow||''}">
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Submitted to NILGo</div>
+          <input id="ed-sub" type="date" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none" value="${d.sub||''}">
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Deal Type</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${types.map(typeCheck).join('')}</div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Activation Notes</div>
+        <textarea id="ed-notes" style="width:100%;height:80px;padding:9px 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none;resize:vertical;line-height:1.5" placeholder="Notes about this activation...">${d.notes||''}</textarea>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Proof of Work URL</div>
+        <input id="ed-pow-url" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none" placeholder="Paste link to proof (Google Drive, Dropbox, etc.)" value="${d.powUrl||''}">
+        <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;cursor:pointer">
+            <input type="checkbox" id="ed-pow" ${d.pow?'checked':''} style="cursor:pointer">
+            <span style="color:#1d9e75;font-weight:600">✓ Mark proof of work delivered</span>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div style="padding:14px 22px;border-top:1px solid #f2f2f7;display:flex;justify-content:space-between;background:#fafafa;flex-shrink:0">
+      <button onclick="document.getElementById('edit-deal-overlay').remove()" style="height:32px;padding:0 16px;border-radius:8px;border:1.5px solid #e5e5ea;background:#fff;color:#1d1d1f;-webkit-text-fill-color:#1d1d1f;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Cancel</button>
+      <button onclick="saveEditDeal('${key}',${di})" style="height:32px;padding:0 18px;border-radius:8px;border:none;background:#1d1d1f;color:#fff;-webkit-text-fill-color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Save Changes</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+
+function saveEditDeal(key,di){
+  const a=A.find(x=>x.f+'_'+x.l===key);if(!a||!a.deals[di]) return;
+  const d=a.deals[di];
+  d.n=(document.getElementById('ed-name').value||'').trim()||d.n;
+  d.sow=(document.getElementById('ed-sow').value||'').trim();
+  d.sub=(document.getElementById('ed-sub').value||'').trim();
+  d.notes=(document.getElementById('ed-notes').value||'').trim();
+  d.powUrl=(document.getElementById('ed-pow-url').value||'').trim();
+  d.pow=document.getElementById('ed-pow').checked;
+  d.types=[...document.querySelectorAll('input[name="ed-type"]:checked')].map(el=>el.value);
+  document.getElementById('edit-deal-overlay').remove();
+  document.getElementById('tb').innerHTML=bWallets(a);
 }
 
 function togglePOW(key,di){
@@ -2438,11 +2528,11 @@ function openAddDeal(key){
         <div style="display:flex;gap:12px;margin-bottom:12px">
           <div style="flex:1">
             <div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Signed SOW Date</div>
-            <input id="nd-sow" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none" placeholder="e.g. Jun 1">
+            <input id="nd-sow" type="date" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none">
           </div>
           <div style="flex:1">
             <div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Submitted to NILGo</div>
-            <input id="nd-sub" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none" placeholder="e.g. Jun 2">
+            <input id="nd-sub" type="date" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none">
           </div>
         </div>
         <div style="margin-bottom:12px"><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Deal Type</div>
