@@ -2143,9 +2143,12 @@ function openEditAthlete(key){
   ov.id='edit-athlete-overlay';
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1200;display:flex;align-items:center;justify-content:center';
   const editSport=a.sport||'Football';
-  const editMonths=[...MO.map(m=>({mo:m,yr:2026}))];
-  if(editSport==='Baseball') ['Jan','Feb','Mar','Apr','May','Jun'].forEach(m=>editMonths.push({mo:m,yr:2027}));
-  if(editSport==='Basketball-M'||editSport==='Basketball-W') ['Jan','Feb','Mar','Apr'].forEach(m=>editMonths.push({mo:m,yr:2027}));
+  // Full range: Jan 2026 → Dec 2027 → Jan 2028
+  const editMonths=[
+    ...MO.map(m=>({mo:m,yr:2026})),
+    ...MO.map(m=>({mo:m,yr:2027})),
+    {mo:'Jan',yr:2028}
+  ];
   const moCells=editMonths.map(({mo:m,yr})=>{
     const s=a.sch.find(x=>x.mo===m&&(x.yr||2026)===yr)||{a:0,p:false};
     const rv=getRev(a,m,yr);
@@ -5610,8 +5613,8 @@ function rebuildMoGrid(){
   const isBball=sport==='Basketball-M'||sport==='Basketball-W';
   const months=[];
   MO.forEach(m=>months.push({mo:m,yr:2026}));
-  if(isBaseball) ['Jan','Feb','Mar','Apr','May','Jun'].forEach(m=>months.push({mo:m,yr:2027}));
-  if(isBball) ['Jan','Feb','Mar','Apr'].forEach(m=>months.push({mo:m,yr:2027}));
+  MO.forEach(m=>months.push({mo:m,yr:2027}));
+  months.push({mo:'Jan',yr:2028});
   grid.innerHTML=months.map(({mo,yr})=>{
     const key=mo+'_'+yr;
     const isCur=mo===CUR&&yr===2026;
