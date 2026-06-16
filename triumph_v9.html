@@ -1148,35 +1148,6 @@ function getAthletesBySport(sport) {
   return A.filter(a => (a.sport||'Football') === sport);
 }
 
-function aF() {
-  const q = document.getElementById('si').value.toLowerCase().trim();
-  const pos = document.getElementById('sel-pos').value;
-  const mo = getMo();
-  // Filter to active sport tab
-  let list = getAthletesBySport(activeSport);
-  if (cp === 'short') list = list.filter(a => isNF(a, mo === 'all' ? CUR : mo));
-  if (pos) list = list.filter(a => a.pos === pos);
-  if (q) list = list.filter(a => (a.f + ' ' + a.l).toLowerCase().includes(q));
-  document.getElementById('cnt').innerHTML = '<b>' + list.length + '</b> athlete' + (list.length !== 1 ? 's' : '');
-  calcStrip(list);
-  if (mo === 'all') {
-    rAnnual(list);
-    document.getElementById('cv').style.display = 'none';
-    document.getElementById('av').style.display = 'block';
-    document.getElementById('vg').classList.remove('on');
-    document.getElementById('vl').classList.add('on');
-  } else {
-    rC(list);
-    if (cv === 'cards') {
-      document.getElementById('cv').style.display = 'grid';
-      document.getElementById('av').style.display = 'none';
-    } else {
-      rAnnual(list);
-      document.getElementById('cv').style.display = 'none';
-      document.getElementById('av').style.display = 'block';
-    }
-  }
-}
 
 // ===== PIN MODAL =====
 function openPin(sport) {
@@ -1603,7 +1574,7 @@ function aF(){
   const q=document.getElementById('si').value.toLowerCase().trim();
   const pos=document.getElementById('sel-pos').value;
   const mo=getMo();
-  let list=[...A];
+  let list=getAthletesBySport(activeSport);
   if(cp==='short') list=list.filter(a=>isNF(a,mo==='all'?CUR:mo));
   if(pos) list=list.filter(a=>a.pos===pos);
   if(q) list=list.filter(a=>(a.f+' '+a.l).toLowerCase().includes(q));
