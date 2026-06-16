@@ -675,9 +675,9 @@ select.aa-inp{appearance:auto}
       <div class="fdiv" id="fbar-div2"></div>
       <select class="fsel" id="sel-sport" onchange="onSportChange()">
         <option value="Football">Football</option>
-        <option value="MBB">Men's Basketball</option>
-        <option value="WBB">Women's Basketball</option>
         <option value="Baseball">Baseball</option>
+        <option value="Basketball-M">Men's Basketball</option>
+        <option value="Basketball-W">Women's Basketball</option>
       </select>
       <select class="fsel" id="sel-pos" onchange="aF()" style="display:none"><option value="">All positions</option><option>CB</option><option>DE</option><option>LB</option><option>QB</option><option>RB</option><option>TE</option><option>WR</option></select>
       <select class="fsel" id="sel-mo" onchange="aF()"><option value="all">All months</option><option>Jan</option><option>Feb</option><option>Mar</option><option>Apr</option><option selected>May</option><option>Jun</option><option>Jul</option><option>Aug</option><option>Sep</option><option>Oct</option><option>Nov</option><option>Dec</option></select>
@@ -707,9 +707,9 @@ select.aa-inp{appearance:auto}
       <div class="fdiv"></div>
       <select class="fsel" id="gm-sport-sel" onchange="gmSportChange()">
         <option value="Football">Football</option>
-        <option value="MBB">Men's Basketball</option>
-        <option value="WBB">Women's Basketball</option>
         <option value="Baseball">Baseball</option>
+        <option value="Basketball-M">Men's Basketball</option>
+        <option value="Basketball-W">Women's Basketball</option>
       </select>
       <select class="fsel" id="gm-pos-sel" onchange="gmRenderTable()"><option value="">All positions</option><option>CB</option><option>DE</option><option>LB</option><option>QB</option><option>RB</option><option>TE</option><option>WR</option></select>
       <select class="fsel" id="gm-mo-sel" onchange="gmRenderTable()">
@@ -1145,8 +1145,7 @@ function doSwitchSport(sport) {
 // After PIN success, also update the dropdown - handled in checkPin()
 
 function getAthletesBySport(sport) {
-  const sMap = {Football:'Football', MBB:'Basketball-M', WBB:'Basketball-W', Baseball:'Baseball'};
-  return A.filter(a => (a.sport||'Football') === (sMap[sport]||sport) || (sport==='Football' && (!a.sport||a.sport==='Football')));
+  return A.filter(a => (a.sport||'Football') === sport || (sport==='Football' && (!a.sport||a.sport==='Football')));
 }
 
 function aF() {
@@ -2032,16 +2031,16 @@ async function markRSPaid(key,mo){
 
 async function markPaid(key,mo){
   const a=A.find(x=>x.f+'_'+x.l===key);if(!a) return;
+  const s=a.sch.find(x=>x.mo===mo);if(!s) return;
   s.p=!s.p;
   if(s.p) a.paid=(a.paid||0)+s.a;
   else a.paid=Math.max(0,(a.paid||0)-s.a);
   try{
-    // Update payment_schedule
     await sb.from('payment_schedule').upsert(
-      {athlete_id:a.id,month:mo,year:2026,amount:s.a,is_paid:s.p,sources:s.s||[]},
+      {athlete_id:a.id,month:mo,year:s.yr||2026,amount:s.a,is_paid:s.p,sources:s.s||[],
+       nil_cleared:s.cleared||0,shortfall:s.shortfall||0,rs_paid:s.rs_paid||false},
       {onConflict:'athlete_id,month,year'}
     );
-    // Update paid_out on athlete
     await sb.from('athletes').update({paid_out:a.paid}).eq('id',a.id);
     syncStatus((s.p?'Marked paid':'Unmarked')+' ✓');
   }catch(e){
@@ -2790,7 +2789,7 @@ function bReceipt(a,mo){
   function hd(name,pos,period,ref){
     return'<div style="padding:20px 22px 16px;border-bottom:1px solid #f2f2f7;display:flex;justify-content:space-between;align-items:flex-start">'
       +'<div>'
-        +'<div style="font-size:10px;font-weight:600;letter-spacing:.09em;color:#aeaeb2;text-transform:uppercase;margin-bottom:7px">Triumph NIL · Receipt</div>'
+        +'<div style="font-size:10px;font-weight:600;letter-spacing:.09em;color:#aeaeb2;text-transform:uppercase;margin-bottom:7px">Triumph · Receipt</div>'
         +'<div style="font-size:19px;font-weight:700;color:#1d1d1f;letter-spacing:-.4px">'+name+'</div>'
         +'<div style="font-size:12px;color:#8e8e93;margin-top:3px">'+pos+' · Virginia Tech</div>'
       +'</div>'
