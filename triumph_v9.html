@@ -2956,10 +2956,12 @@ function buildEventBudget(ev){
   const acts=ev.budget.nilgoActivations;
 
   const totalExp=exp.reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
+  const talentFeeTotal=(ev.talent||[]).reduce((s,t)=>s+(t.fee||0),0);
+  const totalExpWithTalent=totalExp+talentFeeTotal;
   const totalNilgo=acts.reduce((s,x)=>s+((parseFloat(x.perAthlete)||0)*(parseInt(x.athletes)||0)),0);
   const totalNilgoCleared=acts.filter(x=>x.status==='cleared').reduce((s,x)=>s+((parseFloat(x.perAthlete)||0)*(parseInt(x.athletes)||0)),0);
   const sponsorTotal=(ev.sponsors||[]).reduce((s,x)=>s+(x.committed||0),0);
-  const net=sponsorTotal-totalExp-totalNilgo;
+  const net=sponsorTotal-totalExpWithTalent-totalNilgo;
 
   const expCategories=['Venue','Catering','AV / Equipment','Hotel','Travel','Staffing','Marketing','Other'];
   const nilgoStatuses={pending:'#f59e0b',submitted:'#2980b9',cleared:'#1d9e75'};
@@ -2974,7 +2976,8 @@ function buildEventBudget(ev){
       </div>
       <div style="background:#fff0f3;border-radius:12px;padding:14px">
         <div style="font-size:10px;font-weight:600;color:#e34040;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Total Expenses</div>
-        <div style="font-size:18px;font-weight:700;color:#e34040">${f(totalExp)}</div>
+        <div style="font-size:18px;font-weight:700;color:#e34040">${f(totalExpWithTalent)}</div>
+        ${talentFeeTotal>0?`<div style="font-size:10px;color:#8e8e93;margin-top:2px">incl. ${f(talentFeeTotal)} talent</div>`:''}
       </div>
       <div style="background:#f5f0ff;border-radius:12px;padding:14px">
         <div style="font-size:10px;font-weight:600;color:#8e44ad;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">NILGo Submitted</div>
@@ -3033,6 +3036,42 @@ function buildEventBudget(ev){
         </tbody>
       </table>
     </div>
+
+    <!-- TALENT FEES -->
+    ${(ev.talent||[]).some(t=>t.fee>0)?`<div style="background:#fff;border:1.5px solid #e5e5ea;border-radius:14px;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1.5px solid #e5e5ea;background:#f9f9f9">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#1d1d1f">Talent Fees</div>
+          <div style="font-size:11px;color:#8e8e93;margin-top:2px">Auto-populated from Talent tab — edit fees there</div>
+        </div>
+        <div style="font-size:13px;font-weight:700;color:#8e44ad">${f((ev.talent||[]).reduce((s,t)=>s+(t.fee||0),0))}</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:#fafafa">
+          <th style="text-align:left;padding:8px 14px;font-size:10px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;border-bottom:0.5px solid #e5e5ea">Name</th>
+          <th style="text-align:left;padding:8px 14px;font-size:10px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;border-bottom:0.5px solid #e5e5ea">Role</th>
+          <th style="text-align:left;padding:8px 14px;font-size:10px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;border-bottom:0.5px solid #e5e5ea">NILGo Status</th>
+          <th style="text-align:right;padding:8px 14px;font-size:10px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;border-bottom:0.5px solid #e5e5ea">Fee</th>
+        </tr></thead>
+        <tbody>
+          ${(ev.talent||[]).filter(t=>t.fee>0).map(t=>{
+            const nilgoColor={cleared:'#1d9e75',submitted:'#2980b9',pending:'#f59e0b'}[t.nilgoStatus||'pending'];
+            const nilgoLabel={cleared:'NILGo Cleared ✓',submitted:'Submitted',pending:'Not Submitted'}[t.nilgoStatus||'pending'];
+            const isCleared=t.nilgoStatus==='cleared';
+            return`<tr style="border-bottom:0.5px solid #f2f2f7;background:${isCleared?'#f0faf5':'#fff'}">
+              <td style="padding:10px 14px;font-size:13px;font-weight:600">${t.name}</td>
+              <td style="padding:10px 14px;font-size:12px;color:#8e8e93">${t.role||'Talent'}</td>
+              <td style="padding:10px 14px"><span style="font-size:11px;font-weight:600;color:${nilgoColor}">${nilgoLabel}</span></td>
+              <td style="padding:10px 14px;text-align:right;font-size:13px;font-weight:700;color:#8e44ad">${f(t.fee)}</td>
+            </tr>`;
+          }).join('')}
+          <tr style="background:#f9f9f9">
+            <td colspan="3" style="padding:10px 14px;font-size:12px;font-weight:700">Total Talent Fees</td>
+            <td style="padding:10px 14px;text-align:right;font-size:14px;font-weight:700;color:#8e44ad">${f((ev.talent||[]).reduce((s,t)=>s+(t.fee||0),0))}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>`:''}
 
     <!-- NILGO ACTIVATIONS -->
     <div style="background:#fff;border:1.5px solid #e5e5ea;border-radius:14px;overflow:hidden">
