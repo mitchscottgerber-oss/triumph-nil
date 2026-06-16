@@ -655,7 +655,7 @@ select.aa-inp{appearance:auto}
   <div class="page on" id="page-dash">
     <div class="dash-bar">
       <span class="dash-lbl">Month:</span>
-      <select class="fsel" id="dash-mo" onchange="buildDash()"><option value="all">All months</option><option>Jan</option><option>Feb</option><option>Mar</option><option>Apr</option><option>May</option><option selected>Jun</option><option>Jul</option><option>Aug</option><option>Sep</option><option>Oct</option><option>Nov</option><option>Dec</option></select>
+      <select class="fsel" id="dash-mo" onchange="buildDash()"><option value="all" selected>All months</option><option>Jan</option><option>Feb</option><option>Mar</option><option>Apr</option><option>May</option><option selected>Jun</option><option>Jul</option><option>Aug</option><option>Sep</option><option>Oct</option><option>Nov</option><option>Dec</option></select>
       <span class="dash-lbl" style="margin-left:10px">Sport:</span>
       <select class="fsel" id="dash-sport" onchange="buildDash()"><option value="all">All sports</option><option value="Football">Football</option><option value="Basketball">Basketball</option><option value="Baseball">Baseball</option><option value="Soccer">Soccer</option></select>
     </div>
@@ -681,7 +681,35 @@ select.aa-inp{appearance:auto}
         <option value="Basketball-W">Women's Basketball</option>
       </select>
       <select class="fsel" id="sel-pos" onchange="aF()" style="display:none"><option value="">All positions</option><option>CB</option><option>DE</option><option>LB</option><option>QB</option><option>RB</option><option>TE</option><option>WR</option></select>
-      <select class="fsel" id="sel-mo" onchange="aF()"><option value="all">All months</option><option>Jan</option><option>Feb</option><option>Mar</option><option>Apr</option><option selected>May</option><option>Jun</option><option>Jul</option><option>Aug</option><option>Sep</option><option>Oct</option><option>Nov</option><option>Dec</option></select>
+      <div style="position:relative" id="mo-picker-wrap">
+        <button onclick="toggleMoPicker()" id="mo-picker-btn" style="height:32px;padding:0 12px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:12px;font-weight:500;background:#fff;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;white-space:nowrap">
+          <span id="mo-picker-label">All months</span> <i class="ti ti-chevron-down" style="font-size:10px;color:#8e8e93"></i>
+        </button>
+        <div id="mo-picker-panel" style="display:none;position:absolute;top:36px;left:0;z-index:200;background:#fff;border:1.5px solid #e5e5ea;border-radius:12px;padding:12px;box-shadow:0 8px 24px rgba(0,0,0,.12);width:240px">
+          <div style="font-size:10px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Select months (click multiple)</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:10px" id="mo-pill-grid">
+            <button class="mo-pill" onclick="toggleMo(this,'Jan')" style="padding:5px 0;border:1.5px solid #e5e5ea;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;background:#fff;color:#1d1d1f">Jan</button>
+            <button class="mo-pill" onclick="toggleMo(this,'Feb')" style="padding:5px 0;border:1.5px solid #e5e5ea;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;background:#fff;color:#1d1d1f">Feb</button>
+            <button class="mo-pill" onclick="toggleMo(this,'Mar')" style="padding:5px 0;border:1.5px solid #e5e5ea;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;background:#fff;color:#1d1d1f">Mar</button>
+            <button class="mo-pill" onclick="toggleMo(this,'Apr')" style="padding:5px 0;border:1.5px solid #e5e5ea;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;background:#fff;color:#1d1d1f">Apr</button>
+            <button class="mo-pill" onclick="toggleMo(this,'May')" style="padding:5px 0;border:1.5px solid #e5e5ea;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;background:#fff;color:#1d1d1f">May</button>
+            <button class="mo-pill" onclick="toggleMo(this,'Jun')" style="padding:5px 0;border:1.5px solid #e5e5ea;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;background:#fff;color:#1d1d1f">Jun</button>
+            <button class="mo-pill" onclick="toggleMo(this,'Jul')" style="padding:5px 0;border:1.5px solid #e5e5ea;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;background:#fff;color:#1d1d1f">Jul</button>
+            <button class="mo-pill" onclick="toggleMo(this,'Aug')" style="padding:5px 0;border:1.5px solid #e5e5ea;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;background:#fff;color:#1d1d1f">Aug</button>
+            <button class="mo-pill" onclick="toggleMo(this,'Sep')" style="padding:5px 0;border:1.5px solid #e5e5ea;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;background:#fff;color:#1d1d1f">Sep</button>
+            <button class="mo-pill" onclick="toggleMo(this,'Oct')" style="padding:5px 0;border:1.5px solid #e5e5ea;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;background:#fff;color:#1d1d1f">Oct</button>
+            <button class="mo-pill" onclick="toggleMo(this,'Nov')" style="padding:5px 0;border:1.5px solid #e5e5ea;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;background:#fff;color:#1d1d1f">Nov</button>
+            <button class="mo-pill" onclick="toggleMo(this,'Dec')" style="padding:5px 0;border:1.5px solid #e5e5ea;border-radius:6px;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;background:#fff;color:#1d1d1f">Dec</button>
+          </div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap">
+            <button onclick="setMoRange('all')" style="padding:4px 8px;border:1px solid #e5e5ea;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;background:#f9f9f9;color:#6c6c70">All</button>
+            <button onclick="setMoRange('q1')" style="padding:4px 8px;border:1px solid #e5e5ea;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;background:#f9f9f9;color:#6c6c70">Q1 Jan–Mar</button>
+            <button onclick="setMoRange('q2')" style="padding:4px 8px;border:1px solid #e5e5ea;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;background:#f9f9f9;color:#6c6c70">Q2 Apr–Jun</button>
+            <button onclick="setMoRange('q3')" style="padding:4px 8px;border:1px solid #e5e5ea;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;background:#f9f9f9;color:#6c6c70">Q3 Jul–Sep</button>
+            <button onclick="setMoRange('q4')" style="padding:4px 8px;border:1px solid #e5e5ea;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;background:#f9f9f9;color:#6c6c70">Q4 Oct–Dec</button>
+          </div>
+        </div>
+      </div>
       <div class="vtog" id="fbar-vtog"><button class="vb" id="vg" onclick="sV('cards')"><i class="ti ti-layout-grid"></i></button><button class="vb on" id="vl" onclick="sV('annual')"><i class="ti ti-table"></i></button></div>
       <button class="btn btn-outline" id="fbar-export" style="padding:4px 12px;font-size:11px;height:28px;display:flex;align-items:center;gap:4px;white-space:nowrap" onclick="exportExcel()"><i class="ti ti-file-spreadsheet" style="font-size:13px"></i> Export</button>
       <button class="btn btn-dark" id="add-athlete-btn" style="padding:4px 14px;font-size:11px;height:28px;display:flex;align-items:center;gap:4px;white-space:nowrap" onclick="openAddAthlete()"><i class="ti ti-user-plus" style="font-size:13px"></i> Add Athlete</button>
@@ -1491,7 +1519,46 @@ async function saveNewCompany(){
 
 const coSpent=c=>c.athletes.reduce((s,a)=>s+a.hist.reduce((t,h)=>t+h.amt,0),0);
 const moSpent=(c,mo)=>c.athletes.reduce((s,a)=>{const h=a.hist.find(x=>x.mo===mo);return s+(h?h.amt:0);},0);
-const getMo=()=>{const s=document.getElementById('sel-mo');return s?s.value:'May';};
+// Multi-month picker state
+let selectedMos=new Set(); // empty = all months
+
+const getMo=()=>{
+  if(selectedMos.size===0) return 'all';
+  if(selectedMos.size===1) return [...selectedMos][0];
+  return 'multi';
+};
+const getSelectedMos=()=>selectedMos.size===0?[...MO]:[...selectedMos];
+
+function toggleMoPicker(){
+  const panel=document.getElementById('mo-picker-panel');
+  if(!panel) return;
+  panel.style.display=panel.style.display==='none'?'block':'none';
+}
+function toggleMo(btn,mo){
+  if(selectedMos.has(mo)){selectedMos.delete(mo);btn.style.background='#fff';btn.style.color='#1d1d1f';btn.style.borderColor='#e5e5ea';}
+  else{selectedMos.add(mo);btn.style.background='#1d1d1f';btn.style.color='#fff';btn.style.borderColor='#1d1d1f';}
+  updateMoLabel();aF();
+}
+function setMoRange(range){
+  selectedMos.clear();
+  const ranges={q1:['Jan','Feb','Mar'],q2:['Apr','May','Jun'],q3:['Jul','Aug','Sep'],q4:['Oct','Nov','Dec'],all:[]};
+  (ranges[range]||[]).forEach(m=>selectedMos.add(m));
+  document.querySelectorAll('.mo-pill').forEach(btn=>{
+    const mo=btn.textContent.trim();const on=selectedMos.has(mo);
+    btn.style.background=on?'#1d1d1f':'#fff';btn.style.color=on?'#fff':'#1d1d1f';btn.style.borderColor=on?'#1d1d1f':'#e5e5ea';
+  });
+  updateMoLabel();aF();
+}
+function updateMoLabel(){
+  const el=document.getElementById('mo-picker-label');if(!el) return;
+  if(selectedMos.size===0) el.textContent='All months';
+  else if(selectedMos.size===1) el.textContent=[...selectedMos][0];
+  else el.textContent=[...selectedMos].sort((a,b)=>MO.indexOf(a)-MO.indexOf(b)).join(', ');
+}
+document.addEventListener('click',e=>{
+  const wrap=document.getElementById('mo-picker-wrap');
+  if(wrap&&!wrap.contains(e.target)){const panel=document.getElementById('mo-picker-panel');if(panel) panel.style.display='none';}
+});
 
 // Source pairs: ['Name','$Amt','Name2','$Amt2'] -> [{name,amt}]
 function parseSrcs(s){
@@ -1594,7 +1661,8 @@ function aF(){
   const pos=document.getElementById('sel-pos').value;
   const mo=getMo();
   let list=getAthletesBySport(activeSport);
-  if(cp==='short') list=list.filter(a=>isNF(a,mo==='all'?CUR:mo));
+  const moFilter=getMo();
+  if(cp==='short') list=list.filter(a=>isNF(a,moFilter==='all'||moFilter==='multi'?CUR:moFilter));
   if(pos) list=list.filter(a=>a.pos===pos);
   if(q) list=list.filter(a=>(a.f+' '+a.l).toLowerCase().includes(q));
   document.getElementById('cnt').innerHTML='<b>'+list.length+'</b> athlete'+(list.length!==1?'s':'');
@@ -1623,8 +1691,8 @@ function aF(){
   }
 
   calcStrip(list);
-  if(mo==='all'){rAnnual(list);document.getElementById('cv').style.display='none';document.getElementById('av').style.display='block';document.getElementById('vg').classList.remove('on');document.getElementById('vl').classList.add('on');}
-  else{if(cv==='cards'){rC(list);document.getElementById('cv').style.display='grid';document.getElementById('av').style.display='none';}else{rAnnual(list);document.getElementById('cv').style.display='none';document.getElementById('av').style.display='block';}}
+  if(moFilter==='all'||moFilter==='multi'){rAnnual(list,getSelectedMos());document.getElementById('cv').style.display='none';document.getElementById('av').style.display='block';document.getElementById('vg').classList.remove('on');document.getElementById('vl').classList.add('on');}
+  else{if(cv==='cards'){rC(list);document.getElementById('cv').style.display='grid';document.getElementById('av').style.display='none';}else{rAnnual(list,getSelectedMos());document.getElementById('cv').style.display='none';document.getElementById('av').style.display='block';}}
 }
 function rC(list){
   const mo=getMo();
@@ -1646,13 +1714,17 @@ function rC(list){
     +'</div>';
   }).join(''):'<div style="color:#8e8e93;font-size:12px;padding:20px 0">No athletes found.</div>';
 }
-function rAnnual(list){
+function rAnnual(list,filterMos){
   const hasBaseball=list.some(a=>a.sport==='Baseball');
   const hasBball=list.some(a=>a.sport==='Basketball-M'||a.sport==='Basketball-W');
-  const cols=[...MO.map(m=>({mo:m,yr:2026}))];
+  let cols=[...MO.map(m=>({mo:m,yr:2026}))];
   if(hasBaseball||hasBball){
     const extra=hasBaseball?['Jan','Feb','Mar','Apr','May','Jun']:['Jan','Feb','Mar','Apr'];
     extra.forEach(m=>cols.push({mo:m,yr:2027}));
+  }
+  // Filter to selected months if specified
+  if(filterMos&&filterMos.length<12){
+    cols=cols.filter(({mo})=>filterMos.includes(mo));
   }
 
   const moNIL=cols.map(({mo,yr})=>list.reduce((s,a)=>{const sc=a.sch.find(x=>x.mo===mo&&(x.yr||2026)===yr);return s+(sc?sc.a:0);},0));
@@ -4183,7 +4255,6 @@ function buildActivationPlanner(){
       style="background:#fff;border:1.5px solid #e5e5ea;border-radius:10px;padding:10px 12px;cursor:grab;user-select:none;transition:box-shadow .1s"
       onmouseenter="this.style.boxShadow='0 4px 12px rgba(0,0,0,.1)'" onmouseleave="this.style.boxShadow='none'">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-        <div style="width:32px;height:32px;border-radius:8px;background:#1d1d1f;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${a.f[0]}${a.l[0]}</div>
         <div>
           <div style="font-size:12px;font-weight:700;color:#1d1d1f">${a.f} ${a.l}</div>
           <div style="font-size:10px;color:#8e8e93">${sportIcon[a.sport||'Football']||a.pos} · ${a.pos}</div>
