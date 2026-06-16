@@ -2686,7 +2686,12 @@ function buildEventTalent(ev){
           <div style="font-size:12px;color:#8e8e93;margin-top:2px">${t.role||''}${t.org?' · '+t.org:''}</div>
           ${USER_ROLE!=='activation'&&t.fee?`<div style="font-size:12px;font-weight:600;color:#8e44ad;margin-top:3px">Fee: ${typeof t.fee==='number'?f(t.fee):t.fee}</div>`:''}
           ${t.notes?`<div style="font-size:12px;color:#6c6c70;margin-top:4px;line-height:1.4">${t.notes}</div>`:''}
-          ${t.travel?`<div style="font-size:11px;color:#2980b9;margin-top:4px;background:#eef6ff;border-radius:6px;padding:5px 8px"><i class="ti ti-plane" style="font-size:10px"></i> ${t.travel}</div>`:''}
+          ${t.flightIn||t.flightOut||t.hotelName?`<div style="font-size:11px;color:#2980b9;margin-top:4px;background:#eef6ff;border-radius:6px;padding:5px 8px;display:flex;flex-wrap:wrap;gap:10px">
+            ${t.flightIn?`<span><i class="ti ti-plane-departure" style="font-size:10px"></i> In: ${t.flightIn}</span>`:''}
+            ${t.flightOut?`<span><i class="ti ti-plane-arrival" style="font-size:10px"></i> Out: ${t.flightOut}</span>`:''}
+            ${t.hotelName?`<span><i class="ti ti-bed" style="font-size:10px;color:#8e44ad"></i> <span style="color:#8e44ad">${t.hotelName}${t.hotelConf?' #'+t.hotelConf:''}</span></span>`:''}
+          </div>`:''}
+          ${t.travelOther?`<div style="font-size:11px;color:#1d9e75;margin-top:3px;background:#e8f8f2;border-radius:6px;padding:4px 8px"><i class="ti ti-car" style="font-size:10px"></i> ${t.travelOther}</div>`:''}
           ${t.agent?`<div style="font-size:11px;color:#8e8e93;margin-top:4px"><i class="ti ti-user" style="font-size:10px"></i> Agent/Contact: <b>${t.agent}</b>${t.agentPhone?' · '+t.agentPhone:''}${t.agentEmail?' · '+t.agentEmail:''}</div>`:''}
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0">
@@ -2816,8 +2821,39 @@ function openEditTalent(evId,i){
       </div>
 
       <div style="border-top:1px solid #f2f2f7;padding-top:12px">
-        <div style="font-size:11px;font-weight:700;color:#1d1d1f;margin-bottom:8px"><i class="ti ti-plane" style="font-size:12px;color:#2980b9"></i> Travel Details</div>
-        <textarea id="et-travel" style="width:100%;height:72px;padding:9px 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;resize:vertical;line-height:1.5;box-sizing:border-box" placeholder="Flights, hotel, reservations, pickup info...">${t.travel||''}</textarea>
+        <div style="font-size:11px;font-weight:700;color:#1d1d1f;margin-bottom:10px"><i class="ti ti-plane" style="font-size:12px;color:#2980b9"></i> Travel Details</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="background:#f9f9f9;border-radius:10px;padding:10px 12px">
+            <div style="font-size:10px;font-weight:700;color:#2980b9;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px"><i class="ti ti-plane-departure" style="font-size:10px"></i> Flights</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+              <div><div style="font-size:10px;color:#8e8e93;margin-bottom:3px">Inbound Flight #</div>
+                <input id="et-flight-in" value="${t.flightIn||''}" placeholder="e.g. AA 1234" style="width:100%;height:30px;padding:0 9px;border:1.5px solid #e5e5ea;border-radius:7px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box;background:#fff"></div>
+              <div><div style="font-size:10px;color:#8e8e93;margin-bottom:3px">Outbound Flight #</div>
+                <input id="et-flight-out" value="${t.flightOut||''}" placeholder="e.g. AA 5678" style="width:100%;height:30px;padding:0 9px;border:1.5px solid #e5e5ea;border-radius:7px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box;background:#fff"></div>
+            </div>
+            <div><div style="font-size:10px;color:#8e8e93;margin-bottom:3px">Flight Notes</div>
+              <input id="et-flight-notes" value="${t.flightNotes||''}" placeholder="Arrival/departure times, layovers..." style="width:100%;height:30px;padding:0 9px;border:1.5px solid #e5e5ea;border-radius:7px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box;background:#fff"></div>
+          </div>
+          <div style="background:#f9f9f9;border-radius:10px;padding:10px 12px">
+            <div style="font-size:10px;font-weight:700;color:#8e44ad;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px"><i class="ti ti-bed" style="font-size:10px"></i> Hotel</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+              <div><div style="font-size:10px;color:#8e8e93;margin-bottom:3px">Hotel Name</div>
+                <input id="et-hotel-name" value="${t.hotelName||''}" placeholder="Marriott, Hilton..." style="width:100%;height:30px;padding:0 9px;border:1.5px solid #e5e5ea;border-radius:7px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box;background:#fff"></div>
+              <div><div style="font-size:10px;color:#8e8e93;margin-bottom:3px">Confirmation #</div>
+                <input id="et-hotel-conf" value="${t.hotelConf||''}" placeholder="e.g. RES-123456" style="width:100%;height:30px;padding:0 9px;border:1.5px solid #e5e5ea;border-radius:7px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box;background:#fff"></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div><div style="font-size:10px;color:#8e8e93;margin-bottom:3px">Check-in</div>
+                <input id="et-hotel-in" type="date" value="${t.hotelIn||''}" style="width:100%;height:30px;padding:0 9px;border:1.5px solid #e5e5ea;border-radius:7px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box;background:#fff"></div>
+              <div><div style="font-size:10px;color:#8e8e93;margin-bottom:3px">Check-out</div>
+                <input id="et-hotel-out" type="date" value="${t.hotelOut||''}" style="width:100%;height:30px;padding:0 9px;border:1.5px solid #e5e5ea;border-radius:7px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box;background:#fff"></div>
+            </div>
+          </div>
+          <div style="background:#f9f9f9;border-radius:10px;padding:10px 12px">
+            <div style="font-size:10px;font-weight:700;color:#1d9e75;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px"><i class="ti ti-car" style="font-size:10px"></i> Ground Transport & Other</div>
+            <textarea id="et-travel-other" style="width:100%;height:56px;padding:7px 9px;border:1.5px solid #e5e5ea;border-radius:7px;font-size:12px;font-family:inherit;outline:none;resize:none;line-height:1.4;box-sizing:border-box;background:#fff" placeholder="Car service, pickup details, restaurant reservations, special requests...">${t.travelOther||''}</textarea>
+          </div>
+        </div>
       </div>
 
       <div style="border-top:1px solid #f2f2f7;padding-top:12px">
@@ -2845,7 +2881,15 @@ function saveEditTalent(evId,i){
   t.agent=(document.getElementById('et-agent').value||'').trim();
   t.agentPhone=(document.getElementById('et-agent-phone').value||'').trim();
   t.agentEmail=(document.getElementById('et-agent-email').value||'').trim();
-  t.travel=(document.getElementById('et-travel').value||'').trim();
+  t.travel=(document.getElementById('et-travel-other')?.value||'').trim();
+  t.flightIn=(document.getElementById('et-flight-in')?.value||'').trim();
+  t.flightOut=(document.getElementById('et-flight-out')?.value||'').trim();
+  t.flightNotes=(document.getElementById('et-flight-notes')?.value||'').trim();
+  t.hotelName=(document.getElementById('et-hotel-name')?.value||'').trim();
+  t.hotelConf=(document.getElementById('et-hotel-conf')?.value||'').trim();
+  t.hotelIn=(document.getElementById('et-hotel-in')?.value||'').trim();
+  t.hotelOut=(document.getElementById('et-hotel-out')?.value||'').trim();
+  t.travelOther=(document.getElementById('et-travel-other')?.value||'').trim();
   t.notes=(document.getElementById('et-notes').value||'').trim();
   if(USER_ROLE!=='activation'&&document.getElementById('et-fee')) t.fee=parseFloat(document.getElementById('et-fee').value)||0;
   document.getElementById('edit-talent-modal').remove();
@@ -2896,7 +2940,13 @@ function openEditROS(evId,i){
         <input id="re-item" value="${r.item||''}" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Time</div>
-          <input id="re-time" value="${r.time||''}" placeholder="e.g. 6:00 PM" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box"></div>
+        <div style="display:flex;gap:4px">${(()=>{
+          const parts=(r.time||'12:00 PM').match(/^(\d+):(\d+)\s*(AM|PM)$/i)||['','12','00','PM'];
+          const hr=parts[1]||'12',mn=parts[2]||'00',ap=(parts[3]||'PM').toUpperCase();
+          return'<select id="re-hr" style="flex:1;height:34px;padding:0 8px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none">'+Array.from({length:12},(_,i)=>`<option value="${i+1}" ${String(i+1)===hr?'selected':''}>${i+1}</option>`).join('')+'</select>'
+            +'<select id="re-min" style="flex:1;height:34px;padding:0 8px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none">'+['00','15','30','45'].map(m=>`<option ${m===mn?'selected':''}>${m}</option>`).join('')+'</select>'
+            +'<select id="re-ampm" style="height:34px;padding:0 8px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none"><option '+('AM'===ap?'selected':'')+'>AM</option><option '+('PM'===ap?'selected':'')+'>PM</option></select>';
+        })()}</div></div>
         <div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Owner</div>
           <input id="re-owner" value="${r.owner||''}" placeholder="Responsible person" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box"></div>
       </div>
@@ -2919,7 +2969,7 @@ function openEditROS(evId,i){
 function saveEditROS(evId,i){
   const ev=EVENTS.find(e=>e.id===evId);if(!ev||!ev.ros[i])return;
   ev.ros[i].item=(document.getElementById('re-item').value||'').trim()||ev.ros[i].item;
-  ev.ros[i].time=(document.getElementById('re-time').value||'').trim();
+  ev.ros[i].time=(document.getElementById('re-hr')?.value||'12')+':'+(document.getElementById('re-min')?.value||'00')+' '+(document.getElementById('re-ampm')?.value||'PM');
   ev.ros[i].owner=(document.getElementById('re-owner').value||'').trim();
   ev.ros[i].talent=(document.getElementById('re-talent').value||'').trim();
   ev.ros[i].notes=(document.getElementById('re-notes').value||'').trim();
@@ -3202,7 +3252,17 @@ function openAddROS(evId){
         <input id="ros-item" placeholder="e.g. Athlete autograph session" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Time</div>
-          <input id="ros-time" placeholder="e.g. 6:00 PM" style="height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;width:100%;box-sizing:border-box"></div>
+          <div style="display:flex;gap:4px">
+            <select id="ros-hr" style="flex:1;height:34px;padding:0 8px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
+              ${Array.from({length:12},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}
+            </select>
+            <select id="ros-min" style="flex:1;height:34px;padding:0 8px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
+              ${['00','15','30','45'].map(m=>`<option value="${m}">${m}</option>`).join('')}
+            </select>
+            <select id="ros-ampm" style="height:34px;padding:0 8px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
+              <option>AM</option><option selected>PM</option>
+            </select>
+          </div></div>
         <div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Owner</div>
           <input id="ros-owner" placeholder="Responsible person" style="height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;width:100%;box-sizing:border-box"></div>
       </div>
@@ -3227,7 +3287,7 @@ function saveROS(evId){
   if(!ev.ros)ev.ros=[];
   ev.ros.push({
     item,
-    time:document.getElementById('ros-time').value||'',
+    time:(document.getElementById('ros-hr')?.value||'12')+':'+(document.getElementById('ros-min')?.value||'00')+' '+(document.getElementById('ros-ampm')?.value||'PM'),
     owner:document.getElementById('ros-owner').value||'',
     talent:document.getElementById('ros-talent')?.value||'',
     notes:document.getElementById('ros-notes')?.value||''
