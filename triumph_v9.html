@@ -1092,14 +1092,14 @@ async function loadFromSupabase(){
 // ===== SPORT TABS & PIN SYSTEM =====
 let USER_ROLE='admin'; // 'admin' or 'activation'
 // PINs stored in memory (set via Settings)
-let sportPins = {Football:'', MBB:'', WBB:'', Baseball:''};
+let sportPins = {Football:'', Baseball:'', 'Basketball-M':'', 'Basketball-W':''};
 // Unlocked state: Football unlocked by default
-let sportUnlocked = {Football:true, MBB:false, WBB:false, Baseball:true};
+let sportUnlocked = {Football:true, Baseball:true, 'Basketball-M':false, 'Basketball-W':false};
 let activeSport = 'Football'; // current active sport tab
 let pinTarget = null; // which sport we're unlocking
 let pinEntered = '';
 
-const SPORT_NAMES = {Football:'Football', MBB:"Men's Basketball", WBB:"Women's Basketball", Baseball:'Baseball'};
+const SPORT_NAMES = {Football:'Football', Baseball:'Baseball', 'Basketball-M':"Men's Basketball", 'Basketball-W':"Women's Basketball"};
 const SPORT_ICONS = {Football:'football', MBB:'ti-ball-basketball', WBB:'ti-ball-basketball'};
 
 // ===== SPORT SELECTION (dropdown) =====
