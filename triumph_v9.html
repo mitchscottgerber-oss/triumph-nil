@@ -1535,8 +1535,8 @@ function toggleMoPicker(){
   panel.style.display=panel.style.display==='none'?'block':'none';
 }
 function toggleMo(btn,mo){
-  if(selectedMos.has(mo)){selectedMos.delete(mo);btn.style.background='#fff';btn.style.color='#1d1d1f';btn.style.borderColor='#e5e5ea';}
-  else{selectedMos.add(mo);btn.style.background='#1d1d1f';btn.style.color='#fff';btn.style.borderColor='#1d1d1f';}
+  if(selectedMos.has(mo)){selectedMos.delete(mo);btn.style.background='#fff';btn.style.color='#1d1d1f';btn.style.borderColor='#e5e5ea';btn.style.fontWeight='500';}
+  else{selectedMos.add(mo);btn.style.background='#eef6ff';btn.style.color='#2980b9';btn.style.borderColor='#2980b9';btn.style.fontWeight='700';}
   updateMoLabel();aF();
 }
 function setMoRange(range){
@@ -1545,7 +1545,7 @@ function setMoRange(range){
   (ranges[range]||[]).forEach(m=>selectedMos.add(m));
   document.querySelectorAll('.mo-pill').forEach(btn=>{
     const mo=btn.textContent.trim();const on=selectedMos.has(mo);
-    btn.style.background=on?'#1d1d1f':'#fff';btn.style.color=on?'#fff':'#1d1d1f';btn.style.borderColor=on?'#1d1d1f':'#e5e5ea';
+    btn.style.background=on?'#eef6ff':'#fff';btn.style.color=on?'#2980b9':'#1d1d1f';btn.style.borderColor=on?'#2980b9':'#e5e5ea';btn.style.fontWeight=on?'700':'500';
   });
   updateMoLabel();aF();
 }
