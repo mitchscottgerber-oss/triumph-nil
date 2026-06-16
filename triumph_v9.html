@@ -633,6 +633,7 @@ select.aa-inp{appearance:auto}
     <div class="sb-sec">Program</div>
     <button class="sbi" id="nav-athletes" onclick="nav('athletes',this)">Athletes</button>
     <button class="sbi" id="nav-companies" onclick="nav('companies',this)">Companies</button>
+    <button class="sbi" id="nav-events" onclick="nav('events',this)">Events</button>
     <div class="sb-sec">Tools</div>
     <button class="sbi" id="nav-gm" onclick="nav('gm',this)">General Manager</button>
     <button class="sbi" id="nav-reports" onclick="nav('reports',this)">Reports</button>
@@ -691,6 +692,7 @@ select.aa-inp{appearance:auto}
     <div class="prof" id="prof"><button class="backbtn" onclick="cP()"><i class="ti ti-arrow-left"></i> All athletes</button><div id="pc"></div></div>
   </div>
   <div class="page" id="page-settings"><div class="scroll" id="settings-body"></div></div>
+  <div class="page" id="page-events"><div class="scroll" id="events-body"></div></div>
   <div class="page" id="page-gm">
     <!-- Mirror of Athletes strip -->
     <div class="astrip" id="gm-strip">
@@ -1505,6 +1507,7 @@ function nav(page,el){
   if(page==='companies'){renderCos();document.getElementById('top-sub').textContent=CO.length+' active sponsors';}
   if(page==='reports') buildReports();
   if(page==='settings') buildSettings();
+  if(page==='events') buildEvents();
   if(page==='gm') initGMPage();
 }
 
@@ -2556,7 +2559,490 @@ function cycleDealStatus(key,di){
   document.getElementById('tb').innerHTML=bWallets(a);
 }
 
-// ===== ROLE-BASED ACCESS =====
+// ===== EVENTS =====
+let EVENTS=[];
+let activeEventId=null;
+let activeEventTab='talent';
+
+function buildEvents(){
+  const el=document.getElementById('events-body');if(!el)return;
+  if(activeEventId){
+    const ev=EVENTS.find(e=>e.id===activeEventId);
+    if(ev){renderEventDetail(ev);return;}
+  }
+  renderEventList();
+}
+
+function renderEventList(){
+  const el=document.getElementById('events-body');
+  const statusColor={planning:'#f59e0b',active:'#1d9e75',complete:'#8e8e93'};
+  const statusBg={planning:'#fffbe6',active:'#e8f8f2',complete:'#f2f2f7'};
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div>
+        <div style="font-size:22px;font-weight:700;color:#1d1d1f">Events</div>
+        <div style="font-size:13px;color:#8e8e93;margin-top:2px">${EVENTS.length} event${EVENTS.length!==1?'s':''}</div>
+      </div>
+      <button onclick="openAddEvent()" class="btn btn-dark" style="display:flex;align-items:center;gap:6px;padding:8px 16px"><i class="ti ti-calendar-plus"></i> New Event</button>
+    </div>
+    ${EVENTS.length===0?`<div style="text-align:center;padding:80px 20px;background:#fff;border-radius:16px;border:1.5px dashed #e5e5ea">
+      <div style="font-size:32px;margin-bottom:12px">🎪</div>
+      <div style="font-size:16px;font-weight:600;color:#1d1d1f;margin-bottom:6px">No events yet</div>
+      <div style="font-size:13px;color:#8e8e93;margin-bottom:20px">Create your first event to start tracking talent, sponsors, and vendors</div>
+      <button onclick="openAddEvent()" class="btn btn-dark">Create Event</button>
+    </div>`
+    :EVENTS.map(ev=>`<div onclick="openEventDetail('${ev.id}')" style="background:#fff;border:1.5px solid #e5e5ea;border-radius:16px;padding:18px 20px;margin-bottom:12px;cursor:pointer;transition:box-shadow .15s" onmouseenter="this.style.boxShadow='0 4px 16px rgba(0,0,0,.08)'" onmouseleave="this.style.boxShadow='none'">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
+        <div>
+          <div style="font-size:17px;font-weight:700;color:#1d1d1f">${ev.name}</div>
+          <div style="font-size:13px;color:#8e8e93;margin-top:3px">${ev.date?new Date(ev.date).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}):''} ${ev.location?'· '+ev.location:''}</div>
+        </div>
+        <span style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:${statusBg[ev.status||'planning']};color:${statusColor[ev.status||'planning']}">${(ev.status||'planning').charAt(0).toUpperCase()+(ev.status||'planning').slice(1)}</span>
+      </div>
+      <div style="display:flex;gap:20px">
+        <div style="font-size:12px;color:#8e8e93"><span style="font-weight:600;color:#1d1d1f">${(ev.talent||[]).length}</span> Talent</div>
+        <div style="font-size:12px;color:#8e8e93"><span style="font-weight:600;color:#1d9e75">${f((ev.sponsors||[]).reduce((s,x)=>s+(x.committed||0),0))}</span> Committed</div>
+        <div style="font-size:12px;color:#8e8e93"><span style="font-weight:600;color:#1d1d1f">${(ev.vendors||[]).length}</span> Vendors</div>
+        <div style="font-size:12px;color:#8e8e93"><span style="font-weight:600;color:#1d1d1f">${(ev.ros||[]).length}</span> ROS Items</div>
+      </div>
+    </div>`).join('')}`;
+}
+
+function openEventDetail(id){
+  activeEventId=id;
+  activeEventTab='talent';
+  buildEvents();
+}
+
+function renderEventDetail(ev){
+  const el=document.getElementById('events-body');
+  const tabs=['talent','sponsors','vendors','ros','notes'];
+  const tabLabels={talent:'Talent',sponsors:'Sponsors',vendors:'Vendors',ros:'Run of Show',notes:'Notes & Recap'};
+  const statusOpts=['planning','active','complete'];
+
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <button onclick="activeEventId=null;buildEvents()" style="background:none;border:none;cursor:pointer;color:#2980b9;font-size:13px;font-weight:500;display:flex;align-items:center;gap:4px;padding:0;font-family:inherit"><i class="ti ti-arrow-left"></i> All Events</button>
+    </div>
+    <div style="background:#fff;border:1.5px solid #e5e5ea;border-radius:16px;padding:20px;margin-bottom:16px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div>
+          <div style="font-size:22px;font-weight:700;color:#1d1d1f">${ev.name}</div>
+          <div style="font-size:13px;color:#8e8e93;margin-top:4px">${ev.date?new Date(ev.date).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}):''} ${ev.location?'· '+ev.location:''}</div>
+          ${ev.description?`<div style="font-size:13px;color:#6c6c70;margin-top:6px">${ev.description}</div>`:''}
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select onchange="setEventStatus('${ev.id}',this.value)" style="height:30px;padding:0 10px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer">
+            ${statusOpts.map(s=>`<option value="${s}" ${ev.status===s?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}
+          </select>
+          <button onclick="openEditEvent('${ev.id}')" class="btn btn-outline btn-sm" style="display:flex;align-items:center;gap:4px"><i class="ti ti-edit" style="font-size:12px"></i> Edit</button>
+          <button onclick="deleteEvent('${ev.id}')" style="background:#fff0f3;border:1.5px solid #f5c6d0;color:#e34040;-webkit-text-fill-color:#e34040;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px"><i class="ti ti-trash" style="font-size:12px"></i></button>
+        </div>
+      </div>
+    </div>
+    <div class="tabs" style="margin-bottom:16px">
+      ${tabs.map(t=>`<button class="tab${activeEventTab===t?' on':''}" onclick="activeEventTab='${t}';renderEventDetail(EVENTS.find(e=>e.id==='${ev.id}'))">${tabLabels[t]}</button>`).join('')}
+    </div>
+    <div id="event-tab-body"></div>`;
+
+  renderEventTab(ev);
+}
+
+function renderEventTab(ev){
+  const el=document.getElementById('event-tab-body');if(!el)return;
+  if(activeEventTab==='talent') el.innerHTML=buildEventTalent(ev);
+  if(activeEventTab==='sponsors') el.innerHTML=buildEventSponsors(ev);
+  if(activeEventTab==='vendors') el.innerHTML=buildEventVendors(ev);
+  if(activeEventTab==='ros') el.innerHTML=buildEventROS(ev);
+  if(activeEventTab==='notes') el.innerHTML=buildEventNotes(ev);
+}
+
+function buildEventTalent(ev){
+  const talent=ev.talent||[];
+  const statusColor={confirmed:'#1d9e75',invited:'#f59e0b',declined:'#e34040',attended:'#2980b9'};
+  const statusBg={confirmed:'#e8f8f2',invited:'#fffbe6',declined:'#fff0f3',attended:'#eef6ff'};
+  return`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <div style="font-size:14px;font-weight:700">${talent.length} Talent</div>
+    <button onclick="openAddTalent('${ev.id}')" class="btn btn-dark btn-sm" style="display:flex;align-items:center;gap:4px"><i class="ti ti-user-plus" style="font-size:12px"></i> Add Talent</button>
+  </div>`
+  +(!talent.length?'<div style="text-align:center;padding:40px;background:#fff;border-radius:12px;border:1.5px dashed #e5e5ea;color:#8e8e93">No talent added yet</div>'
+  :talent.map((t,i)=>`<div style="background:#fff;border:1.5px solid #e5e5ea;border-radius:12px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px">
+    <div style="width:40px;height:40px;border-radius:10px;background:#1d1d1f;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0">${(t.name||'?')[0]}</div>
+    <div style="flex:1">
+      <div style="font-size:14px;font-weight:600">${t.name}</div>
+      <div style="font-size:12px;color:#8e8e93;margin-top:1px">${t.role||''} ${t.org?'· '+t.org:''}</div>
+      ${t.notes?`<div style="font-size:11px;color:#6c6c70;margin-top:3px">${t.notes}</div>`:''}
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <select onchange="updateTalentStatus('${ev.id}',${i},this.value)" style="height:28px;padding:0 8px;border:1.5px solid #e5e5ea;border-radius:7px;font-size:11px;font-weight:600;font-family:inherit;background:${statusBg[t.status||'invited']};color:${statusColor[t.status||'invited']}">
+        ${['invited','confirmed','attended','declined'].map(s=>`<option value="${s}" ${(t.status||'invited')===s?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}
+      </select>
+      <button onclick="removeTalent('${ev.id}',${i})" style="background:none;border:none;cursor:pointer;color:#c7c7cc;font-size:14px"><i class="ti ti-x"></i></button>
+    </div>
+  </div>`).join(''));
+}
+
+function buildEventSponsors(ev){
+  const sponsors=ev.sponsors||[];
+  const total=sponsors.reduce((s,x)=>s+(x.committed||0),0);
+  return`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <div>
+      <div style="font-size:14px;font-weight:700">${sponsors.length} Sponsors</div>
+      <div style="font-size:12px;color:#1d9e75;font-weight:600;margin-top:2px">${f(total)} total committed</div>
+    </div>
+    <button onclick="openAddSponsor('${ev.id}')" class="btn btn-dark btn-sm" style="display:flex;align-items:center;gap:4px"><i class="ti ti-building" style="font-size:12px"></i> Add Sponsor</button>
+  </div>`
+  +(!sponsors.length?'<div style="text-align:center;padding:40px;background:#fff;border-radius:12px;border:1.5px dashed #e5e5ea;color:#8e8e93">No sponsors added yet</div>'
+  :sponsors.map((s,i)=>`<div style="background:#fff;border:1.5px solid #e5e5ea;border-radius:12px;padding:16px;margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+      <div>
+        <div style="font-size:15px;font-weight:700">${s.name}</div>
+        <div style="font-size:12px;color:#8e8e93;margin-top:2px">${s.contact||''}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="text-align:right">
+          <div style="font-size:16px;font-weight:700;color:#1d9e75">${f(s.committed||0)}</div>
+          <div style="font-size:10px;color:#8e8e93">committed</div>
+        </div>
+        <button onclick="removeSponsor('${ev.id}',${i})" style="background:none;border:none;cursor:pointer;color:#c7c7cc;font-size:14px"><i class="ti ti-x"></i></button>
+      </div>
+    </div>
+    ${s.deliverables?`<div style="font-size:12px;color:#6c6c70;background:#f9f9f9;border-radius:8px;padding:8px 10px"><b>Deliverables:</b> ${s.deliverables}</div>`:''}
+    ${s.activation?`<div style="font-size:12px;color:#6c6c70;background:#f9f9f9;border-radius:8px;padding:8px 10px;margin-top:6px"><b>Activation:</b> ${s.activation}</div>`:''}
+  </div>`).join(''));
+}
+
+function buildEventVendors(ev){
+  const vendors=ev.vendors||[];
+  const totalCost=vendors.reduce((s,x)=>s+(x.cost||0),0);
+  const contractStatus={signed:'#1d9e75',pending:'#f59e0b',none:'#8e8e93'};
+  return`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <div>
+      <div style="font-size:14px;font-weight:700">${vendors.length} Vendors</div>
+      <div style="font-size:12px;color:#e34040;font-weight:600;margin-top:2px">${f(totalCost)} total cost</div>
+    </div>
+    <button onclick="openAddVendor('${ev.id}')" class="btn btn-dark btn-sm" style="display:flex;align-items:center;gap:4px"><i class="ti ti-tool" style="font-size:12px"></i> Add Vendor</button>
+  </div>`
+  +(!vendors.length?'<div style="text-align:center;padding:40px;background:#fff;border-radius:12px;border:1.5px dashed #e5e5ea;color:#8e8e93">No vendors added yet</div>'
+  :vendors.map((v,i)=>`<div style="background:#fff;border:1.5px solid #e5e5ea;border-radius:12px;padding:16px;margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+      <div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="font-size:15px;font-weight:700">${v.name}</div>
+          <span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:5px;background:#f2f2f7;color:#6c6c70">${v.category||'Other'}</span>
+        </div>
+        <div style="font-size:12px;color:#8e8e93;margin-top:2px">${v.contact||''} ${v.phone?'· '+v.phone:''}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="text-align:right">
+          <div style="font-size:16px;font-weight:700;color:#e34040">${f(v.cost||0)}</div>
+          <div style="font-size:10px;color:${contractStatus[v.contract||'none']};font-weight:600">Contract: ${(v.contract||'none').charAt(0).toUpperCase()+(v.contract||'none').slice(1)}</div>
+        </div>
+        <button onclick="removeVendor('${ev.id}',${i})" style="background:none;border:none;cursor:pointer;color:#c7c7cc;font-size:14px"><i class="ti ti-x"></i></button>
+      </div>
+    </div>
+    ${v.notes?`<div style="font-size:12px;color:#6c6c70;background:#f9f9f9;border-radius:8px;padding:8px 10px">${v.notes}</div>`:''}
+  </div>`).join(''));
+}
+
+function buildEventROS(ev){
+  const ros=ev.ros||[];
+  const statusColor={pending:'#8e8e93',inprogress:'#f59e0b',done:'#1d9e75'};
+  return`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <div style="font-size:14px;font-weight:700">${ros.length} Items</div>
+    <button onclick="openAddROS('${ev.id}')" class="btn btn-dark btn-sm" style="display:flex;align-items:center;gap:4px"><i class="ti ti-list" style="font-size:12px"></i> Add Item</button>
+  </div>`
+  +(!ros.length?'<div style="text-align:center;padding:40px;background:#fff;border-radius:12px;border:1.5px dashed #e5e5ea;color:#8e8e93">No run of show items yet</div>'
+  :'<div style="background:#fff;border:1.5px solid #e5e5ea;border-radius:12px;overflow:hidden">'
+  +ros.map((r,i)=>`<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:0.5px solid #f2f2f7">
+    <div style="font-size:12px;font-weight:700;color:#8e8e93;min-width:52px;flex-shrink:0">${r.time||'—'}</div>
+    <div style="flex:1">
+      <div style="font-size:13px;font-weight:600">${r.item}</div>
+      ${r.owner?`<div style="font-size:11px;color:#8e8e93;margin-top:1px">Owner: ${r.owner}</div>`:''}
+    </div>
+    <select onchange="updateROSStatus('${ev.id}',${i},this.value)" style="height:26px;padding:0 6px;border:1.5px solid #e5e5ea;border-radius:6px;font-size:11px;font-weight:600;font-family:inherit;color:${statusColor[r.status||'pending']}">
+      ${['pending','inprogress','done'].map(s=>`<option value="${s}" ${(r.status||'pending')===s?'selected':''}>${{pending:'Pending',inprogress:'In Progress',done:'Done'}[s]}</option>`).join('')}
+    </select>
+    <button onclick="removeROS('${ev.id}',${i})" style="background:none;border:none;cursor:pointer;color:#c7c7cc;font-size:13px"><i class="ti ti-x"></i></button>
+  </div>`).join('')+'</div>');
+}
+
+function buildEventNotes(ev){
+  return`<div style="display:flex;flex-direction:column;gap:16px">
+    <div style="background:#fff;border:1.5px solid #e5e5ea;border-radius:12px;padding:16px">
+      <div style="font-size:12px;font-weight:700;color:#1d1d1f;margin-bottom:8px">Planning Notes</div>
+      <textarea id="ev-notes-plan" style="width:100%;height:120px;border:1.5px solid #e5e5ea;border-radius:8px;padding:10px;font-size:13px;font-family:inherit;resize:vertical;outline:none;line-height:1.5;box-sizing:border-box" placeholder="Pre-event notes, logistics, to-dos...">${ev.notesPlan||''}</textarea>
+    </div>
+    <div style="background:#fff;border:1.5px solid #e5e5ea;border-radius:12px;padding:16px">
+      <div style="font-size:12px;font-weight:700;color:#1d1d1f;margin-bottom:8px">Post-Event Recap</div>
+      <textarea id="ev-notes-recap" style="width:100%;height:120px;border:1.5px solid #e5e5ea;border-radius:8px;padding:10px;font-size:13px;font-family:inherit;resize:vertical;outline:none;line-height:1.5;box-sizing:border-box" placeholder="What happened, what worked, follow-ups...">${ev.notesRecap||''}</textarea>
+    </div>
+    <button onclick="saveEventNotes('${ev.id}')" class="btn btn-dark" style="align-self:flex-end;display:flex;align-items:center;gap:4px"><i class="ti ti-check"></i> Save Notes</button>
+  </div>`;
+}
+
+// Event CRUD
+function openAddEvent(){
+  showEventModal({});
+}
+function openEditEvent(id){
+  const ev=EVENTS.find(e=>e.id===id);if(!ev)return;
+  showEventModal(ev);
+}
+function showEventModal(ev){
+  const existing=document.getElementById('event-modal-overlay');if(existing)existing.remove();
+  const ov=document.createElement('div');
+  ov.id='event-modal-overlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1200;display:flex;align-items:center;justify-content:center';
+  const isNew=!ev.id;
+  ov.innerHTML=`<div style="background:#fff;border-radius:18px;width:520px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.25);overflow:hidden">
+    <div style="background:#1d1d1f;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
+      <div style="font-size:15px;font-weight:700;color:#fff">${isNew?'New Event':'Edit Event'}</div>
+      <button onclick="document.getElementById('event-modal-overlay').remove()" style="background:rgba(255,255,255,.12);border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+    <div style="padding:20px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:12px">
+      <div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Event Name *</div>
+        <input id="ev-name" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none;box-sizing:border-box" value="${ev.name||''}"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Date</div>
+          <input id="ev-date" type="date" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none;box-sizing:border-box" value="${ev.date||''}"></div>
+        <div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Status</div>
+          <select id="ev-status" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none">
+            ${['planning','active','complete'].map(s=>`<option value="${s}" ${(ev.status||'planning')===s?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}
+          </select></div>
+      </div>
+      <div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Location</div>
+        <input id="ev-location" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none;box-sizing:border-box" value="${ev.location||''}" placeholder="Venue, City, etc."></div>
+      <div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Description</div>
+        <textarea id="ev-desc" style="width:100%;height:72px;padding:9px 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none;resize:none;line-height:1.5;box-sizing:border-box" placeholder="Event overview...">${ev.description||''}</textarea></div>
+    </div>
+    <div style="padding:14px 20px;border-top:1px solid #f2f2f7;display:flex;justify-content:space-between;background:#fafafa;flex-shrink:0">
+      <button onclick="document.getElementById('event-modal-overlay').remove()" style="height:36px;padding:0 18px;border-radius:8px;border:1.5px solid #e5e5ea;background:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Cancel</button>
+      <button onclick="saveEvent('${ev.id||''}')" style="height:36px;padding:0 22px;border-radius:8px;border:none;background:#1d1d1f;color:#fff;-webkit-text-fill-color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">${isNew?'Create Event':'Save Changes'}</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+
+function saveEvent(id){
+  const name=(document.getElementById('ev-name').value||'').trim();
+  if(!name){alert('Event name is required');return;}
+  const ev={
+    id:id||'ev-'+Date.now(),
+    name,
+    date:document.getElementById('ev-date').value||'',
+    status:document.getElementById('ev-status').value||'planning',
+    location:document.getElementById('ev-location').value||'',
+    description:document.getElementById('ev-desc').value||'',
+  };
+  if(id){
+    const idx=EVENTS.findIndex(e=>e.id===id);
+    if(idx>=0){const existing=EVENTS[idx];EVENTS[idx]={...existing,...ev};}
+  } else {
+    ev.talent=[];ev.sponsors=[];ev.vendors=[];ev.ros=[];ev.notesPlan='';ev.notesRecap='';
+    EVENTS.push(ev);
+  }
+  document.getElementById('event-modal-overlay').remove();
+  if(id) activeEventId=id;
+  buildEvents();
+}
+
+function deleteEvent(id){
+  if(!confirm('Delete this event?')) return;
+  EVENTS=EVENTS.filter(e=>e.id!==id);
+  activeEventId=null;
+  buildEvents();
+}
+function setEventStatus(id,status){
+  const ev=EVENTS.find(e=>e.id===id);if(!ev)return;
+  ev.status=status;
+}
+
+// Talent
+function openAddTalent(evId){
+  const ev=EVENTS.find(e=>e.id===evId);if(!ev)return;
+  const existing=document.getElementById('talent-modal');if(existing)existing.remove();
+  const ov=document.createElement('div');ov.id='talent-modal';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1300;display:flex;align-items:center;justify-content:center';
+  // Pull athletes from tracker as quick-add options
+  const trackerAthletes=A.map(a=>`<div onclick="quickAddTalent('${evId}','${a.f} ${a.l}','Athlete','Virginia Tech')" style="padding:8px 12px;cursor:pointer;border-bottom:0.5px solid #f2f2f7;font-size:13px;display:flex;align-items:center;justify-content:space-between" onmouseenter="this.style.background='#f9f9f9'" onmouseleave="this.style.background=''">${a.f} ${a.l} <span style="font-size:11px;color:#8e8e93">${a.pos}</span></div>`).join('');
+  ov.innerHTML=`<div style="background:#fff;border-radius:16px;width:480px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.25);overflow:hidden">
+    <div style="background:#1d1d1f;padding:14px 18px;display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:14px;font-weight:700;color:#fff">Add Talent</div>
+      <button onclick="document.getElementById('talent-modal').remove()" style="background:rgba(255,255,255,.12);border:none;border-radius:8px;width:28px;height:28px;cursor:pointer;color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+    ${trackerAthletes?`<div style="flex-shrink:0"><div style="padding:10px 16px;font-size:10px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;background:#f9f9f9;border-bottom:0.5px solid #e5e5ea">Quick-add from roster</div>${trackerAthletes}</div>`:''}
+    <div style="padding:16px;overflow-y:auto;flex:1">
+      <div style="font-size:10px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Or add manually</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <input id="tal-name" placeholder="Full name *" style="height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <input id="tal-role" placeholder="Role (e.g. Celebrity, Coach)" style="height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
+          <input id="tal-org" placeholder="Organization" style="height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
+        </div>
+        <input id="tal-notes" placeholder="Notes" style="height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
+      </div>
+    </div>
+    <div style="padding:12px 16px;border-top:1px solid #f2f2f7;display:flex;justify-content:space-between;background:#fafafa">
+      <button onclick="document.getElementById('talent-modal').remove()" style="height:34px;padding:0 16px;border-radius:8px;border:1.5px solid #e5e5ea;background:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Cancel</button>
+      <button onclick="saveTalent('${evId}')" style="height:34px;padding:0 18px;border-radius:8px;border:none;background:#1d1d1f;color:#fff;-webkit-text-fill-color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Add Talent</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+
+function quickAddTalent(evId,name,role,org){
+  const ev=EVENTS.find(e=>e.id===evId);if(!ev)return;
+  if(!ev.talent) ev.talent=[];
+  if(ev.talent.find(t=>t.name===name)){document.getElementById('talent-modal').remove();return;}
+  ev.talent.push({name,role,org,status:'invited',notes:''});
+  document.getElementById('talent-modal').remove();
+  renderEventDetail(ev);
+}
+function saveTalent(evId){
+  const ev=EVENTS.find(e=>e.id===evId);if(!ev)return;
+  const name=(document.getElementById('tal-name').value||'').trim();if(!name)return;
+  if(!ev.talent) ev.talent=[];
+  ev.talent.push({name,role:document.getElementById('tal-role').value||'',org:document.getElementById('tal-org').value||'',notes:document.getElementById('tal-notes').value||'',status:'invited'});
+  document.getElementById('talent-modal').remove();
+  renderEventDetail(ev);
+}
+function removeTalent(evId,i){const ev=EVENTS.find(e=>e.id===evId);if(!ev)return;ev.talent.splice(i,1);renderEventDetail(ev);}
+function updateTalentStatus(evId,i,status){const ev=EVENTS.find(e=>e.id===evId);if(!ev||!ev.talent[i])return;ev.talent[i].status=status;}
+
+// Sponsors
+function openAddSponsor(evId){
+  const existing=document.getElementById('sponsor-modal');if(existing)existing.remove();
+  const ov=document.createElement('div');ov.id='sponsor-modal';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1300;display:flex;align-items:center;justify-content:center';
+  ov.innerHTML=`<div style="background:#fff;border-radius:16px;width:480px;box-shadow:0 30px 80px rgba(0,0,0,.25);overflow:hidden">
+    <div style="background:#1d1d1f;padding:14px 18px;display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:14px;font-weight:700;color:#fff">Add Sponsor</div>
+      <button onclick="document.getElementById('sponsor-modal').remove()" style="background:rgba(255,255,255,.12);border:none;border-radius:8px;width:28px;height:28px;cursor:pointer;color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+    <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
+      <input id="sp-name" placeholder="Company / Sponsor name *" style="height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="display:flex;align-items:center;border:1.5px solid #e5e5ea;border-radius:8px;overflow:hidden;background:#f9f9f9">
+          <span style="padding:0 10px;color:#1d9e75;font-weight:700;border-right:1px solid #e5e5ea;height:34px;display:flex;align-items:center">$</span>
+          <input id="sp-committed" type="number" placeholder="Committed amount" style="border:none;background:transparent;flex:1;height:34px;padding:0 10px;font-size:13px;font-family:inherit;outline:none">
+        </div>
+        <input id="sp-contact" placeholder="Contact name / email" style="height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
+      </div>
+      <textarea id="sp-deliverables" placeholder="Deliverables (logo placement, speaking slot, etc.)" style="height:60px;padding:9px 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;resize:none"></textarea>
+      <textarea id="sp-activation" placeholder="Activation details" style="height:60px;padding:9px 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;resize:none"></textarea>
+    </div>
+    <div style="padding:12px 16px;border-top:1px solid #f2f2f7;display:flex;justify-content:space-between;background:#fafafa">
+      <button onclick="document.getElementById('sponsor-modal').remove()" style="height:34px;padding:0 16px;border-radius:8px;border:1.5px solid #e5e5ea;background:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Cancel</button>
+      <button onclick="saveSponsor('${evId}')" style="height:34px;padding:0 18px;border-radius:8px;border:none;background:#1d1d1f;color:#fff;-webkit-text-fill-color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Add Sponsor</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+function saveSponsor(evId){
+  const ev=EVENTS.find(e=>e.id===evId);if(!ev)return;
+  const name=(document.getElementById('sp-name').value||'').trim();if(!name)return;
+  if(!ev.sponsors)ev.sponsors=[];
+  ev.sponsors.push({name,committed:parseFloat(document.getElementById('sp-committed').value)||0,contact:document.getElementById('sp-contact').value||'',deliverables:document.getElementById('sp-deliverables').value||'',activation:document.getElementById('sp-activation').value||''});
+  document.getElementById('sponsor-modal').remove();
+  renderEventDetail(ev);
+}
+function removeSponsor(evId,i){const ev=EVENTS.find(e=>e.id===evId);if(!ev)return;ev.sponsors.splice(i,1);renderEventDetail(ev);}
+
+// Vendors
+function openAddVendor(evId){
+  const existing=document.getElementById('vendor-modal');if(existing)existing.remove();
+  const ov=document.createElement('div');ov.id='vendor-modal';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1300;display:flex;align-items:center;justify-content:center';
+  ov.innerHTML=`<div style="background:#fff;border-radius:16px;width:480px;box-shadow:0 30px 80px rgba(0,0,0,.25);overflow:hidden">
+    <div style="background:#1d1d1f;padding:14px 18px;display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:14px;font-weight:700;color:#fff">Add Vendor</div>
+      <button onclick="document.getElementById('vendor-modal').remove()" style="background:rgba(255,255,255,.12);border:none;border-radius:8px;width:28px;height:28px;cursor:pointer;color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+    <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <input id="vn-name" placeholder="Vendor name *" style="height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
+        <select id="vn-category" style="height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;background:#f9f9f9">
+          ${['Catering','AV / Tech','Event Staff','Security','Photography','Transportation','Venue','Other'].map(c=>`<option>${c}</option>`).join('')}
+        </select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <input id="vn-contact" placeholder="Contact name" style="height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
+        <input id="vn-phone" placeholder="Phone / Email" style="height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div style="display:flex;align-items:center;border:1.5px solid #e5e5ea;border-radius:8px;overflow:hidden;background:#f9f9f9">
+          <span style="padding:0 10px;color:#e34040;font-weight:700;border-right:1px solid #e5e5ea;height:34px;display:flex;align-items:center">$</span>
+          <input id="vn-cost" type="number" placeholder="Cost" style="border:none;background:transparent;flex:1;height:34px;padding:0 10px;font-size:13px;font-family:inherit;outline:none">
+        </div>
+        <select id="vn-contract" style="height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;background:#f9f9f9">
+          <option value="none">No contract yet</option>
+          <option value="pending">Contract pending</option>
+          <option value="signed">Contract signed</option>
+        </select>
+      </div>
+      <textarea id="vn-notes" placeholder="Notes" style="height:56px;padding:9px 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;resize:none"></textarea>
+    </div>
+    <div style="padding:12px 16px;border-top:1px solid #f2f2f7;display:flex;justify-content:space-between;background:#fafafa">
+      <button onclick="document.getElementById('vendor-modal').remove()" style="height:34px;padding:0 16px;border-radius:8px;border:1.5px solid #e5e5ea;background:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Cancel</button>
+      <button onclick="saveVendor('${evId}')" style="height:34px;padding:0 18px;border-radius:8px;border:none;background:#1d1d1f;color:#fff;-webkit-text-fill-color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Add Vendor</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+function saveVendor(evId){
+  const ev=EVENTS.find(e=>e.id===evId);if(!ev)return;
+  const name=(document.getElementById('vn-name').value||'').trim();if(!name)return;
+  if(!ev.vendors)ev.vendors=[];
+  ev.vendors.push({name,category:document.getElementById('vn-category').value,contact:document.getElementById('vn-contact').value||'',phone:document.getElementById('vn-phone').value||'',cost:parseFloat(document.getElementById('vn-cost').value)||0,contract:document.getElementById('vn-contract').value||'none',notes:document.getElementById('vn-notes').value||''});
+  document.getElementById('vendor-modal').remove();
+  renderEventDetail(ev);
+}
+function removeVendor(evId,i){const ev=EVENTS.find(e=>e.id===evId);if(!ev)return;ev.vendors.splice(i,1);renderEventDetail(ev);}
+
+// Run of Show
+function openAddROS(evId){
+  const existing=document.getElementById('ros-modal');if(existing)existing.remove();
+  const ov=document.createElement('div');ov.id='ros-modal';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1300;display:flex;align-items:center;justify-content:center';
+  ov.innerHTML=`<div style="background:#fff;border-radius:16px;width:420px;box-shadow:0 30px 80px rgba(0,0,0,.25);overflow:hidden">
+    <div style="background:#1d1d1f;padding:14px 18px;display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:14px;font-weight:700;color:#fff">Add ROS Item</div>
+      <button onclick="document.getElementById('ros-modal').remove()" style="background:rgba(255,255,255,.12);border:none;border-radius:8px;width:28px;height:28px;cursor:pointer;color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+    <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
+      <input id="ros-item" placeholder="Item description *" style="height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <input id="ros-time" placeholder="Time (e.g. 6:00 PM)" style="height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
+        <input id="ros-owner" placeholder="Owner / responsible" style="height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
+      </div>
+    </div>
+    <div style="padding:12px 16px;border-top:1px solid #f2f2f7;display:flex;justify-content:space-between;background:#fafafa">
+      <button onclick="document.getElementById('ros-modal').remove()" style="height:34px;padding:0 16px;border-radius:8px;border:1.5px solid #e5e5ea;background:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Cancel</button>
+      <button onclick="saveROS('${evId}')" style="height:34px;padding:0 18px;border-radius:8px;border:none;background:#1d1d1f;color:#fff;-webkit-text-fill-color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Add Item</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+function saveROS(evId){
+  const ev=EVENTS.find(e=>e.id===evId);if(!ev)return;
+  const item=(document.getElementById('ros-item').value||'').trim();if(!item)return;
+  if(!ev.ros)ev.ros=[];
+  ev.ros.push({item,time:document.getElementById('ros-time').value||'',owner:document.getElementById('ros-owner').value||'',status:'pending'});
+  document.getElementById('ros-modal').remove();
+  renderEventDetail(ev);
+}
+function removeROS(evId,i){const ev=EVENTS.find(e=>e.id===evId);if(!ev)return;ev.ros.splice(i,1);renderEventDetail(ev);}
+function updateROSStatus(evId,i,status){const ev=EVENTS.find(e=>e.id===evId);if(!ev||!ev.ros[i])return;ev.ros[i].status=status;}
+
+// Notes
+function saveEventNotes(evId){
+  const ev=EVENTS.find(e=>e.id===evId);if(!ev)return;
+  ev.notesPlan=document.getElementById('ev-notes-plan')?.value||'';
+  ev.notesRecap=document.getElementById('ev-notes-recap')?.value||'';
+  syncStatus('Notes saved ✓');
+}
+
 
 function applyRole(role){
   USER_ROLE=role;
