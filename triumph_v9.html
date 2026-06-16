@@ -1078,11 +1078,12 @@ function syncStatus(msg, ok=true){
 async function loadFromSupabase(){
   syncStatus('Loading…');
   try {
-    const [{data:athletes,error:ae},{data:schedules},{data:revShareData},{data:eventsData}] = await Promise.all([
+    const [{data:athletes,error:ae},{data:schedules},{data:revShareData},{data:eventsData},{data:companiesData}] = await Promise.all([
       sb.from('athletes').select('*').eq('active',true).order('rank_priority',{ascending:true,nullsFirst:false}),
       sb.from('payment_schedule').select('*').in('year',[2026,2027]),
       sb.from('rev_share').select('*').in('year',[2026,2027]),
-      sb.from('events').select('*').order('date',{ascending:true})
+      sb.from('events').select('*').order('date',{ascending:true}),
+      sb.from('companies').select('*').order('priority',{ascending:true})
     ]);
     if(ae) throw ae;
 
@@ -1112,6 +1113,18 @@ async function loadFromSupabase(){
       const k=a.f+'_'+a.l;
       if(!revShare[k]) revShare[k]={};
       revShare[k][r.month+'_'+(r.year||2026)]=r.amount;
+    });
+
+    // Load companies
+    CO.length=0;
+    (companiesData||[]).forEach(c=>{
+      CO.push({
+        id:c.id,
+        name:c.name,
+        committed:c.committed||0,
+        athletes:Array.isArray(c.athletes)?c.athletes:(c.athletes?JSON.parse(c.athletes):[]),
+        priority:c.priority||0
+      });
     });
 
     syncStatus('Synced ✓');
@@ -1492,21 +1505,26 @@ async function saveNewCompany(){
   btn.disabled=true;btn.textContent='Saving...';
   try{
     const {data:newCo,error:ce}=await sb.from('companies').insert({
-      name,logo_initial:name[0].toUpperCase(),rank_number:CO.length+1
+      name,committed,logo_initial:name[0].toUpperCase(),rank_number:CO.length+1,
+      priority:CO.length,athletes:JSON.stringify([])
     }).select().single();
     if(ce) throw ce;
+    const athleteObjs=selectedKeys.map(key=>{
+      const a=A.find(x=>x.f+'_'+x.l===key);
+      return a?{n:a.f+' '+a.l,pos:a.pos,deal:Math.round(committed/(selectedKeys.length||1)),hist:[]}:null;
+    }).filter(Boolean);
     if(selectedKeys.length){
       const perAth=selectedKeys.length>0?Math.round(committed/selectedKeys.length):0;
       const links=selectedKeys.map(key=>{
         const a=A.find(x=>x.f+'_'+x.l===key);
         return a?{company_id:newCo.id,athlete_id:a.id,deal_amount:perAth}:null;
       }).filter(Boolean);
-      if(links.length){const {error:le}=await sb.from('company_athletes').insert(links);if(le) throw le;}
+      if(links.length){
+        await sb.from('companies').update({athletes:JSON.stringify(athleteObjs)}).eq('id',newCo.id);
+        const {error:le}=await sb.from('company_athletes').insert(links);if(le) console.warn(le);
+      }
     }
-    CO.push({id:newCo.id,name,committed,athletes:selectedKeys.map(key=>{
-      const a=A.find(x=>x.f+'_'+x.l===key);
-      return a?{n:a.f+' '+a.l,pos:a.pos,deal:Math.round(committed/(selectedKeys.length||1)),hist:[]}:null;
-    }).filter(Boolean)});
+    CO.push({id:newCo.id,name,committed,athletes:athleteObjs,priority:CO.length-1});
     document.getElementById('add-co-overlay').remove();
     renderCos();
     syncStatus('Company added ✓');
@@ -4472,6 +4490,12 @@ function loadPlannerState(){
   try{const s=localStorage.getItem('triumphPlannerSlots');if(s) plannerSlots=JSON.parse(s);}catch(e){}
 }
 
+async function saveCompanyPriorities(){
+  try{
+    await Promise.all(CO.map((c,i)=>sb.from('companies').update({priority:i,rank_number:i+1,committed:c.committed,athletes:JSON.stringify(c.athletes||[])}).eq('id',c.id)));
+  }catch(e){console.warn('saveCompanyPriorities:',e);}
+}
+
 function setCOMode(v){
   coGridMode=v;
   const grid=document.getElementById('co-drag-grid');
@@ -4506,6 +4530,7 @@ function initDrag(){
       const cards=[...grid.querySelectorAll('.cocard')];
       const fi=cards.indexOf(dragSrc),ti=cards.indexOf(card);
       const tmp=CO[fi];CO[fi]=CO[ti];CO[ti]=tmp;
+      saveCompanyPriorities();
       renderCos();if(coGridMode==='list') setCOMode('list');
     });
   });
