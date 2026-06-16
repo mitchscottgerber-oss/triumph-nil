@@ -1050,10 +1050,11 @@ function syncStatus(msg, ok=true){
 async function loadFromSupabase(){
   syncStatus('Loading…');
   try {
-    const [{data:athletes,error:ae},{data:schedules},{data:revShareData}] = await Promise.all([
+    const [{data:athletes,error:ae},{data:schedules},{data:revShareData},{data:eventsData}] = await Promise.all([
       sb.from('athletes').select('*').eq('active',true).order('rank_priority',{ascending:true,nullsFirst:false}),
       sb.from('payment_schedule').select('*').in('year',[2026,2027]),
-      sb.from('rev_share').select('*').in('year',[2026,2027])
+      sb.from('rev_share').select('*').in('year',[2026,2027]),
+      sb.from('events').select('*').order('date',{ascending:true})
     ]);
     if(ae) throw ae;
 
@@ -1086,6 +1087,20 @@ async function loadFromSupabase(){
     });
 
     syncStatus('Synced ✓');
+
+    // Load events
+    EVENTS.length=0;
+    (eventsData||[]).forEach(e=>{
+      EVENTS.push({
+        id:e.id,name:e.name,date:e.date||'',status:e.status||'planning',
+        location:e.location||'',description:e.description||'',
+        talent:Array.isArray(e.talent)?e.talent:(e.talent?JSON.parse(e.talent):[]),
+        sponsors:Array.isArray(e.sponsors)?e.sponsors:(e.sponsors?JSON.parse(e.sponsors):[]),
+        vendors:Array.isArray(e.vendors)?e.vendors:(e.vendors?JSON.parse(e.vendors):[]),
+        ros:Array.isArray(e.ros)?e.ros:(e.ros?JSON.parse(e.ros):[]),
+        notesPlan:e.notes_plan||'',notesRecap:e.notes_recap||''
+      });
+    });
   } catch(e){
     syncStatus('Sync error: '+e.message, false);
   }
@@ -2564,6 +2579,23 @@ let EVENTS=[];
 let activeEventId=null;
 let activeEventTab='talent';
 
+async function saveEventToSupabase(ev){
+  try{
+    const row={
+      id:ev.id,name:ev.name,date:ev.date||null,status:ev.status||'planning',
+      location:ev.location||'',description:ev.description||'',
+      talent:JSON.stringify(ev.talent||[]),
+      sponsors:JSON.stringify(ev.sponsors||[]),
+      vendors:JSON.stringify(ev.vendors||[]),
+      ros:JSON.stringify(ev.ros||[]),
+      notes_plan:ev.notesPlan||'',notes_recap:ev.notesRecap||''
+    };
+    const {error}=await sb.from('events').upsert(row,{onConflict:'id'});
+    if(error) throw error;
+    syncStatus('Saved ✓');
+  }catch(e){syncStatus('Save error: '+e.message,false);}
+}
+
 function buildEvents(){
   const el=document.getElementById('events-body');if(!el)return;
   if(activeEventId){
@@ -2903,6 +2935,7 @@ function saveEditTalent(evId,i){
   t.notes=(document.getElementById('et-notes').value||'').trim();
   if(USER_ROLE!=='activation'&&document.getElementById('et-fee')) t.fee=parseFloat(document.getElementById('et-fee').value)||0;
   document.getElementById('edit-talent-modal').remove();
+  saveEventToSupabase(ev);
   renderEventDetail(ev);
 }
 
@@ -2984,6 +3017,7 @@ function saveEditROS(evId,i){
   ev.ros[i].talent=(document.getElementById('re-talent').value||'').trim();
   ev.ros[i].notes=(document.getElementById('re-notes').value||'').trim();
   document.getElementById('ros-edit-modal').remove();
+  saveEventToSupabase(ev);
   renderEventDetail(ev);
 }
 
@@ -3089,18 +3123,22 @@ function saveEvent(id){
   }
   document.getElementById('event-modal-overlay').remove();
   if(id) activeEventId=id;
+  const savedEv=EVENTS.find(e=>e.id===ev.id);
+  if(savedEv) saveEventToSupabase(savedEv);
   buildEvents();
 }
 
-function deleteEvent(id){
+async function deleteEvent(id){
   if(!confirm('Delete this event?')) return;
   EVENTS=EVENTS.filter(e=>e.id!==id);
   activeEventId=null;
+  try{await sb.from('events').delete().eq('id',id);}catch(e){console.warn('delete error',e);}
   buildEvents();
 }
 function setEventStatus(id,status){
   const ev=EVENTS.find(e=>e.id===id);if(!ev)return;
   ev.status=status;
+  saveEventToSupabase(ev);
 }
 
 // Talent
@@ -3150,9 +3188,10 @@ function saveTalent(evId){
   if(!ev.talent) ev.talent=[];
   ev.talent.push({name,role:document.getElementById('tal-role').value||'',org:document.getElementById('tal-org').value||'',notes:document.getElementById('tal-notes').value||'',status:'invited'});
   document.getElementById('talent-modal').remove();
+  saveEventToSupabase(ev);
   renderEventDetail(ev);
 }
-function removeTalent(evId,i){const ev=EVENTS.find(e=>e.id===evId);if(!ev)return;ev.talent.splice(i,1);renderEventDetail(ev);}
+function removeTalent(evId,i){const ev=EVENTS.find(e=>e.id===evId);if(!ev)return;ev.talent.splice(i,1);saveEventToSupabase(ev);renderEventDetail(ev);}
 function updateTalentStatus(evId,i,status){const ev=EVENTS.find(e=>e.id===evId);if(!ev||!ev.talent[i])return;ev.talent[i].status=status;}
 
 // Sponsors
@@ -3190,9 +3229,10 @@ function saveSponsor(evId){
   if(!ev.sponsors)ev.sponsors=[];
   ev.sponsors.push({name,committed:parseFloat(document.getElementById('sp-committed').value)||0,contact:document.getElementById('sp-contact').value||'',deliverables:document.getElementById('sp-deliverables').value||'',activation:document.getElementById('sp-activation').value||''});
   document.getElementById('sponsor-modal').remove();
+  saveEventToSupabase(ev);
   renderEventDetail(ev);
 }
-function removeSponsor(evId,i){const ev=EVENTS.find(e=>e.id===evId);if(!ev)return;ev.sponsors.splice(i,1);renderEventDetail(ev);}
+function removeSponsor(evId,i){const ev=EVENTS.find(e=>e.id===evId);if(!ev)return;ev.sponsors.splice(i,1);saveEventToSupabase(ev);renderEventDetail(ev);}
 
 // Vendors
 function openAddVendor(evId){
@@ -3241,9 +3281,10 @@ function saveVendor(evId){
   if(!ev.vendors)ev.vendors=[];
   ev.vendors.push({name,category:document.getElementById('vn-category').value,contact:document.getElementById('vn-contact').value||'',phone:document.getElementById('vn-phone').value||'',cost:parseFloat(document.getElementById('vn-cost').value)||0,contract:document.getElementById('vn-contract').value||'none',notes:document.getElementById('vn-notes').value||''});
   document.getElementById('vendor-modal').remove();
+  saveEventToSupabase(ev);
   renderEventDetail(ev);
 }
-function removeVendor(evId,i){const ev=EVENTS.find(e=>e.id===evId);if(!ev)return;ev.vendors.splice(i,1);renderEventDetail(ev);}
+function removeVendor(evId,i){const ev=EVENTS.find(e=>e.id===evId);if(!ev)return;ev.vendors.splice(i,1);saveEventToSupabase(ev);renderEventDetail(ev);}
 
 // Run of Show
 function openAddROS(evId){
@@ -3303,9 +3344,10 @@ function saveROS(evId){
     notes:document.getElementById('ros-notes')?.value||''
   });
   document.getElementById('ros-modal').remove();
+  saveEventToSupabase(ev);
   renderEventDetail(ev);
 }
-function removeROS(evId,i){const ev=EVENTS.find(e=>e.id===evId);if(!ev)return;ev.ros.splice(i,1);renderEventDetail(ev);}
+function removeROS(evId,i){const ev=EVENTS.find(e=>e.id===evId);if(!ev)return;ev.ros.splice(i,1);saveEventToSupabase(ev);renderEventDetail(ev);}
 function updateROSStatus(evId,i,status){const ev=EVENTS.find(e=>e.id===evId);if(!ev||!ev.ros[i])return;ev.ros[i].status=status;}
 
 // Notes
@@ -3313,7 +3355,7 @@ function saveEventNotes(evId){
   const ev=EVENTS.find(e=>e.id===evId);if(!ev)return;
   ev.notesPlan=document.getElementById('ev-notes-plan')?.value||'';
   ev.notesRecap=document.getElementById('ev-notes-recap')?.value||'';
-  syncStatus('Notes saved ✓');
+  saveEventToSupabase(ev);
 }
 
 
