@@ -1146,18 +1146,8 @@ function doSwitchSport(sport) {
 
 function getAthletesBySport(sport) {
   return A.filter(a => {
-    // Derive sport from position if not set in DB
-    let s=a.sport;
-    if(!s||s==='Football'){
-      if(a.pos==='BSB') s='Baseball';
-      else if(a.pos==='MBB') s='Basketball-M';
-      else if(a.pos==='WBB') s='Basketball-W';
-      else s='Football';
-    }
-    // Cache derived sport back onto athlete object
-    a.sport=s;
-    if(sport==='Football') return s==='Football';
-    return s===sport;
+    const s = a.sport || 'Football';
+    return s === sport;
   });
 }
 
