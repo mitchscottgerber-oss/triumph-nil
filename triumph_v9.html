@@ -1098,7 +1098,8 @@ async function loadFromSupabase(){
         sponsors:Array.isArray(e.sponsors)?e.sponsors:(e.sponsors?JSON.parse(e.sponsors):[]),
         vendors:Array.isArray(e.vendors)?e.vendors:(e.vendors?JSON.parse(e.vendors):[]),
         ros:Array.isArray(e.ros)?e.ros:(e.ros?JSON.parse(e.ros):[]),
-        notesPlan:e.notes_plan||'',notesRecap:e.notes_recap||''
+        notesPlan:e.notes_plan||'',notesRecap:e.notes_recap||'',
+        budget:typeof e.budget==='object'?e.budget:(e.budget?JSON.parse(e.budget):{expenses:[],nilgoActivations:[]})
       });
     });
   } catch(e){
@@ -2589,7 +2590,8 @@ async function saveEventToSupabase(ev){
       sponsors:JSON.stringify(ev.sponsors||[]),
       vendors:JSON.stringify(ev.vendors||[]),
       ros:JSON.stringify(ev.ros||[]),
-      notes_plan:ev.notesPlan||'',notes_recap:ev.notesRecap||''
+      notes_plan:ev.notesPlan||'',notes_recap:ev.notesRecap||'',
+      budget:JSON.stringify(ev.budget||{expenses:[],nilgoActivations:[]})
     };
     const {data,error}=await sb.from('events').upsert(row,{onConflict:'id'});
     if(error){console.error('Supabase events error:', error);throw error;}
@@ -2947,115 +2949,184 @@ function saveEditTalent(evId,i){
 }
 
 function buildEventBudget(ev){
-  // Income
+  if(!ev.budget) ev.budget={expenses:[],nilgoActivations:[]};
+  const exp=ev.budget.expenses||[];
+  const acts=ev.budget.nilgoActivations||[];
+
+  const totalExp=exp.reduce((s,x)=>s+(parseFloat(x.amount)||0),0);
+  const totalNilgo=acts.reduce((s,x)=>s+((parseFloat(x.perAthlete)||0)*(parseInt(x.athletes)||0)),0);
+  const totalNilgoCleared=acts.filter(x=>x.status==='cleared').reduce((s,x)=>s+((parseFloat(x.perAthlete)||0)*(parseInt(x.athletes)||0)),0);
   const sponsorTotal=(ev.sponsors||[]).reduce((s,x)=>s+(x.committed||0),0);
+  const net=sponsorTotal-totalExp-totalNilgo;
 
-  // NILGo cleared — sum of talent fees marked as NILGo
-  const talentFeeTotal=(ev.talent||[]).reduce((s,t)=>s+(t.fee||0),0);
-  const nilgoCleared=(ev.talent||[]).filter(t=>t.nilgoStatus==='cleared').reduce((s,t)=>s+(t.fee||0),0);
-  const nilgoPending=(ev.talent||[]).filter(t=>!t.nilgoStatus||t.nilgoStatus==='pending').reduce((s,t)=>s+(t.fee||0),0);
+  const expCategories=['Venue','Catering','AV / Equipment','Hotel','Travel','Staffing','Marketing','Other'];
+  const nilgoStatuses={pending:'#f59e0b',submitted:'#2980b9',cleared:'#1d9e75'};
 
-  // Costs
-  const vendorTotal=(ev.vendors||[]).reduce((s,x)=>s+(x.cost||0),0);
-  const totalCost=vendorTotal+talentFeeTotal;
-  const netIncome=sponsorTotal-totalCost;
+  return`<div style="max-width:760px;display:flex;flex-direction:column;gap:16px">
 
-  const row=(label,val,color,sub)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:0.5px solid #f2f2f7">
-    <div><div style="font-size:13px;font-weight:500;color:#1d1d1f">${label}</div>${sub?`<div style="font-size:11px;color:#8e8e93;margin-top:1px">${sub}</div>`:''}</div>
-    <div style="font-size:14px;font-weight:700;color:${color||'#1d1d1f'}">${typeof val==='number'?f(val):val}</div>
-  </div>`;
-
-  const section=(title,color,content)=>`<div style="background:#fff;border:1.5px solid #e5e5ea;border-radius:14px;padding:16px 20px;margin-bottom:14px">
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:${color};margin-bottom:4px">${title}</div>
-    ${content}
-  </div>`;
-
-  // Sponsor breakdown rows
-  const sponsorRows=(ev.sponsors||[]).length
-    ?(ev.sponsors||[]).map(s=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:0.5px solid #f2f2f7">
-      <div><div style="font-size:13px;font-weight:500">${s.name}</div>${s.contact?`<div style="font-size:11px;color:#8e8e93">${s.contact}</div>`:''}</div>
-      <div style="font-size:13px;font-weight:700;color:#1d9e75">${f(s.committed||0)}</div>
-    </div>`).join('')
-    :'<div style="color:#8e8e93;font-size:13px;padding:8px 0">No sponsors added</div>';
-
-  // Talent fee rows with NILGo status toggle
-  const talentRows=(ev.talent||[]).length
-    ?(ev.talent||[]).filter(t=>t.fee>0).map((t,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:0.5px solid #f2f2f7">
-      <div>
-        <div style="font-size:13px;font-weight:500">${t.name}</div>
-        <div style="font-size:11px;color:#8e8e93;margin-top:1px">${t.role||'Talent'}</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <select onchange="updateTalentNilgoStatus('${ev.id}',${i},this.value)" style="height:26px;padding:0 8px;border:1.5px solid #e5e5ea;border-radius:6px;font-size:11px;font-weight:600;font-family:inherit;color:${t.nilgoStatus==='cleared'?'#1d9e75':t.nilgoStatus==='submitted'?'#2980b9':'#f59e0b'}">
-          <option value="pending" ${(!t.nilgoStatus||t.nilgoStatus==='pending')?'selected':''}>Pending NILGo</option>
-          <option value="submitted" ${t.nilgoStatus==='submitted'?'selected':''}>Submitted</option>
-          <option value="cleared" ${t.nilgoStatus==='cleared'?'selected':''}>NILGo Cleared</option>
-        </select>
-        <div style="font-size:13px;font-weight:700;color:#8e44ad">${f(t.fee||0)}</div>
-      </div>
-    </div>`).join('')
-    :'<div style="color:#8e8e93;font-size:13px;padding:8px 0">No talent fees set — add fees in the Talent tab</div>';
-
-  // Vendor breakdown rows
-  const vendorRows=(ev.vendors||[]).length
-    ?(ev.vendors||[]).map(v=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:0.5px solid #f2f2f7">
-      <div><div style="font-size:13px;font-weight:500">${v.name}</div><div style="font-size:11px;color:#8e8e93">${v.category||''}</div></div>
-      <div style="font-size:13px;font-weight:700;color:#e34040">${f(v.cost||0)}</div>
-    </div>`).join('')
-    :'<div style="color:#8e8e93;font-size:13px;padding:8px 0">No vendors added</div>';
-
-  return`<div style="max-width:680px">
-
-    <!-- Summary bar -->
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:16px">
-      <div style="background:#e8f8f2;border-radius:12px;padding:14px;text-align:center">
+    <!-- Summary row -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+      <div style="background:#e8f8f2;border-radius:12px;padding:14px">
         <div style="font-size:10px;font-weight:600;color:#1d9e75;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Sponsor Revenue</div>
         <div style="font-size:20px;font-weight:700;color:#1d9e75">${f(sponsorTotal)}</div>
       </div>
-      <div style="background:#f5f0ff;border-radius:12px;padding:14px;text-align:center">
-        <div style="font-size:10px;font-weight:600;color:#8e44ad;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">NILGo Cleared</div>
-        <div style="font-size:20px;font-weight:700;color:#8e44ad">${f(nilgoCleared)}</div>
-        ${nilgoPending>0?`<div style="font-size:10px;color:#f59e0b;margin-top:2px">${f(nilgoPending)} pending</div>`:''}
+      <div style="background:#fff0f3;border-radius:12px;padding:14px">
+        <div style="font-size:10px;font-weight:600;color:#e34040;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Total Expenses</div>
+        <div style="font-size:20px;font-weight:700;color:#e34040">${f(totalExp)}</div>
       </div>
-      <div style="background:#fff0f3;border-radius:12px;padding:14px;text-align:center">
-        <div style="font-size:10px;font-weight:600;color:#e34040;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Total Cost</div>
-        <div style="font-size:20px;font-weight:700;color:#e34040">${f(totalCost)}</div>
+      <div style="background:#f5f0ff;border-radius:12px;padding:14px">
+        <div style="font-size:10px;font-weight:600;color:#8e44ad;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">NILGo Attempting</div>
+        <div style="font-size:20px;font-weight:700;color:#8e44ad">${f(totalNilgo)}</div>
+        ${totalNilgoCleared>0?`<div style="font-size:11px;color:#1d9e75;margin-top:2px">${f(totalNilgoCleared)} cleared</div>`:''}
       </div>
-      <div style="background:${netIncome>=0?'#e8f8f2':'#fff0f3'};border-radius:12px;padding:14px;text-align:center">
-        <div style="font-size:10px;font-weight:600;color:${netIncome>=0?'#1d9e75':'#e34040'};text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Net</div>
-        <div style="font-size:20px;font-weight:700;color:${netIncome>=0?'#1d9e75':'#e34040'}">${netIncome>=0?'+':''}${f(netIncome)}</div>
-      </div>
-    </div>
-
-    ${section('💰 Sponsor Revenue','#1d9e75',sponsorRows
-      +'<div style="display:flex;justify-content:space-between;padding:10px 0 0;font-weight:700"><span>Total</span><span style="color:#1d9e75">${f(sponsorTotal)}</span></div>')}
-
-    ${section('🎤 Talent Fees (NILGo)','#8e44ad',talentRows
-      +(talentFeeTotal>0?`<div style="display:flex;justify-content:space-between;padding:10px 0 0;font-weight:700"><span>Total</span><span style="color:#8e44ad">${f(talentFeeTotal)}</span></div>`:''))}
-
-    ${section('🔧 Vendor Costs','#e34040',vendorRows
-      +(vendorTotal>0?`<div style="display:flex;justify-content:space-between;padding:10px 0 0;font-weight:700"><span>Total</span><span style="color:#e34040">${f(vendorTotal)}</span></div>`:''))}
-
-    <!-- P&L Summary -->
-    <div style="background:#1d1d1f;border-radius:14px;padding:18px 20px;color:#fff">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,.4);margin-bottom:12px">P&L Summary</div>
-      ${row('Sponsor Revenue',sponsorTotal,'#4ade80')}
-      ${row('Talent Fees',-talentFeeTotal,'#f87171','Paid via NILGo')}
-      ${row('Vendor Costs',-vendorTotal,'#f87171')}
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0 0;border-top:1px solid rgba(255,255,255,.1);margin-top:4px">
-        <div style="font-size:15px;font-weight:700;color:#fff">Net Event P&L</div>
-        <div style="font-size:22px;font-weight:700;color:${netIncome>=0?'#4ade80':'#f87171'}">${netIncome>=0?'+':''}${f(netIncome)}</div>
+      <div style="background:${net>=0?'#e8f8f2':'#fff0f3'};border-radius:12px;padding:14px">
+        <div style="font-size:10px;font-weight:600;color:${net>=0?'#1d9e75':'#e34040'};text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Net</div>
+        <div style="font-size:20px;font-weight:700;color:${net>=0?'#1d9e75':'#e34040'}">${net>=0?'+':''}${f(net)}</div>
       </div>
     </div>
 
+    <!-- EXPENSES -->
+    <div style="background:#fff;border:1.5px solid #e5e5ea;border-radius:14px;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1.5px solid #e5e5ea;background:#f9f9f9">
+        <div style="font-size:13px;font-weight:700;color:#1d1d1f">Event Expenses</div>
+        <button onclick="addBudgetExpense('${ev.id}')" style="background:#1d1d1f;color:#fff;-webkit-text-fill-color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px"><i class="ti ti-plus" style="font-size:11px"></i> Add Line</button>
+      </div>
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:#f9f9f9">
+          <th style="text-align:left;padding:8px 14px;font-size:10px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;border-bottom:0.5px solid #e5e5ea;width:30%">Category</th>
+          <th style="text-align:left;padding:8px 14px;font-size:10px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;border-bottom:0.5px solid #e5e5ea">Description</th>
+          <th style="text-align:left;padding:8px 14px;font-size:10px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;border-bottom:0.5px solid #e5e5ea;width:80px">Vendor</th>
+          <th style="text-align:right;padding:8px 14px;font-size:10px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;border-bottom:0.5px solid #e5e5ea;width:110px">Amount</th>
+          <th style="width:32px;border-bottom:0.5px solid #e5e5ea"></th>
+        </tr></thead>
+        <tbody id="exp-body-${ev.id}">
+          ${exp.length===0?`<tr><td colspan="5" style="padding:24px;text-align:center;color:#8e8e93;font-size:13px">No expenses yet — click Add Line</td></tr>`
+          :exp.map((x,i)=>`<tr style="border-bottom:0.5px solid #f2f2f7">
+            <td style="padding:10px 14px">
+              <select onchange="updateBudgetExp('${ev.id}',${i},'category',this.value)" style="border:none;background:transparent;font-size:13px;font-family:inherit;color:#1d1d1f;width:100%;cursor:pointer;outline:none">
+                ${expCategories.map(c=>`<option ${x.category===c?'selected':''}>${c}</option>`).join('')}
+              </select>
+            </td>
+            <td style="padding:10px 14px">
+              <input value="${x.desc||''}" onchange="updateBudgetExp('${ev.id}',${i},'desc',this.value)" style="border:none;background:transparent;font-size:13px;font-family:inherit;width:100%;outline:none" placeholder="Description">
+            </td>
+            <td style="padding:10px 14px">
+              <input value="${x.vendor||''}" onchange="updateBudgetExp('${ev.id}',${i},'vendor',this.value)" style="border:none;background:transparent;font-size:13px;font-family:inherit;width:100%;outline:none" placeholder="—">
+            </td>
+            <td style="padding:10px 14px;text-align:right">
+              <input type="number" value="${x.amount||''}" onchange="updateBudgetExp('${ev.id}',${i},'amount',this.value)" style="border:none;background:transparent;font-size:13px;font-weight:600;font-family:inherit;text-align:right;width:100%;outline:none;color:#e34040" placeholder="$0">
+            </td>
+            <td style="padding:10px 8px">
+              <button onclick="removeBudgetExp('${ev.id}',${i})" style="background:none;border:none;cursor:pointer;color:#d1d1d6;font-size:13px"><i class="ti ti-x"></i></button>
+            </td>
+          </tr>`).join('')}
+          ${exp.length>0?`<tr style="background:#f9f9f9">
+            <td colspan="3" style="padding:10px 14px;font-size:12px;font-weight:700;color:#1d1d1f">Total</td>
+            <td style="padding:10px 14px;text-align:right;font-size:14px;font-weight:700;color:#e34040">${f(totalExp)}</td>
+            <td></td>
+          </tr>`:''}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- NILGO ACTIVATIONS -->
+    <div style="background:#fff;border:1.5px solid #e5e5ea;border-radius:14px;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1.5px solid #e5e5ea;background:#f9f9f9">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#1d1d1f">NILGo Activations</div>
+          <div style="font-size:11px;color:#8e8e93;margin-top:2px">Track sponsor-funded athlete activations submitted to NILGo</div>
+        </div>
+        <button onclick="addNilgoActivation('${ev.id}')" style="background:#8e44ad;color:#fff;-webkit-text-fill-color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px"><i class="ti ti-plus" style="font-size:11px"></i> Add Activation</button>
+      </div>
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:#f9f9f9">
+          <th style="text-align:left;padding:8px 14px;font-size:10px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;border-bottom:0.5px solid #e5e5ea">Sponsor</th>
+          <th style="text-align:left;padding:8px 14px;font-size:10px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;border-bottom:0.5px solid #e5e5ea">Activation Description</th>
+          <th style="text-align:center;padding:8px 14px;font-size:10px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;border-bottom:0.5px solid #e5e5ea;width:80px">Athletes</th>
+          <th style="text-align:right;padding:8px 14px;font-size:10px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;border-bottom:0.5px solid #e5e5ea;width:100px">Per Athlete</th>
+          <th style="text-align:right;padding:8px 14px;font-size:10px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;border-bottom:0.5px solid #e5e5ea;width:100px">Total</th>
+          <th style="text-align:center;padding:8px 14px;font-size:10px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;border-bottom:0.5px solid #e5e5ea;width:100px">NILGo Status</th>
+          <th style="width:32px;border-bottom:0.5px solid #e5e5ea"></th>
+        </tr></thead>
+        <tbody>
+          ${acts.length===0?`<tr><td colspan="7" style="padding:24px;text-align:center;color:#8e8e93;font-size:13px">No activations yet — click Add Activation</td></tr>`
+          :acts.map((x,i)=>{
+            const rowTotal=(parseFloat(x.perAthlete)||0)*(parseInt(x.athletes)||0);
+            const sc=nilgoStatuses[x.status||'pending'];
+            return`<tr style="border-bottom:0.5px solid #f2f2f7">
+              <td style="padding:10px 14px">
+                <input value="${x.sponsor||''}" onchange="updateNilgoAct('${ev.id}',${i},'sponsor',this.value)" style="border:none;background:transparent;font-size:13px;font-family:inherit;width:100%;outline:none;font-weight:500" placeholder="Sponsor name">
+              </td>
+              <td style="padding:10px 14px">
+                <input value="${x.desc||''}" onchange="updateNilgoAct('${ev.id}',${i},'desc',this.value)" style="border:none;background:transparent;font-size:13px;font-family:inherit;width:100%;outline:none" placeholder="e.g. Tailgate social posts">
+              </td>
+              <td style="padding:10px 14px;text-align:center">
+                <input type="number" value="${x.athletes||''}" onchange="updateNilgoAct('${ev.id}',${i},'athletes',this.value)" style="border:none;background:transparent;font-size:13px;font-weight:600;font-family:inherit;text-align:center;width:100%;outline:none" placeholder="0">
+              </td>
+              <td style="padding:10px 14px;text-align:right">
+                <input type="number" value="${x.perAthlete||''}" onchange="updateNilgoAct('${ev.id}',${i},'perAthlete',this.value)" style="border:none;background:transparent;font-size:13px;font-weight:600;font-family:inherit;text-align:right;width:100%;outline:none;color:#8e44ad" placeholder="$0">
+              </td>
+              <td style="padding:10px 14px;text-align:right;font-size:13px;font-weight:700;color:#8e44ad">${f(rowTotal)}</td>
+              <td style="padding:10px 14px;text-align:center">
+                <select onchange="updateNilgoAct('${ev.id}',${i},'status',this.value)" style="border:1.5px solid #e5e5ea;background:#fff;border-radius:7px;font-size:11px;font-weight:600;font-family:inherit;padding:3px 6px;cursor:pointer;color:${sc};outline:none">
+                  <option value="pending" ${(!x.status||x.status==='pending')?'selected':''} style="color:#f59e0b">Pending</option>
+                  <option value="submitted" ${x.status==='submitted'?'selected':''} style="color:#2980b9">Submitted</option>
+                  <option value="cleared" ${x.status==='cleared'?'selected':''} style="color:#1d9e75">Cleared ✓</option>
+                </select>
+              </td>
+              <td style="padding:10px 8px">
+                <button onclick="removeNilgoAct('${ev.id}',${i})" style="background:none;border:none;cursor:pointer;color:#d1d1d6;font-size:13px"><i class="ti ti-x"></i></button>
+              </td>
+            </tr>`;
+          }).join('')}
+          ${acts.length>0?`<tr style="background:#f9f9f9">
+            <td colspan="4" style="padding:10px 14px;font-size:12px;font-weight:700;color:#1d1d1f">Total Attempting NILGo</td>
+            <td style="padding:10px 14px;text-align:right;font-size:14px;font-weight:700;color:#8e44ad">${f(totalNilgo)}</td>
+            <td colspan="2" style="padding:10px 14px;text-align:center;font-size:11px;font-weight:600;color:#1d9e75">${f(totalNilgoCleared)} cleared</td>
+          </tr>`:''}
+        </tbody>
+      </table>
+    </div>
   </div>`;
 }
 
-function updateTalentNilgoStatus(evId,i,status){
-  const ev=EVENTS.find(e=>e.id===evId);if(!ev||!ev.talent[i])return;
-  ev.talent[i].nilgoStatus=status;
+function addBudgetExpense(evId){
+  const ev=EVENTS.find(e=>e.id===evId);if(!ev)return;
+  if(!ev.budget)ev.budget={expenses:[],nilgoActivations:[]};
+  ev.budget.expenses.push({category:'Other',desc:'',vendor:'',amount:0});
+  saveEventToSupabase(ev);
+  activeEventTab='budget';renderEventDetail(ev);
+}
+function removeBudgetExp(evId,i){
+  const ev=EVENTS.find(e=>e.id===evId);if(!ev)return;
+  ev.budget.expenses.splice(i,1);
+  saveEventToSupabase(ev);
+  activeEventTab='budget';renderEventDetail(ev);
+}
+function updateBudgetExp(evId,i,field,val){
+  const ev=EVENTS.find(e=>e.id===evId);if(!ev)return;
+  ev.budget.expenses[i][field]=field==='amount'?parseFloat(val)||0:val;
   saveEventToSupabase(ev);
 }
+function addNilgoActivation(evId){
+  const ev=EVENTS.find(e=>e.id===evId);if(!ev)return;
+  if(!ev.budget)ev.budget={expenses:[],nilgoActivations:[]};
+  ev.budget.nilgoActivations.push({sponsor:'',desc:'',athletes:0,perAthlete:0,status:'pending'});
+  saveEventToSupabase(ev);
+  activeEventTab='budget';renderEventDetail(ev);
+}
+function removeNilgoAct(evId,i){
+  const ev=EVENTS.find(e=>e.id===evId);if(!ev)return;
+  ev.budget.nilgoActivations.splice(i,1);
+  saveEventToSupabase(ev);
+  activeEventTab='budget';renderEventDetail(ev);
+}
+function updateNilgoAct(evId,i,field,val){
+  const ev=EVENTS.find(e=>e.id===evId);if(!ev)return;
+  ev.budget.nilgoActivations[i][field]=['athletes','perAthlete'].includes(field)?parseFloat(val)||0:val;
+  saveEventToSupabase(ev);
+}
+
 
 function buildEventROS(ev){
   const ros=ev.ros||[];
