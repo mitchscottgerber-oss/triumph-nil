@@ -4167,7 +4167,7 @@ let plannerSlots={};
 function buildActivationPlanner(){
   if(CO.length===0) return'<div style="text-align:center;padding:60px;color:#8e8e93"><div style="font-size:28px;margin-bottom:10px">🏢</div><div style="font-weight:600;color:#1d1d1f;margin-bottom:4px">No companies yet</div><div style="font-size:12px">Add a company first, then plan activations here</div></div>';
 
-  const sportIcon={Football:'🏈',Baseball:'⚾','Basketball-M':'🏀','Basketball-W':'🏀'};
+  const sportIcon={Football:'FB',Baseball:'BSB','Basketball-M':'MBB','Basketball-W':'WBB'};
   const athleteBench=A.map(a=>{
     const nilRem=a.contract-a.paid;
     const banked=a.banked-a.paid;
@@ -4254,9 +4254,9 @@ function buildActivationPlanner(){
   return`<div style="display:grid;grid-template-columns:1fr 280px;gap:16px;align-items:start">
     <div>${companyBoards}</div>
     <div style="position:sticky;top:0">
-      <div style="background:#1d1d1f;border-radius:14px;padding:14px 16px;margin-bottom:10px">
-        <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:2px">Athlete Bench</div>
-        <div style="font-size:11px;color:rgba(255,255,255,.4)">Drag athletes onto activation slots</div>
+      <div style="border-bottom:1.5px solid #e5e5ea;padding-bottom:10px;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:700;color:#1d1d1f">Athlete Bench</div>
+        <div style="font-size:11px;color:#8e8e93;margin-top:2px">Drag athletes onto activation slots</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:8px;max-height:calc(100vh - 200px);overflow-y:auto">${athleteBench}</div>
     </div>
