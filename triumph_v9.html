@@ -1080,8 +1080,8 @@ async function loadFromSupabase(){
   try {
     const [{data:athletes,error:ae},{data:schedules},{data:revShareData},{data:eventsData},{data:companiesData}] = await Promise.all([
       sb.from('athletes').select('*').eq('active',true).order('rank_priority',{ascending:true,nullsFirst:false}),
-      sb.from('payment_schedule').select('*').in('year',[2026,2027]),
-      sb.from('rev_share').select('*').in('year',[2026,2027]),
+      sb.from('payment_schedule').select('*').in('year',[2026,2027,2028]),
+      sb.from('rev_share').select('*').in('year',[2026,2027,2028]),
       sb.from('events').select('*').order('date',{ascending:true}),
       sb.from('companies').select('*').order('priority',{ascending:true})
     ]);
@@ -1098,6 +1098,8 @@ async function loadFromSupabase(){
       }));
       // Ensure all 2026 months exist
       MO.forEach(mo=>{if(!sch.find(x=>x.mo===mo&&x.yr===2026)) sch.push({mo,yr:2026,a:0,p:false,s:[],cleared:0,shortfall:0,rs_paid:false});});
+      MO.forEach(mo=>{if(!sch.find(x=>x.mo===mo&&x.yr===2027)) sch.push({mo,yr:2027,a:0,p:false,s:[],cleared:0,shortfall:0,rs_paid:false});});
+      if(!sch.find(x=>x.mo==='Jan'&&x.yr===2028)) sch.push({mo:'Jan',yr:2028,a:0,p:false,s:[],cleared:0,shortfall:0,rs_paid:false});
       A.push({id:a.id,f:a.first_name,l:a.last_name,pos:a.position,sport:(()=>{const p=a.position||'';if(p==='BSB'||a.sport==='Baseball') return 'Baseball';if(p==='MBB'||a.sport==='Basketball-M') return 'Basketball-M';if(p==='WBB'||a.sport==='Basketball-W') return 'Basketball-W';return a.sport||'Football';})(),
         rank:a.rank_priority,contract:a.contract||0,banked:a.banked||0,paid:a.paid_out||0,
         rsContract:a.rs_contract||0,rsPaid:a.rs_paid||0,
@@ -1735,11 +1737,12 @@ function rC(list){
 function rAnnual(list,filterMos){
   const hasBaseball=list.some(a=>a.sport==='Baseball');
   const hasBball=list.some(a=>a.sport==='Basketball-M'||a.sport==='Basketball-W');
+  // Full range: Jan 2026 → Jan 2028
   let cols=[...MO.map(m=>({mo:m,yr:2026}))];
-  if(hasBaseball||hasBball){
-    const extra=hasBaseball?['Jan','Feb','Mar','Apr','May','Jun']:['Jan','Feb','Mar','Apr'];
-    extra.forEach(m=>cols.push({mo:m,yr:2027}));
-  }
+  // 2027 — all 12 months
+  MO.forEach(m=>cols.push({mo:m,yr:2027}));
+  // 2028 — just Jan
+  cols.push({mo:'Jan',yr:2028});
   // Filter to selected months if specified
   if(filterMos&&filterMos.length<12){
     cols=cols.filter(({mo})=>filterMos.includes(mo));
@@ -1759,7 +1762,7 @@ function rAnnual(list,filterMos){
     +'<th style="text-align:right;min-width:110px;background:#f0ebff;color:#8e44ad;cursor:pointer" title="Click any cell to expand detail">Money Owed ▾</th>'
     +cols.map(({mo,yr},i)=>{
       const isCur=mo===CUR&&yr===2026;
-      const label=yr===2027?mo+' \'27':mo+' \'26';
+      const label=mo+' \''+(String(yr).slice(2));
       return'<th class="'+(isCur?'cur':'')+'" style="min-width:78px;background:'+(isCur?'#fffbe6':'#fff')+'!important;color:'+(isCur?'#b7791f':'#8e8e93')+'!important;">'
         +'<div>'+label+'</div>'
         +(moNIL[i]>0?'<div style="font-size:8px;color:#1d9e75;font-weight:500;margin-top:1px">'+f(moNIL[i])+'</div>':'')
@@ -2147,7 +2150,7 @@ function openEditAthlete(key){
     const s=a.sch.find(x=>x.mo===m&&(x.yr||2026)===yr)||{a:0,p:false};
     const rv=getRev(a,m,yr);
     const isCurCell=m===CUR&&yr===2026;
-    const moLabel=m+(yr===2027?' \'27':' \'26');
+    const moLabel=m+' \''+(String(yr||2026).slice(2));
     return`<div style="background:#f9f9f9;border:1.5px solid #e5e5ea;border-radius:8px;padding:8px 10px${isCurCell?';border-color:#b7791f;background:#fffbe6':''}">
       <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:${isCurCell?'#b7791f':'#8e8e93'};margin-bottom:5px">${moLabel}</div>
       <div style="font-size:8px;color:#2980b9;font-weight:600;margin-bottom:2px">NIL</div>
@@ -2209,9 +2212,7 @@ async function saveEditAthlete(key){
   a.phone=(document.getElementById('em-phone').value||'').trim();
   a.notes=(document.getElementById('em-notes').value||'').trim();
   // Update schedule
-  const editMonths2=[...MO.map(m=>({mo:m,yr:2026}))];
-  if((a.sport||'Football')==='Baseball') ['Jan','Feb','Mar','Apr','May','Jun'].forEach(m=>editMonths2.push({mo:m,yr:2027}));
-  if(a.sport==='Basketball-M'||a.sport==='Basketball-W') ['Jan','Feb','Mar','Apr'].forEach(m=>editMonths2.push({mo:m,yr:2027}));
+  const editMonths2=[...MO.map(m=>({mo:m,yr:2026})),...MO.map(m=>({mo:m,yr:2027})),{mo:'Jan',yr:2028}];
   editMonths2.forEach(({mo:m,yr})=>{
     let s=a.sch.find(x=>x.mo===m&&(x.yr||2026)===yr);
     if(!s){s={mo:m,a:0,p:false,s:[]};a.sch.push(s);}
