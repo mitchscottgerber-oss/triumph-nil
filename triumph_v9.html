@@ -2692,6 +2692,7 @@ function buildEventTalent(ev){
             ${t.hotelName?`<span><i class="ti ti-bed" style="font-size:10px;color:#8e44ad"></i> <span style="color:#8e44ad">${t.hotelName}${t.hotelConf?' #'+t.hotelConf:''}</span></span>`:''}
           </div>`:''}
           ${t.travelOther?`<div style="font-size:11px;color:#1d9e75;margin-top:3px;background:#e8f8f2;border-radius:6px;padding:4px 8px"><i class="ti ti-car" style="font-size:10px"></i> ${t.travelOther}</div>`:''}
+          ${t.reservedParking?`<div style="font-size:11px;font-weight:600;color:#b7791f;margin-top:3px;background:#fffbe6;border-radius:6px;padding:4px 8px;display:inline-flex;align-items:center;gap:4px"><i class="ti ti-parking" style="font-size:10px"></i> Reserved Parking Required</div>`:''}
           ${t.agent?`<div style="font-size:11px;color:#8e8e93;margin-top:4px"><i class="ti ti-user" style="font-size:10px"></i> Agent/Contact: <b>${t.agent}</b>${t.agentPhone?' · '+t.agentPhone:''}${t.agentEmail?' · '+t.agentEmail:''}</div>`:''}
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0">
@@ -2851,6 +2852,14 @@ function openEditTalent(evId,i){
           </div>
           <div style="background:#f9f9f9;border-radius:10px;padding:10px 12px">
             <div style="font-size:10px;font-weight:700;color:#1d9e75;text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px"><i class="ti ti-car" style="font-size:10px"></i> Ground Transport & Other</div>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 10px;border:1.5px solid ${t.reservedParking?'#1d9e75':'#e5e5ea'};border-radius:8px;background:${t.reservedParking?'#e8f8f2':'#fff'};margin-bottom:8px">
+              <input type="checkbox" id="et-parking" ${t.reservedParking?'checked':''} style="cursor:pointer;width:15px;height:15px">
+              <div>
+                <div style="font-size:12px;font-weight:600;color:#1d1d1f">Reserved Parking Required</div>
+                <div style="font-size:10px;color:#8e8e93;margin-top:1px">Reminder to arrange parking for this talent</div>
+              </div>
+              <i class="ti ti-parking" style="font-size:16px;color:${t.reservedParking?'#1d9e75':'#c7c7cc'};margin-left:auto"></i>
+            </label>
             <textarea id="et-travel-other" style="width:100%;height:56px;padding:7px 9px;border:1.5px solid #e5e5ea;border-radius:7px;font-size:12px;font-family:inherit;outline:none;resize:none;line-height:1.4;box-sizing:border-box;background:#fff" placeholder="Car service, pickup details, restaurant reservations, special requests...">${t.travelOther||''}</textarea>
           </div>
         </div>
@@ -2889,6 +2898,7 @@ function saveEditTalent(evId,i){
   t.hotelConf=(document.getElementById('et-hotel-conf')?.value||'').trim();
   t.hotelIn=(document.getElementById('et-hotel-in')?.value||'').trim();
   t.hotelOut=(document.getElementById('et-hotel-out')?.value||'').trim();
+  t.reservedParking=document.getElementById('et-parking')?.checked||false;
   t.travelOther=(document.getElementById('et-travel-other')?.value||'').trim();
   t.notes=(document.getElementById('et-notes').value||'').trim();
   if(USER_ROLE!=='activation'&&document.getElementById('et-fee')) t.fee=parseFloat(document.getElementById('et-fee').value)||0;
