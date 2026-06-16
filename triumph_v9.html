@@ -4135,6 +4135,9 @@ let coPageMode='roster';
 
 function setCoPageMode(mode){
   coPageMode=mode;
+  curCo=null;
+  document.getElementById('top-title').textContent='Companies';
+  document.getElementById('top-sub').textContent=CO.length+' active sponsors';
   renderCos();
 }
 
@@ -4440,7 +4443,7 @@ function openCo(name){
 function buildCoDetail(){
   const c=curCo,s=coSpent(c),r=c.committed-s,pct=Math.round(s/c.committed*100),rank=CO.indexOf(c)+1;
   document.getElementById('co-body').innerHTML=
-    '<button class="detback" onclick="renderCos()"><i class="ti ti-arrow-left"></i> All companies</button>'
+    '<button class="detback" onclick="coPageMode=\'roster\';renderCos()"><i class="ti ti-arrow-left"></i> All companies</button>'
     +'<div style="margin-bottom:16px"><div style="display:flex;align-items:center;gap:10px"><div style="font-size:20px;font-weight:700;color:#1d1d1f;letter-spacing:-.4px">'+c.name+'</div><span class="badge bb">Priority #'+rank+'</span></div>'
     +'<div style="font-size:11px;color:#8e8e93;margin-top:3px">'+c.athletes.length+' athletes funded — '+pct+'% of commitment drawn</div></div>'
     +'<div class="cokrow">'
