@@ -1066,7 +1066,7 @@ async function loadFromSupabase(){
       }));
       // Ensure all 2026 months exist
       MO.forEach(mo=>{if(!sch.find(x=>x.mo===mo&&x.yr===2026)) sch.push({mo,yr:2026,a:0,p:false,s:[],cleared:0,shortfall:0,rs_paid:false});});
-      A.push({id:a.id,f:a.first_name,l:a.last_name,pos:a.position,sport:a.sport||'Football',
+      A.push({id:a.id,f:a.first_name,l:a.last_name,pos:a.position,sport:(()=>{const p=a.position||'';if(p==='BSB'||a.sport==='Baseball') return 'Baseball';if(p==='MBB'||a.sport==='Basketball-M') return 'Basketball-M';if(p==='WBB'||a.sport==='Basketball-W') return 'Basketball-W';return a.sport||'Football';})(),
         rank:a.rank_priority,contract:a.contract||0,banked:a.banked||0,paid:a.paid_out||0,
         rsContract:a.rs_contract||0,rsPaid:a.rs_paid||0,
         agent:a.agent||'',agency:a.agency||'',contact_email:a.email||'',phone:a.phone||'',notes:a.notes||'',
@@ -1145,10 +1145,7 @@ function doSwitchSport(sport) {
 // After PIN success, also update the dropdown - handled in checkPin()
 
 function getAthletesBySport(sport) {
-  return A.filter(a => {
-    const s = a.sport || 'Football';
-    return s === sport;
-  });
+  return A.filter(a => (a.sport||'Football') === sport);
 }
 
 function aF() {
