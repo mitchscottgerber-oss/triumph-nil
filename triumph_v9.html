@@ -4507,9 +4507,10 @@ function setCOMode(v){
 function coCardHtml(c,i){
   const s=coSpent(c),r=c.committed-s,pct=Math.round(s/c.committed*100);
   const rkc=i===0?'rk1':i===1?'rk2':i===2?'rk3':'rko';
-  return'<div class="cocard" draggable="true" data-co="'+c.name+'" onclick="openCo(\''+c.name+'\')">'
+  return'<div class="cocard" draggable="true" data-co="'+c.name+'" onclick="openCo(\''+c.name+'\')" style="position:relative">'
     +'<div class="cork '+rkc+'">#'+(i+1)+'</div>'
-    +'<div class="coname">'+c.name+'</div>'
+    +'<button onclick="event.stopPropagation();deleteCompany(\''+c.name+'\')" style="position:absolute;top:10px;left:12px;background:none;border:none;cursor:pointer;color:#d1d1d6;font-size:13px;padding:2px;border-radius:4px;line-height:1" title="Delete company"><i class="ti ti-trash"></i></button>'
+    +'<div class="coname" style="padding-left:28px">'+c.name+'</div>'
     +'<div class="cosub">'+c.athletes.length+' athletes funded</div>'
     +'<div class="corule"></div>'
     +'<div class="corows"><div class="corow"><span class="colbl">Committed</span><span class="coval">'+f(c.committed)+'</span></div>'
@@ -4517,6 +4518,19 @@ function coCardHtml(c,i){
     +'<div class="corow"><span class="colbl">Remaining</span><span class="coval">'+f(r)+'</span></div></div>'
     +'<div class="coprog"><div class="coprogf" style="width:'+pct+'%"></div></div>'
   +'</div>';
+}
+
+async function deleteCompany(name){
+  if(!confirm('Delete '+name+'? This cannot be undone.')) return;
+  const co=CO.find(c=>c.name===name);
+  CO=CO.filter(c=>c.name!==name);
+  if(co?.id){
+    try{
+      await sb.from('companies').delete().eq('id',co.id);
+    }catch(e){console.warn('delete company:',e);}
+  }
+  renderCos();
+  syncStatus('Deleted ✓');
 }
 function initDrag(){
   const grid=document.getElementById('co-drag-grid');if(!grid) return;
