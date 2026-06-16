@@ -674,6 +674,11 @@ select.aa-inp{appearance:auto}
       <button class="pill on" id="fbar-all" onclick="sP('all',this)">All</button>
       <button class="pill s" id="fbar-short" onclick="sP('short',this)">Short</button>
       <div class="fdiv" id="fbar-div2"></div>
+      <div style="display:flex;background:#f2f2f7;border-radius:8px;padding:2px;gap:2px" id="fbar-rowview">
+        <button id="rv-both" onclick="setRowView('both')" style="padding:4px 10px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;background:#1d1d1f;color:#fff;-webkit-text-fill-color:#fff">Both</button>
+        <button id="rv-nil" onclick="setRowView('nil')" style="padding:4px 10px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;background:transparent;color:#2980b9;-webkit-text-fill-color:#2980b9">NIL</button>
+        <button id="rv-rs" onclick="setRowView('rs')" style="padding:4px 10px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;background:transparent;color:#c0392b;-webkit-text-fill-color:#c0392b">RS</button>
+      </div>
       <select class="fsel" id="sel-sport" onchange="onSportChange()">
         <option value="Football">Football</option>
         <option value="Baseball">Baseball</option>
@@ -1785,7 +1790,7 @@ function rAnnual(list,filterMos){
     const totalCols=4+cols.length+2;
 
     // NIL row (blue)
-    html+='<tr class="athlete-nil-row" style="cursor:pointer;background:#eef6ff" onclick="oProf(\'' + key + '\')">'
+    if(rowView!=='rs') html+='<tr class="athlete-nil-row" style="cursor:pointer;background:#eef6ff" onclick="oProf(\'' + key + '\')">'
       +'<td style="position:sticky;left:0;z-index:1;background:#eef6ff;border-right:1px solid #f2f2f7">'
         +'<div style="font-weight:600;font-size:12.5px">'+a.f+' '+a.l+'</div>'
         +'<div style="display:flex;gap:4px;margin-top:2px">'
@@ -1813,7 +1818,7 @@ function rAnnual(list,filterMos){
     +'</tr>';
 
     // NIL expand row
-    html+='<tr id="'+nilExpId+'" style="display:none">'
+    if(rowView!=='rs') html+='<tr id="'+nilExpId+'" style="display:none">'
       +'<td colspan="'+totalCols+'" style="padding:10px 16px 12px;background:#f0f6ff;border-top:0.5px solid #b3d4f5;border-bottom:0.5px solid #b3d4f5">'
         +'<div style="display:flex;gap:36px;font-size:12px">'
           +'<div><div style="font-size:9px;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">NIL Contract</div><div style="font-weight:600;color:#1d1d1f;font-size:13px">'+f(a.contract)+'</div></div>'
@@ -1824,7 +1829,7 @@ function rAnnual(list,filterMos){
     +'</tr>';
 
     // RS row (pink)
-    html+='<tr style="background:#fff5f7;cursor:pointer" onclick="oProf(\'' + key + '\')">'
+    if(rowView!=='nil') html+='<tr style="background:#fff5f7;cursor:pointer" onclick="oProf(\'' + key + '\')">'
       +'<td style="padding:3px 10px 8px 22px;font-size:9px;color:#c0392b;font-weight:600;text-transform:uppercase;letter-spacing:.05em;position:sticky;left:0;background:#fff5f7;border-right:1px solid #f5c6d0">↳ Rev Share</td>'
       +'<td style="background:#fff5f7"></td>'
       +'<td style="text-align:right;background:#fff0f3;cursor:pointer" onclick="event.stopPropagation();raToggle(\'' + rsExpId + '\',\'' + nilExpId + '\',\'rs\',' + idx + ')">'
@@ -1840,7 +1845,7 @@ function rAnnual(list,filterMos){
     +'</tr>';
 
     // RS expand row
-    html+='<tr id="'+rsExpId+'" style="display:none">'
+    if(rowView!=='nil') html+='<tr id="'+rsExpId+'" style="display:none">'
       +'<td colspan="'+totalCols+'" style="padding:10px 16px 12px;background:#fff5f7;border-top:0.5px solid #f5c6d0;border-bottom:0.5px solid #f5c6d0">'
         +'<div style="display:flex;gap:36px;font-size:12px">'
           +'<div><div style="font-size:9px;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">RS Contract</div><div style="font-weight:600;color:#1d1d1f;font-size:13px">'+f(a.rsContract||0)+'</div></div>'
@@ -4226,6 +4231,20 @@ function cP(){showRoster();aF();}
 /* ===== COMPANIES ===== */
 let dragSrc=null,coGridMode='grid';
 let coPageMode='roster';
+let rowView='both'; // 'both' | 'nil' | 'rs'
+
+function setRowView(v){
+  rowView=v;
+  ['rv-both','rv-nil','rv-rs'].forEach(id=>{
+    const el=document.getElementById(id);if(!el) return;
+    const isActive=id==='rv-'+v;
+    const colors={'rv-both':'#1d1d1f','rv-nil':'#2980b9','rv-rs':'#c0392b'};
+    el.style.background=isActive?colors[id]:'transparent';
+    el.style.color=isActive?'#fff':colors[id];
+    el.style.webkitTextFillColor=isActive?'#fff':colors[id];
+  });
+  aF();
+}
 
 function setCoPageMode(mode){
   coPageMode=mode;
