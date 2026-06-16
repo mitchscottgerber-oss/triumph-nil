@@ -4153,8 +4153,13 @@ function renderCos(){
     +'</div>';
 
   if(coPageMode==='planner'){
-    document.getElementById('co-body').innerHTML=header+buildActivationPlanner();
-    initPlannerDrag();
+    try{
+      document.getElementById('co-body').innerHTML=header+buildActivationPlanner();
+      setTimeout(()=>initPlannerDrag(),50);
+    }catch(e){
+      console.error('Planner error:',e);
+      document.getElementById('co-body').innerHTML=header+'<div style="padding:40px;text-align:center;color:#e34040">Error loading planner: '+e.message+'</div>';
+    }
     return;
   }
 
