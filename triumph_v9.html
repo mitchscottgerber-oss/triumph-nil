@@ -2580,6 +2580,7 @@ let activeEventId=null;
 let activeEventTab='talent';
 
 async function saveEventToSupabase(ev){
+  console.log('Saving event to Supabase:', ev.id, ev.name);
   try{
     const row={
       id:ev.id,name:ev.name,date:ev.date||null,status:ev.status||'planning',
@@ -2590,10 +2591,15 @@ async function saveEventToSupabase(ev){
       ros:JSON.stringify(ev.ros||[]),
       notes_plan:ev.notesPlan||'',notes_recap:ev.notesRecap||''
     };
-    const {error}=await sb.from('events').upsert(row,{onConflict:'id'});
-    if(error) throw error;
+    const {data,error}=await sb.from('events').upsert(row,{onConflict:'id'});
+    if(error){console.error('Supabase events error:', error);throw error;}
+    console.log('Event saved OK:', data);
     syncStatus('Saved ✓');
-  }catch(e){syncStatus('Save error: '+e.message,false);}
+  }catch(e){
+    console.error('saveEventToSupabase failed:', e);
+    syncStatus('Save error: '+e.message,false);
+    alert('Event save failed: '+e.message+'\n\nMake sure you have run the events table SQL in Supabase.');
+  }
 }
 
 function buildEvents(){
