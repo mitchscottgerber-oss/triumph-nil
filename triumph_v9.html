@@ -2591,7 +2591,10 @@ function renderEventList(){
       <div style="font-size:13px;color:#8e8e93;margin-bottom:20px">Create your first event to start tracking talent, sponsors, and vendors</div>
       <button onclick="openAddEvent()" class="btn btn-dark">Create Event</button>
     </div>`
-    :EVENTS.map(ev=>`<div onclick="openEventDetail('${ev.id}')" style="background:#fff;border:1.5px solid #e5e5ea;border-radius:16px;padding:18px 20px;margin-bottom:12px;cursor:pointer;transition:box-shadow .15s" onmouseenter="this.style.boxShadow='0 4px 16px rgba(0,0,0,.08)'" onmouseleave="this.style.boxShadow='none'">
+    :EVENTS.map(ev=>{
+      const evBg={planning:'#fffbe6',active:'#f0faf5',complete:'#f2f2f7'}[ev.status||'planning'];
+      const evBorder={planning:'#f0c040',active:'#9fd6b8',complete:'#d1d1d6'}[ev.status||'planning'];
+      return`<div onclick="openEventDetail('${ev.id}')" style="background:${evBg};border:1.5px solid ${evBorder};border-radius:16px;padding:18px 20px;margin-bottom:12px;cursor:pointer;transition:box-shadow .15s" onmouseenter="this.style.boxShadow='0 4px 16px rgba(0,0,0,.1)'" onmouseleave="this.style.boxShadow='none'">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
         <div>
           <div style="font-size:17px;font-weight:700;color:#1d1d1f">${ev.name}</div>
@@ -2605,7 +2608,7 @@ function renderEventList(){
         <div style="font-size:12px;color:#8e8e93"><span style="font-weight:600;color:#1d1d1f">${(ev.vendors||[]).length}</span> Vendors</div>
         <div style="font-size:12px;color:#8e8e93"><span style="font-weight:600;color:#1d1d1f">${(ev.ros||[]).length}</span> ROS Items</div>
       </div>
-    </div>`).join('')}`;
+    </div>`;}).join('')}`;
 }
 
 function openEventDetail(id){
@@ -2666,20 +2669,33 @@ function buildEventTalent(ev){
     <button onclick="openAddTalent('${ev.id}')" class="btn btn-dark btn-sm" style="display:flex;align-items:center;gap:4px"><i class="ti ti-user-plus" style="font-size:12px"></i> Add Talent</button>
   </div>`
   +(!talent.length?'<div style="text-align:center;padding:40px;background:#fff;border-radius:12px;border:1.5px dashed #e5e5ea;color:#8e8e93">No talent added yet</div>'
-  :talent.map((t,i)=>`<div style="background:#fff;border:1.5px solid #e5e5ea;border-radius:12px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px">
-    <div style="width:40px;height:40px;border-radius:10px;background:#1d1d1f;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0">${(t.name||'?')[0]}</div>
-    <div style="flex:1">
-      <div style="font-size:14px;font-weight:600">${t.name}</div>
-      <div style="font-size:12px;color:#8e8e93;margin-top:1px">${t.role||''} ${t.org?'· '+t.org:''}</div>
-      ${t.notes?`<div style="font-size:11px;color:#6c6c70;margin-top:3px">${t.notes}</div>`:''}
-    </div>
-    <div style="display:flex;align-items:center;gap:8px">
-      <select onchange="updateTalentStatus('${ev.id}',${i},this.value)" style="height:28px;padding:0 8px;border:1.5px solid #e5e5ea;border-radius:7px;font-size:11px;font-weight:600;font-family:inherit;background:${statusBg[t.status||'invited']};color:${statusColor[t.status||'invited']}">
-        ${['invited','confirmed','attended','declined'].map(s=>`<option value="${s}" ${(t.status||'invited')===s?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}
-      </select>
-      <button onclick="removeTalent('${ev.id}',${i})" style="background:none;border:none;cursor:pointer;color:#c7c7cc;font-size:14px"><i class="ti ti-x"></i></button>
-    </div>
-  </div>`).join(''));
+  :talent.map((t,i)=>{
+    const initials=(t.name||'?').split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+    return`<div style="background:#fff;border:1.5px solid #e5e5ea;border-radius:14px;padding:16px;margin-bottom:10px">
+      <div style="display:flex;align-items:flex-start;gap:14px">
+        <div style="flex-shrink:0">
+          ${t.headshot
+            ?`<img src="${t.headshot}" style="width:52px;height:52px;border-radius:12px;object-fit:cover;border:1.5px solid #e5e5ea">`
+            :`<div style="width:52px;height:52px;border-radius:12px;background:#1d1d1f;color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700">${initials}</div>`}
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <div style="font-size:15px;font-weight:700">${t.name}</div>
+            <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:6px;background:${statusBg[t.status||'invited']};color:${statusColor[t.status||'invited']}">${(t.status||'invited').charAt(0).toUpperCase()+(t.status||'invited').slice(1)}</span>
+          </div>
+          <div style="font-size:12px;color:#8e8e93;margin-top:2px">${t.role||''}${t.org?' · '+t.org:''}</div>
+          ${USER_ROLE!=='activation'&&t.fee?`<div style="font-size:12px;font-weight:600;color:#8e44ad;margin-top:3px">Fee: ${typeof t.fee==='number'?f(t.fee):t.fee}</div>`:''}
+          ${t.notes?`<div style="font-size:12px;color:#6c6c70;margin-top:4px;line-height:1.4">${t.notes}</div>`:''}
+          ${t.travel?`<div style="font-size:11px;color:#2980b9;margin-top:4px;background:#eef6ff;border-radius:6px;padding:5px 8px"><i class="ti ti-plane" style="font-size:10px"></i> ${t.travel}</div>`:''}
+          ${t.agent?`<div style="font-size:11px;color:#8e8e93;margin-top:4px"><i class="ti ti-user" style="font-size:10px"></i> Agent/Contact: <b>${t.agent}</b>${t.agentPhone?' · '+t.agentPhone:''}${t.agentEmail?' · '+t.agentEmail:''}</div>`:''}
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button onclick="openEditTalent('${ev.id}',${i})" style="background:#f2f2f7;border:none;border-radius:7px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:3px"><i class="ti ti-edit" style="font-size:11px"></i> Edit</button>
+          <button onclick="removeTalent('${ev.id}',${i})" style="background:none;border:none;cursor:pointer;color:#c7c7cc;font-size:15px;padding:4px"><i class="ti ti-x"></i></button>
+        </div>
+      </div>
+    </div>`;
+  }).join(''));
 }
 
 function buildEventSponsors(ev){
@@ -2745,26 +2761,195 @@ function buildEventVendors(ev){
   </div>`).join(''));
 }
 
+function openEditTalent(evId,i){
+  const ev=EVENTS.find(e=>e.id===evId);if(!ev||!ev.talent[i])return;
+  const t=ev.talent[i];
+  const existing=document.getElementById('edit-talent-modal');if(existing)existing.remove();
+  const ov=document.createElement('div');ov.id='edit-talent-modal';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1300;display:flex;align-items:center;justify-content:center';
+  ov.innerHTML=`<div style="background:#fff;border-radius:18px;width:540px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.25);overflow:hidden">
+    <div style="background:#1d1d1f;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
+      <div><div style="font-size:15px;font-weight:700;color:#fff">Edit Talent</div><div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:1px">${t.name}</div></div>
+      <button onclick="document.getElementById('edit-talent-modal').remove()" style="background:rgba(255,255,255,.12);border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+    <div style="overflow-y:auto;flex:1;padding:16px 20px;display:flex;flex-direction:column;gap:12px">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Full Name</div>
+          <input id="et-name" value="${t.name||''}" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box"></div>
+        <div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Status</div>
+          <select id="et-status" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
+            ${['invited','confirmed','attended','declined'].map(s=>`<option value="${s}" ${(t.status||'invited')===s?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}
+          </select></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Role</div>
+          <input id="et-role" value="${t.role||''}" placeholder="Athlete, Celebrity, Coach..." style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box"></div>
+        <div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Organization</div>
+          <input id="et-org" value="${t.org||''}" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box"></div>
+      </div>
+
+      ${USER_ROLE!=='activation'?`<div style="background:#f5f0ff;border:1.5px solid #d4b8f0;border-radius:10px;padding:12px">
+        <div style="font-size:10px;font-weight:700;color:#8e44ad;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px"><i class="ti ti-lock" style="font-size:10px"></i> Admin Only</div>
+        <div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Talent Fee</div>
+          <div style="display:flex;align-items:center;border:1.5px solid #e5e5ea;border-radius:8px;overflow:hidden;background:#fff">
+            <span style="padding:0 10px;color:#8e44ad;font-weight:700;border-right:1px solid #e5e5ea;height:34px;display:flex;align-items:center">$</span>
+            <input id="et-fee" type="number" value="${t.fee||''}" placeholder="0" style="border:none;background:transparent;flex:1;height:34px;padding:0 10px;font-size:13px;font-family:inherit;outline:none">
+          </div>
+        </div>
+      </div>`:''}
+
+      <div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Headshot URL</div>
+        <input id="et-headshot" value="${t.headshot||''}" placeholder="Paste image URL (or use Google Drive / Dropbox link)" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box"></div>
+
+      <div style="border-top:1px solid #f2f2f7;padding-top:12px">
+        <div style="font-size:11px;font-weight:700;color:#1d1d1f;margin-bottom:8px">Agent / Direct Contact</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Agent / Contact Name</div>
+            <input id="et-agent" value="${t.agent||''}" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box"></div>
+          <div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Phone</div>
+            <input id="et-agent-phone" value="${t.agentPhone||''}" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box"></div>
+        </div>
+        <div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Email</div>
+          <input id="et-agent-email" value="${t.agentEmail||''}" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box"></div>
+      </div>
+
+      <div style="border-top:1px solid #f2f2f7;padding-top:12px">
+        <div style="font-size:11px;font-weight:700;color:#1d1d1f;margin-bottom:8px"><i class="ti ti-plane" style="font-size:12px;color:#2980b9"></i> Travel Details</div>
+        <textarea id="et-travel" style="width:100%;height:72px;padding:9px 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;resize:vertical;line-height:1.5;box-sizing:border-box" placeholder="Flights, hotel, reservations, pickup info...">${t.travel||''}</textarea>
+      </div>
+
+      <div style="border-top:1px solid #f2f2f7;padding-top:12px">
+        <div style="font-size:11px;font-weight:700;color:#1d1d1f;margin-bottom:8px">Conversation Updates / Notes</div>
+        <textarea id="et-notes" style="width:100%;height:80px;padding:9px 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;resize:vertical;line-height:1.5;box-sizing:border-box" placeholder="Latest updates, conversations, requirements...">${t.notes||''}</textarea>
+      </div>
+
+    </div>
+    <div style="padding:14px 20px;border-top:1px solid #f2f2f7;display:flex;justify-content:space-between;background:#fafafa;flex-shrink:0">
+      <button onclick="document.getElementById('edit-talent-modal').remove()" style="height:36px;padding:0 18px;border-radius:8px;border:1.5px solid #e5e5ea;background:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Cancel</button>
+      <button onclick="saveEditTalent('${evId}',${i})" style="height:36px;padding:0 22px;border-radius:8px;border:none;background:#1d1d1f;color:#fff;-webkit-text-fill-color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Save</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+
+function saveEditTalent(evId,i){
+  const ev=EVENTS.find(e=>e.id===evId);if(!ev||!ev.talent[i])return;
+  const t=ev.talent[i];
+  t.name=(document.getElementById('et-name').value||'').trim()||t.name;
+  t.status=document.getElementById('et-status').value||t.status;
+  t.role=(document.getElementById('et-role').value||'').trim();
+  t.org=(document.getElementById('et-org').value||'').trim();
+  t.headshot=(document.getElementById('et-headshot').value||'').trim();
+  t.agent=(document.getElementById('et-agent').value||'').trim();
+  t.agentPhone=(document.getElementById('et-agent-phone').value||'').trim();
+  t.agentEmail=(document.getElementById('et-agent-email').value||'').trim();
+  t.travel=(document.getElementById('et-travel').value||'').trim();
+  t.notes=(document.getElementById('et-notes').value||'').trim();
+  if(USER_ROLE!=='activation'&&document.getElementById('et-fee')) t.fee=parseFloat(document.getElementById('et-fee').value)||0;
+  document.getElementById('edit-talent-modal').remove();
+  renderEventDetail(ev);
+}
+
 function buildEventROS(ev){
   const ros=ev.ros||[];
-  const statusColor={pending:'#8e8e93',inprogress:'#f59e0b',done:'#1d9e75'};
+  const talentNames=(ev.talent||[]).map(t=>t.name);
   return`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
     <div style="font-size:14px;font-weight:700">${ros.length} Items</div>
-    <button onclick="openAddROS('${ev.id}')" class="btn btn-dark btn-sm" style="display:flex;align-items:center;gap:4px"><i class="ti ti-list" style="font-size:12px"></i> Add Item</button>
+    <div style="display:flex;gap:8px">
+      <button onclick="printROS('${ev.id}')" style="background:#f2f2f7;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px"><i class="ti ti-printer" style="font-size:12px"></i> Print / Export</button>
+      <button onclick="openAddROS('${ev.id}')" class="btn btn-dark btn-sm" style="display:flex;align-items:center;gap:4px"><i class="ti ti-list" style="font-size:12px"></i> Add Item</button>
+    </div>
   </div>`
   +(!ros.length?'<div style="text-align:center;padding:40px;background:#fff;border-radius:12px;border:1.5px dashed #e5e5ea;color:#8e8e93">No run of show items yet</div>'
   :'<div style="background:#fff;border:1.5px solid #e5e5ea;border-radius:12px;overflow:hidden">'
-  +ros.map((r,i)=>`<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:0.5px solid #f2f2f7">
-    <div style="font-size:12px;font-weight:700;color:#8e8e93;min-width:52px;flex-shrink:0">${r.time||'—'}</div>
+  +ros.map((r,i)=>`<div style="display:flex;align-items:flex-start;gap:12px;padding:13px 16px;border-bottom:0.5px solid #f2f2f7">
+    <div style="font-size:13px;font-weight:700;color:#8e8e93;min-width:60px;flex-shrink:0;padding-top:1px">${r.time||'TBD'}</div>
     <div style="flex:1">
-      <div style="font-size:13px;font-weight:600">${r.item}</div>
-      ${r.owner?`<div style="font-size:11px;color:#8e8e93;margin-top:1px">Owner: ${r.owner}</div>`:''}
+      <div style="font-size:13px;font-weight:600;color:#1d1d1f">${r.item}</div>
+      ${r.talent?`<div style="font-size:11px;color:#2980b9;margin-top:3px;display:flex;align-items:center;gap:4px"><i class="ti ti-user" style="font-size:10px"></i> ${r.talent}</div>`:''}
+      ${r.notes?`<div style="font-size:11px;color:#6c6c70;margin-top:3px;line-height:1.4">${r.notes}</div>`:''}
+      ${r.owner?`<div style="font-size:11px;color:#8e8e93;margin-top:2px">Owner: ${r.owner}</div>`:''}
     </div>
-    <select onchange="updateROSStatus('${ev.id}',${i},this.value)" style="height:26px;padding:0 6px;border:1.5px solid #e5e5ea;border-radius:6px;font-size:11px;font-weight:600;font-family:inherit;color:${statusColor[r.status||'pending']}">
-      ${['pending','inprogress','done'].map(s=>`<option value="${s}" ${(r.status||'pending')===s?'selected':''}>${{pending:'Pending',inprogress:'In Progress',done:'Done'}[s]}</option>`).join('')}
-    </select>
-    <button onclick="removeROS('${ev.id}',${i})" style="background:none;border:none;cursor:pointer;color:#c7c7cc;font-size:13px"><i class="ti ti-x"></i></button>
+    <div style="display:flex;gap:6px;flex-shrink:0">
+      <button onclick="openEditROS('${ev.id}',${i})" style="background:#f2f2f7;border:none;border-radius:7px;padding:4px 9px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:3px"><i class="ti ti-edit" style="font-size:10px"></i> Edit</button>
+      <button onclick="removeROS('${ev.id}',${i})" style="background:none;border:none;cursor:pointer;color:#c7c7cc;font-size:14px;padding:3px"><i class="ti ti-x"></i></button>
+    </div>
   </div>`).join('')+'</div>');
+}
+
+function openEditROS(evId,i){
+  const ev=EVENTS.find(e=>e.id===evId);if(!ev||!ev.ros[i])return;
+  const r=ev.ros[i];
+  const talentNames=(ev.talent||[]).map(t=>t.name);
+  const existing=document.getElementById('ros-edit-modal');if(existing)existing.remove();
+  const ov=document.createElement('div');ov.id='ros-edit-modal';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1300;display:flex;align-items:center;justify-content:center';
+  ov.innerHTML=`<div style="background:#fff;border-radius:16px;width:460px;box-shadow:0 30px 80px rgba(0,0,0,.25);overflow:hidden">
+    <div style="background:#1d1d1f;padding:14px 18px;display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:14px;font-weight:700;color:#fff">Edit ROS Item</div>
+      <button onclick="document.getElementById('ros-edit-modal').remove()" style="background:rgba(255,255,255,.12);border:none;border-radius:8px;width:28px;height:28px;cursor:pointer;color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>
+    <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
+      <div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Item Description</div>
+        <input id="re-item" value="${r.item||''}" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Time</div>
+          <input id="re-time" value="${r.time||''}" placeholder="e.g. 6:00 PM" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box"></div>
+        <div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Owner</div>
+          <input id="re-owner" value="${r.owner||''}" placeholder="Responsible person" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box"></div>
+      </div>
+      <div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Associated Talent</div>
+        <select id="re-talent" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
+          <option value="">— None —</option>
+          ${talentNames.map(n=>`<option value="${n}" ${r.talent===n?'selected':''}>${n}</option>`).join('')}
+        </select></div>
+      <div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Notes</div>
+        <textarea id="re-notes" style="width:100%;height:72px;padding:9px 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;resize:none;line-height:1.5;box-sizing:border-box" placeholder="Additional notes...">${r.notes||''}</textarea></div>
+    </div>
+    <div style="padding:12px 16px;border-top:1px solid #f2f2f7;display:flex;justify-content:space-between;background:#fafafa">
+      <button onclick="document.getElementById('ros-edit-modal').remove()" style="height:34px;padding:0 16px;border-radius:8px;border:1.5px solid #e5e5ea;background:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Cancel</button>
+      <button onclick="saveEditROS('${evId}',${i})" style="height:34px;padding:0 18px;border-radius:8px;border:none;background:#1d1d1f;color:#fff;-webkit-text-fill-color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Save</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+
+function saveEditROS(evId,i){
+  const ev=EVENTS.find(e=>e.id===evId);if(!ev||!ev.ros[i])return;
+  ev.ros[i].item=(document.getElementById('re-item').value||'').trim()||ev.ros[i].item;
+  ev.ros[i].time=(document.getElementById('re-time').value||'').trim();
+  ev.ros[i].owner=(document.getElementById('re-owner').value||'').trim();
+  ev.ros[i].talent=(document.getElementById('re-talent').value||'').trim();
+  ev.ros[i].notes=(document.getElementById('re-notes').value||'').trim();
+  document.getElementById('ros-edit-modal').remove();
+  renderEventDetail(ev);
+}
+
+function printROS(evId){
+  const ev=EVENTS.find(e=>e.id===evId);if(!ev)return;
+  const rows=(ev.ros||[]).map(r=>`
+    <tr>
+      <td style="padding:10px 14px;border-bottom:1px solid #eee;font-weight:600;white-space:nowrap;width:80px">${r.time||'TBD'}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid #eee">
+        <div style="font-weight:600">${r.item}</div>
+        ${r.talent?`<div style="font-size:12px;color:#2980b9;margin-top:2px">👤 ${r.talent}</div>`:''}
+        ${r.notes?`<div style="font-size:12px;color:#6c6c70;margin-top:2px">${r.notes}</div>`:''}
+      </td>
+      <td style="padding:10px 14px;border-bottom:1px solid #eee;font-size:12px;color:#8e8e93;white-space:nowrap">${r.owner||''}</td>
+    </tr>`).join('');
+  const win=window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>Run of Show — ${ev.name}</title>
+  <style>body{font-family:-apple-system,sans-serif;max-width:800px;margin:40px auto;padding:0 20px}h1{font-size:24px;margin-bottom:4px}h2{font-size:14px;color:#8e8e93;font-weight:400;margin-bottom:24px}table{width:100%;border-collapse:collapse}th{text-align:left;padding:8px 14px;border-bottom:2px solid #1d1d1f;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:#8e8e93}@media print{body{margin:20px}}</style>
+  </head><body>
+  <h1>${ev.name}</h1>
+  <h2>${ev.date?new Date(ev.date).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'}):''} ${ev.location?'· '+ev.location:''}</h2>
+  <table><thead><tr><th>Time</th><th>Item</th><th>Owner</th></tr></thead><tbody>${rows}</tbody></table>
+  <div style="margin-top:30px;font-size:11px;color:#aeaeb2">Generated by Triumph NIL · ${new Date().toLocaleDateString()}</div>
+  </body></html>`);
+  win.document.close();
+  setTimeout(()=>win.print(),400);
 }
 
 function buildEventNotes(ev){
@@ -3002,20 +3187,32 @@ function removeVendor(evId,i){const ev=EVENTS.find(e=>e.id===evId);if(!ev)return
 
 // Run of Show
 function openAddROS(evId){
+  const ev=EVENTS.find(e=>e.id===evId);if(!ev)return;
+  const talentNames=(ev.talent||[]).map(t=>t.name);
   const existing=document.getElementById('ros-modal');if(existing)existing.remove();
   const ov=document.createElement('div');ov.id='ros-modal';
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1300;display:flex;align-items:center;justify-content:center';
-  ov.innerHTML=`<div style="background:#fff;border-radius:16px;width:420px;box-shadow:0 30px 80px rgba(0,0,0,.25);overflow:hidden">
+  ov.innerHTML=`<div style="background:#fff;border-radius:16px;width:460px;box-shadow:0 30px 80px rgba(0,0,0,.25);overflow:hidden">
     <div style="background:#1d1d1f;padding:14px 18px;display:flex;justify-content:space-between;align-items:center">
       <div style="font-size:14px;font-weight:700;color:#fff">Add ROS Item</div>
       <button onclick="document.getElementById('ros-modal').remove()" style="background:rgba(255,255,255,.12);border:none;border-radius:8px;width:28px;height:28px;cursor:pointer;color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center">✕</button>
     </div>
     <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
-      <input id="ros-item" placeholder="Item description *" style="height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
+      <div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Item Description *</div>
+        <input id="ros-item" placeholder="e.g. Athlete autograph session" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <input id="ros-time" placeholder="Time (e.g. 6:00 PM)" style="height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
-        <input id="ros-owner" placeholder="Owner / responsible" style="height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
+        <div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Time</div>
+          <input id="ros-time" placeholder="e.g. 6:00 PM" style="height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;width:100%;box-sizing:border-box"></div>
+        <div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Owner</div>
+          <input id="ros-owner" placeholder="Responsible person" style="height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;width:100%;box-sizing:border-box"></div>
       </div>
+      <div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Associated Talent</div>
+        <select id="ros-talent" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none">
+          <option value="">— None —</option>
+          ${talentNames.map(n=>`<option value="${n}">${n}</option>`).join('')}
+        </select></div>
+      <div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Notes</div>
+        <textarea id="ros-notes" style="width:100%;height:60px;padding:9px 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;resize:none;box-sizing:border-box" placeholder="Additional notes..."></textarea></div>
     </div>
     <div style="padding:12px 16px;border-top:1px solid #f2f2f7;display:flex;justify-content:space-between;background:#fafafa">
       <button onclick="document.getElementById('ros-modal').remove()" style="height:34px;padding:0 16px;border-radius:8px;border:1.5px solid #e5e5ea;background:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Cancel</button>
@@ -3028,7 +3225,13 @@ function saveROS(evId){
   const ev=EVENTS.find(e=>e.id===evId);if(!ev)return;
   const item=(document.getElementById('ros-item').value||'').trim();if(!item)return;
   if(!ev.ros)ev.ros=[];
-  ev.ros.push({item,time:document.getElementById('ros-time').value||'',owner:document.getElementById('ros-owner').value||'',status:'pending'});
+  ev.ros.push({
+    item,
+    time:document.getElementById('ros-time').value||'',
+    owner:document.getElementById('ros-owner').value||'',
+    talent:document.getElementById('ros-talent')?.value||'',
+    notes:document.getElementById('ros-notes')?.value||''
+  });
   document.getElementById('ros-modal').remove();
   renderEventDetail(ev);
 }
