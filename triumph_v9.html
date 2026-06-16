@@ -2657,8 +2657,8 @@ function openEventDetail(id){
 
 function renderEventDetail(ev){
   const el=document.getElementById('events-body');
-  const tabs=['talent','sponsors','vendors','ros','notes'];
-  const tabLabels={talent:'Talent',sponsors:'Sponsors',vendors:'Vendors',ros:'Run of Show',notes:'Notes & Recap'};
+  const tabs=['talent','sponsors','vendors',...(USER_ROLE!=='activation'?['budget']:[]),'ros','notes'];
+  const tabLabels={talent:'Talent',sponsors:'Sponsors',vendors:'Vendors',budget:'Budget',ros:'Run of Show',notes:'Notes & Recap'};
   const statusOpts=['planning','active','complete'];
 
   el.innerHTML=`
@@ -2696,6 +2696,7 @@ function renderEventTab(ev){
   if(activeEventTab==='vendors') el.innerHTML=buildEventVendors(ev);
   if(activeEventTab==='ros') el.innerHTML=buildEventROS(ev);
   if(activeEventTab==='notes') el.innerHTML=buildEventNotes(ev);
+  if(activeEventTab==='budget') el.innerHTML=buildEventBudget(ev);
 }
 
 function buildEventTalent(ev){
@@ -2943,6 +2944,117 @@ function saveEditTalent(evId,i){
   document.getElementById('edit-talent-modal').remove();
   saveEventToSupabase(ev);
   renderEventDetail(ev);
+}
+
+function buildEventBudget(ev){
+  // Income
+  const sponsorTotal=(ev.sponsors||[]).reduce((s,x)=>s+(x.committed||0),0);
+
+  // NILGo cleared — sum of talent fees marked as NILGo
+  const talentFeeTotal=(ev.talent||[]).reduce((s,t)=>s+(t.fee||0),0);
+  const nilgoCleared=(ev.talent||[]).filter(t=>t.nilgoStatus==='cleared').reduce((s,t)=>s+(t.fee||0),0);
+  const nilgoPending=(ev.talent||[]).filter(t=>!t.nilgoStatus||t.nilgoStatus==='pending').reduce((s,t)=>s+(t.fee||0),0);
+
+  // Costs
+  const vendorTotal=(ev.vendors||[]).reduce((s,x)=>s+(x.cost||0),0);
+  const totalCost=vendorTotal+talentFeeTotal;
+  const netIncome=sponsorTotal-totalCost;
+
+  const row=(label,val,color,sub)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:0.5px solid #f2f2f7">
+    <div><div style="font-size:13px;font-weight:500;color:#1d1d1f">${label}</div>${sub?`<div style="font-size:11px;color:#8e8e93;margin-top:1px">${sub}</div>`:''}</div>
+    <div style="font-size:14px;font-weight:700;color:${color||'#1d1d1f'}">${typeof val==='number'?f(val):val}</div>
+  </div>`;
+
+  const section=(title,color,content)=>`<div style="background:#fff;border:1.5px solid #e5e5ea;border-radius:14px;padding:16px 20px;margin-bottom:14px">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:${color};margin-bottom:4px">${title}</div>
+    ${content}
+  </div>`;
+
+  // Sponsor breakdown rows
+  const sponsorRows=(ev.sponsors||[]).length
+    ?(ev.sponsors||[]).map(s=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:0.5px solid #f2f2f7">
+      <div><div style="font-size:13px;font-weight:500">${s.name}</div>${s.contact?`<div style="font-size:11px;color:#8e8e93">${s.contact}</div>`:''}</div>
+      <div style="font-size:13px;font-weight:700;color:#1d9e75">${f(s.committed||0)}</div>
+    </div>`).join('')
+    :'<div style="color:#8e8e93;font-size:13px;padding:8px 0">No sponsors added</div>';
+
+  // Talent fee rows with NILGo status toggle
+  const talentRows=(ev.talent||[]).length
+    ?(ev.talent||[]).filter(t=>t.fee>0).map((t,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:0.5px solid #f2f2f7">
+      <div>
+        <div style="font-size:13px;font-weight:500">${t.name}</div>
+        <div style="font-size:11px;color:#8e8e93;margin-top:1px">${t.role||'Talent'}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <select onchange="updateTalentNilgoStatus('${ev.id}',${i},this.value)" style="height:26px;padding:0 8px;border:1.5px solid #e5e5ea;border-radius:6px;font-size:11px;font-weight:600;font-family:inherit;color:${t.nilgoStatus==='cleared'?'#1d9e75':t.nilgoStatus==='submitted'?'#2980b9':'#f59e0b'}">
+          <option value="pending" ${(!t.nilgoStatus||t.nilgoStatus==='pending')?'selected':''}>Pending NILGo</option>
+          <option value="submitted" ${t.nilgoStatus==='submitted'?'selected':''}>Submitted</option>
+          <option value="cleared" ${t.nilgoStatus==='cleared'?'selected':''}>NILGo Cleared</option>
+        </select>
+        <div style="font-size:13px;font-weight:700;color:#8e44ad">${f(t.fee||0)}</div>
+      </div>
+    </div>`).join('')
+    :'<div style="color:#8e8e93;font-size:13px;padding:8px 0">No talent fees set — add fees in the Talent tab</div>';
+
+  // Vendor breakdown rows
+  const vendorRows=(ev.vendors||[]).length
+    ?(ev.vendors||[]).map(v=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:0.5px solid #f2f2f7">
+      <div><div style="font-size:13px;font-weight:500">${v.name}</div><div style="font-size:11px;color:#8e8e93">${v.category||''}</div></div>
+      <div style="font-size:13px;font-weight:700;color:#e34040">${f(v.cost||0)}</div>
+    </div>`).join('')
+    :'<div style="color:#8e8e93;font-size:13px;padding:8px 0">No vendors added</div>';
+
+  return`<div style="max-width:680px">
+
+    <!-- Summary bar -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+      <div style="background:#e8f8f2;border-radius:12px;padding:14px;text-align:center">
+        <div style="font-size:10px;font-weight:600;color:#1d9e75;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Sponsor Revenue</div>
+        <div style="font-size:20px;font-weight:700;color:#1d9e75">${f(sponsorTotal)}</div>
+      </div>
+      <div style="background:#f5f0ff;border-radius:12px;padding:14px;text-align:center">
+        <div style="font-size:10px;font-weight:600;color:#8e44ad;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">NILGo Cleared</div>
+        <div style="font-size:20px;font-weight:700;color:#8e44ad">${f(nilgoCleared)}</div>
+        ${nilgoPending>0?`<div style="font-size:10px;color:#f59e0b;margin-top:2px">${f(nilgoPending)} pending</div>`:''}
+      </div>
+      <div style="background:#fff0f3;border-radius:12px;padding:14px;text-align:center">
+        <div style="font-size:10px;font-weight:600;color:#e34040;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Total Cost</div>
+        <div style="font-size:20px;font-weight:700;color:#e34040">${f(totalCost)}</div>
+      </div>
+      <div style="background:${netIncome>=0?'#e8f8f2':'#fff0f3'};border-radius:12px;padding:14px;text-align:center">
+        <div style="font-size:10px;font-weight:600;color:${netIncome>=0?'#1d9e75':'#e34040'};text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Net</div>
+        <div style="font-size:20px;font-weight:700;color:${netIncome>=0?'#1d9e75':'#e34040'}">${netIncome>=0?'+':''}${f(netIncome)}</div>
+      </div>
+    </div>
+
+    ${section('💰 Sponsor Revenue','#1d9e75',sponsorRows
+      +'<div style="display:flex;justify-content:space-between;padding:10px 0 0;font-weight:700"><span>Total</span><span style="color:#1d9e75">${f(sponsorTotal)}</span></div>')}
+
+    ${section('🎤 Talent Fees (NILGo)','#8e44ad',talentRows
+      +(talentFeeTotal>0?`<div style="display:flex;justify-content:space-between;padding:10px 0 0;font-weight:700"><span>Total</span><span style="color:#8e44ad">${f(talentFeeTotal)}</span></div>`:''))}
+
+    ${section('🔧 Vendor Costs','#e34040',vendorRows
+      +(vendorTotal>0?`<div style="display:flex;justify-content:space-between;padding:10px 0 0;font-weight:700"><span>Total</span><span style="color:#e34040">${f(vendorTotal)}</span></div>`:''))}
+
+    <!-- P&L Summary -->
+    <div style="background:#1d1d1f;border-radius:14px;padding:18px 20px;color:#fff">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,.4);margin-bottom:12px">P&L Summary</div>
+      ${row('Sponsor Revenue',sponsorTotal,'#4ade80')}
+      ${row('Talent Fees',-talentFeeTotal,'#f87171','Paid via NILGo')}
+      ${row('Vendor Costs',-vendorTotal,'#f87171')}
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0 0;border-top:1px solid rgba(255,255,255,.1);margin-top:4px">
+        <div style="font-size:15px;font-weight:700;color:#fff">Net Event P&L</div>
+        <div style="font-size:22px;font-weight:700;color:${netIncome>=0?'#4ade80':'#f87171'}">${netIncome>=0?'+':''}${f(netIncome)}</div>
+      </div>
+    </div>
+
+  </div>`;
+}
+
+function updateTalentNilgoStatus(evId,i,status){
+  const ev=EVENTS.find(e=>e.id===evId);if(!ev||!ev.talent[i])return;
+  ev.talent[i].nilgoStatus=status;
+  saveEventToSupabase(ev);
 }
 
 function buildEventROS(ev){
