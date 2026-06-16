@@ -1487,6 +1487,32 @@ function openAddCompany(){
           <input id="co-committed" type="text" inputmode="decimal" placeholder="0" style="border:none!important;background:transparent!important;flex:1;height:100%;padding:0 11px;font-size:13px;font-family:inherit;outline:none" onfocus="this.select()" onblur="const n=parseFloat(this.value.replace(/[^0-9.]/g,''))||0;this.value=n>0?n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}):''">
         </div>
       </div>
+      <div style="margin-bottom:16px">
+        <div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Partner Channel</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px" id="co-partner-grid">
+          <div onclick="document.querySelectorAll('.co-partner-opt').forEach(x=>x.classList.remove('active'));this.classList.add('active');document.getElementById('co-partner-val').value=''" class="co-partner-opt" style="border:1.5px solid #e5e5ea;border-radius:8px;padding:8px 10px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .15s">
+            <div style="width:8px;height:8px;border-radius:50%;background:#f2f2f7;border:1.5px solid #d1d1d6"></div>
+            <span style="font-size:11px;font-weight:600;color:#8e8e93">No Tag</span>
+          </div>
+          <div onclick="document.querySelectorAll('.co-partner-opt').forEach(x=>x.classList.remove('active'));this.classList.add('active');document.getElementById('co-partner-val').value='playfly'" class="co-partner-opt" data-val="playfly" style="border:1.5px solid #a8d0f0;border-radius:8px;padding:8px 10px;cursor:pointer;display:flex;align-items:center;gap:6px;background:#dbeeff;transition:all .15s">
+            <div style="width:8px;height:8px;border-radius:50%;background:#1565a8"></div>
+            <span style="font-size:11px;font-weight:600;color:#1565a8">Playfly</span>
+          </div>
+          <div onclick="document.querySelectorAll('.co-partner-opt').forEach(x=>x.classList.remove('active'));this.classList.add('active');document.getElementById('co-partner-val').value='bpg'" class="co-partner-opt" data-val="bpg" style="border:1.5px solid #d4a0a0;border-radius:8px;padding:8px 10px;cursor:pointer;display:flex;align-items:center;gap:6px;background:#f5e8e8;transition:all .15s">
+            <div style="width:8px;height:8px;border-radius:50%;background:#7a1f1f"></div>
+            <span style="font-size:11px;font-weight:600;color:#7a1f1f">Blacksburg Partnership Group</span>
+          </div>
+          <div onclick="document.querySelectorAll('.co-partner-opt').forEach(x=>x.classList.remove('active'));this.classList.add('active');document.getElementById('co-partner-val').value='mccc'" class="co-partner-opt" data-val="mccc" style="border:1.5px solid #e8d870;border-radius:8px;padding:8px 10px;cursor:pointer;display:flex;align-items:center;gap:6px;background:#fefbe8;transition:all .15s">
+            <div style="width:8px;height:8px;border-radius:50%;background:#7a6a00"></div>
+            <span style="font-size:11px;font-weight:600;color:#7a6a00">Montgomery Co. Chamber</span>
+          </div>
+          <div onclick="document.querySelectorAll('.co-partner-opt').forEach(x=>x.classList.remove('active'));this.classList.add('active');document.getElementById('co-partner-val').value='independent'" class="co-partner-opt" data-val="independent" style="border:1.5px solid #c5b8f0;border-radius:8px;padding:8px 10px;cursor:pointer;display:flex;align-items:center;gap:6px;background:#f3f0fb;transition:all .15s">
+            <div style="width:8px;height:8px;border-radius:50%;background:#5b21b6"></div>
+            <span style="font-size:11px;font-weight:600;color:#5b21b6">Independent</span>
+          </div>
+        </div>
+        <input type="hidden" id="co-partner-val" value="">
+      </div>
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8e8e93;border-bottom:1px solid #f2f2f7;padding-bottom:6px;margin-bottom:10px">Athletes in this deal</div>
       ${A.length===0?'<div style="color:#8e8e93;font-size:12px;padding:10px 0">No athletes added yet — add athletes first</div>':'<div style="display:flex;flex-direction:column;gap:6px">'+athleteList+'</div>'}
       <div id="co-err" style="display:none;margin-top:12px;padding:10px 14px;background:#fff0f3;border-radius:8px;font-size:12px;color:#e34040"></div>
@@ -1514,7 +1540,8 @@ async function saveNewCompany(){
   try{
     const {data:newCo,error:ce}=await sb.from('companies').insert({
       name,committed,logo_initial:name[0].toUpperCase(),rank_number:CO.length+1,
-      priority:CO.length,athletes:JSON.stringify([])
+      priority:CO.length,athletes:JSON.stringify([]),
+      partner_type:document.getElementById('co-partner-val')?.value||null
     }).select().single();
     if(ce) throw ce;
     const athleteObjs=selectedKeys.map(key=>{
@@ -1532,7 +1559,8 @@ async function saveNewCompany(){
         const {error:le}=await sb.from('company_athletes').insert(links);if(le) console.warn(le);
       }
     }
-    CO.push({id:newCo.id,name,committed,athletes:athleteObjs,priority:CO.length-1});
+    const newPartnerType=document.getElementById('co-partner-val')?.value||'';
+    CO.push({id:newCo.id,name,committed,athletes:athleteObjs,priority:CO.length-1,partner_type:newPartnerType});
     document.getElementById('add-co-overlay').remove();
     renderCos();
     syncStatus('Company added ✓');
@@ -4304,106 +4332,138 @@ function renderCos(){
 let plannerSlots={};
 
 function buildActivationPlanner(){
-  if(CO.length===0) return'<div style="text-align:center;padding:60px;color:#8e8e93"><div style="font-size:14px;font-weight:600;color:#1d1d1f;margin-bottom:4px">No companies yet</div><div style="font-size:12px">Add a company first, then plan activations here</div></div>';
+  if(CO.length===0) return '<div style="text-align:center;padding:60px;color:#8e8e93"><div style="font-size:14px;font-weight:600;color:#1d1d1f;margin-bottom:4px">No companies yet</div><div style="font-size:12px">Add a company first, then plan activations here</div></div>';
 
   const sportOrder=['Football','Baseball','Basketball-M','Basketball-W'];
-  const sportLabels={Football:'Football',Baseball:'Baseball','Basketball-M':'Men\'s Basketball','Basketball-W':'Women\'s Basketball'};
+  const sportLabels={Football:'Football',Baseball:'Baseball','Basketball-M':"Men's Basketball",'Basketball-W':"Women's Basketball"};
   const sportColors={Football:{bg:'#eef6ff',text:'#2980b9'},Baseball:{bg:'#fff8e8',text:'#b7791f'},'Basketball-M':{bg:'#f3f0fb',text:'#5b21b6'},'Basketball-W':{bg:'#fff0f3',text:'#c0392b'}};
+  const statusColors={Draft:'#8e8e93',Confirmed:'#b7791f',Activated:'#1d9e75'};
+  const typeLabels={social:'Social',appearance:'Appearance',content:'Content',autograph:'Autograph',other:'Other'};
 
-  // Build sport-tab bench HTML
   const allSports=[...new Set(A.map(a=>a.sport||'Football'))].sort((a,b)=>sportOrder.indexOf(a)-sportOrder.indexOf(b));
   const activeSportTab=window._plannerSportTab||allSports[0]||'Football';
 
+  // ── Athlete card for bench ──
   function athleteCardHtml(a){
     const akey=a.f+'_'+a.l;
-    // Sum activation fees already slotted for this athlete
     let plannedFee=0;
     Object.values(plannerSlots).forEach(co=>Object.values(co).forEach(act=>{
       if((act.slots||[]).includes(akey)) plannedFee+=(act.fee||0);
     }));
     const nilRem=a.contract-a.paid;
-    const nilRemAfter=nilRem-plannedFee;
-    const bankedAfter=(a.banked-a.paid)+plannedFee;
     const curSch=a.sch.find(x=>x.mo===CUR&&(x.yr||2026)===2026);
     const curNIL=curSch&&curSch.a>0?curSch.a:0;
     const isSlotted=plannedFee>0;
-    return'<div class="planner-athlete" draggable="true" data-akey="'+akey+'"'
-      +' style="background:#fff;border:1.5px solid '+(isSlotted?'#1d9e75':'#e5e5ea')+';border-radius:10px;padding:10px 12px;cursor:grab;user-select:none;transition:box-shadow .1s;position:relative"'
+    return '<div class="planner-athlete" draggable="true" data-akey="'+akey+'"'
+      +' style="background:#fff;border:1.5px solid '+(isSlotted?'#1d9e75':'#e5e5ea')+';border-radius:10px;padding:9px 11px;cursor:grab;user-select:none;transition:box-shadow .1s;position:relative"'
       +' onmouseenter="this.style.boxShadow=\'0 4px 12px rgba(0,0,0,.1)\'" onmouseleave="this.style.boxShadow=\'none\'">'
-      +(isSlotted?'<div style="position:absolute;top:8px;right:8px;background:#1d9e75;color:#fff;-webkit-text-fill-color:#fff;border-radius:4px;font-size:8px;font-weight:700;padding:1px 5px">SLOTTED</div>':'')
-      +'<div style="font-size:12px;font-weight:700;color:#1d1d1f;margin-bottom:2px;padding-right:'+(isSlotted?'52px':'4px')+'">'+a.f+' '+a.l+'</div>'
-      +'<div style="font-size:10px;color:#8e8e93;margin-bottom:6px">'+a.pos+'</div>'
-      +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px">'
-      +'<div style="background:#f0ebff;border-radius:5px;padding:3px 5px"><div style="font-size:8px;color:#8e44ad;font-weight:600">NIL REM</div><div style="font-size:10px;font-weight:700;color:#8e44ad">'+f(nilRem)+'</div></div>'
-      +'<div style="background:#e8f8f2;border-radius:5px;padding:3px 5px"><div style="font-size:8px;color:#1d9e75;font-weight:600">BANKED</div><div style="font-size:10px;font-weight:700;color:#1d9e75">'+f(a.banked-a.paid)+'</div></div>'
-      +'<div style="background:#eef6ff;border-radius:5px;padding:3px 5px"><div style="font-size:8px;color:#2980b9;font-weight:600">'+CUR+' NIL</div><div style="font-size:10px;font-weight:700;color:#2980b9">'+(curNIL>0?f(curNIL):'-')+'</div></div>'
+      +(isSlotted?'<div style="position:absolute;top:7px;right:7px;background:#1d9e75;color:#fff;-webkit-text-fill-color:#fff;border-radius:4px;font-size:7px;font-weight:700;padding:1px 4px">SLOTTED</div>':'')
+      +'<div style="font-size:11px;font-weight:700;color:#1d1d1f;margin-bottom:1px;padding-right:'+(isSlotted?'46px':'4px')+'">'+a.f+' '+a.l+'</div>'
+      +'<div style="font-size:10px;color:#8e8e93;margin-bottom:5px">'+a.pos+'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px">'
+        +'<div style="background:#f0ebff;border-radius:4px;padding:3px 5px"><div style="font-size:7px;color:#8e44ad;font-weight:700">NIL REM</div><div style="font-size:10px;font-weight:700;color:#8e44ad">'+f(nilRem)+'</div></div>'
+        +'<div style="background:#e8f8f2;border-radius:4px;padding:3px 5px"><div style="font-size:7px;color:#1d9e75;font-weight:700">BANKED</div><div style="font-size:10px;font-weight:700;color:#1d9e75">'+f(a.banked-a.paid)+'</div></div>'
+        +'<div style="background:#eef6ff;border-radius:4px;padding:3px 5px"><div style="font-size:7px;color:#2980b9;font-weight:700">'+CUR+' NIL</div><div style="font-size:10px;font-weight:700;color:#2980b9">'+(curNIL>0?f(curNIL):'-')+'</div></div>'
       +'</div>'
-      +'</div>';
+    +'</div>';
   }
 
   const benchAthletes=A.filter(a=>(a.sport||'Football')===activeSportTab);
   const sportTabs=allSports.map(sp=>{
     const sc=sportColors[sp]||{bg:'#f2f2f7',text:'#3c3c43'};
     const active=sp===activeSportTab;
-    return'<button onclick="window._plannerSportTab=\''+sp+'\';renderCos()" style="padding:4px 11px;border-radius:6px;border:1.5px solid '+(active?sc.text:'#e5e5ea')+';background:'+(active?sc.bg:'transparent')+';color:'+(active?sc.text:'#8e8e93')+';-webkit-text-fill-color:'+(active?sc.text:'#8e8e93')+';font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">'+sportLabels[sp]+'</button>';
+    return '<button onclick="window._plannerSportTab=\''+sp+'\';renderCos()" style="padding:4px 10px;border-radius:6px;border:1.5px solid '+(active?sc.text:'#e5e5ea')+';background:'+(active?sc.bg:'transparent')+';color:'+(active?sc.text:'#8e8e93')+';-webkit-text-fill-color:'+(active?sc.text:'#8e8e93')+';font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">'+sportLabels[sp]+'</button>';
   }).join('');
 
-  // ===== LEFT: Company boards =====
+  // ── Budget warning helper ──
+  function budgetWarning(co, totalPlanned){
+    if(co.committed>0 && totalPlanned>co.committed){
+      const over=totalPlanned-co.committed;
+      return '<div style="margin:6px 0;background:#fff0f3;border:1px solid #f5c6cb;border-radius:6px;padding:5px 9px;font-size:9px;font-weight:700;color:#c0392b">Over budget by '+f(over)+'</div>';
+    }
+    if(co.committed>0){
+      const rem=co.committed-totalPlanned;
+      const pct=Math.round(totalPlanned/co.committed*100);
+      return '<div style="margin:6px 0;height:3px;background:#f2f2f7;border-radius:2px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+(pct>90?'#c0392b':pct>70?'#b7791f':'#1d9e75')+';border-radius:2px;transition:width .3s"></div></div>';
+    }
+    return '';
+  }
+
+  // ── Left: Company boards ──
   const companyBoards=CO.map(co=>{
     if(!plannerSlots[co.name]) plannerSlots[co.name]={};
     const acts=Object.entries(plannerSlots[co.name]);
     const totalPlanned=acts.reduce((s,[,act])=>s+(act.fee||0)*(act.slots||[]).filter(Boolean).length,0);
     const pm=partnerMeta(co.partner_type);
     const cardBorder=pm?pm.border:'#e5e5ea';
-    const headerBg=pm?pm.bg+'cc':'#f9f9f9';
+    const headerBg=pm?pm.bg+'bb':'#f9f9f9';
 
     const actsHtml=acts.map(([actId,act])=>{
       const slots=(act.slots||[]).map((akey,si)=>{
         const a=akey?A.find(x=>x.f+'_'+x.l===akey):null;
-        return'<div class="planner-slot'+(akey?' filled':'')+'" data-co="'+co.name+'" data-act="'+actId+'" data-slot="'+si+'"'
-          +' style="background:'+(akey?'#e8f8f2':'#f9f9f9')+';border:1.5px dashed '+(akey?'#1d9e75':'#d1d1d6')+';border-radius:7px;padding:7px 9px;min-height:44px;display:flex;align-items:center;justify-content:'+(akey?'space-between':'center')+';transition:all .15s"'
+        // Conflict: same athlete in multiple slots across all co's
+        let conflictCount=0;
+        if(akey) Object.values(plannerSlots).forEach(c=>Object.values(c).forEach(ac=>{
+          if((ac.slots||[]).includes(akey)) conflictCount++;
+        }));
+        const hasConflict=conflictCount>1;
+        return '<div class="planner-slot'+(akey?' filled':'')+'" data-co="'+co.name+'" data-act="'+actId+'" data-slot="'+si+'"'
+          +' style="background:'+(akey?(hasConflict?'#fff8e8':'#e8f8f2'):'#f9f9f9')+';border:1.5px dashed '+(akey?(hasConflict?'#b7791f':'#1d9e75'):'#d1d1d6')+';border-radius:7px;padding:6px 8px;min-height:40px;display:flex;align-items:center;justify-content:'+(akey?'space-between':'center')+';transition:all .15s"'
           +' ondragover="event.preventDefault();this.style.borderColor=\'#2980b9\';this.style.background=\'#eef6ff\'"'
-          +' ondragleave="this.style.borderColor=\''+(akey?'#1d9e75':'#d1d1d6')+'\';this.style.background=\''+(akey?'#e8f8f2':'#f9f9f9')+'\'"'
+          +' ondragleave="this.style.borderColor=\''+(akey?(hasConflict?'#b7791f':'#1d9e75'):'#d1d1d6')+'\';this.style.background=\''+(akey?(hasConflict?'#fff8e8':'#e8f8f2'):'#f9f9f9')+'\'"'
           +' ondrop="dropAthlete(event,\''+co.name+'\',\''+actId+'\','+si+')">'
           +(akey&&a
-            ?'<div style="flex:1"><div style="font-size:10px;font-weight:700;color:#1d1d1f">'+a.f+' '+a.l+'</div><div style="font-size:9px;color:#1d9e75">'+f(act.fee||0)+'</div></div>'
-             +'<button onclick="removeFromSlot(\''+co.name+'\',\''+actId+'\','+si+')" style="background:none;border:none;cursor:pointer;color:#c7c7cc;font-size:11px;padding:0 0 0 4px"><i class="ti ti-x"></i></button>'
-            :'<span style="font-size:10px;color:#aeaeb2">Drop athlete here</span>')
+            ?'<div style="flex:1"><div style="font-size:10px;font-weight:700;color:#1d1d1f">'+a.f+' '+a.l+'</div>'
+              +'<div style="font-size:9px;color:'+(hasConflict?'#b7791f':'#1d9e75')+'">'+(hasConflict?'Multi-slotted · ':'')+f(act.fee||0)+'</div></div>'
+              +'<button onclick="removeFromSlot(\''+co.name+'\',\''+actId+'\','+si+')" style="background:none;border:none;cursor:pointer;color:#c7c7cc;font-size:11px;padding:0 0 0 4px"><i class="ti ti-x"></i></button>'
+            :'<span style="font-size:9px;color:#aeaeb2">Drop athlete here</span>')
           +'</div>';
       }).join('');
 
       const filledCount=(act.slots||[]).filter(Boolean).length;
       const totalSlots=(act.slots||[]).length;
-      return'<div style="background:#fff;border:1.5px solid #e5e5ea;border-radius:9px;padding:10px;margin-bottom:7px">'
-        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">'
-          +'<div><div style="font-size:11px;font-weight:700;color:#1d1d1f">'+act.label+'</div>'
-          +'<div style="font-size:9px;color:#8e8e93;margin-top:1px">'+(act.type||'')+' · '+f(act.fee||0)+'/athlete · '+filledCount+'/'+totalSlots+' filled</div></div>'
-          +'<div style="display:flex;gap:3px">'
-            +'<button onclick="addSlotToAct(\''+co.name+'\',\''+actId+'\')" style="background:#f2f2f7;border:none;border-radius:5px;width:22px;height:22px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center" title="Add slot"><i class="ti ti-plus"></i></button>'
-            +'<button onclick="removeAct(\''+co.name+'\',\''+actId+'\')" style="background:none;border:none;cursor:pointer;color:#c7c7cc;font-size:12px"><i class="ti ti-trash"></i></button>'
+      const sc=statusColors[act.status_label||'Draft']||'#8e8e93';
+      const typesList=(act.types||[typeToKey(act.type||'Other')]).map(t=>typeLabels[t]||t).join(' + ');
+      const hasDate=act.date?(' · <b>'+act.date+'</b>'):'';
+      return '<div style="background:#fff;border:1.5px solid #e5e5ea;border-radius:9px;padding:9px;margin-bottom:7px">'
+        +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px">'
+          +'<div style="flex:1;min-width:0">'
+            +'<div style="display:flex;align-items:center;gap:5px;margin-bottom:1px">'
+              +'<div style="font-size:11px;font-weight:700;color:#1d1d1f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+act.label+'</div>'
+              +'<div style="flex-shrink:0;font-size:8px;font-weight:700;color:'+sc+';background:'+sc+'22;border-radius:3px;padding:1px 5px">'+( act.status_label||'Draft')+'</div>'
+            +'</div>'
+            +'<div style="font-size:9px;color:#8e8e93">'+typesList+hasDate+' · '+f(act.fee||0)+'/ath · '+filledCount+'/'+totalSlots+' filled</div>'
+            +(act.notes?'<div style="font-size:9px;color:#aeaeb2;margin-top:1px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+act.notes+'</div>':'')
+          +'</div>'
+          +'<div style="display:flex;gap:2px;flex-shrink:0;margin-left:6px">'
+            +'<button onclick="openAddActivation(\''+co.name+'\',\''+actId+'\')" style="background:#f2f2f7;border:none;border-radius:5px;width:22px;height:22px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center" title="Edit"><i class="ti ti-pencil"></i></button>'
+            +'<button onclick="addSlotToAct(\''+co.name+'\',\''+actId+'\')" style="background:#f2f2f7;border:none;border-radius:5px;width:22px;height:22px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center" title="Add slot"><i class="ti ti-plus"></i></button>'
+            +'<button onclick="removeAct(\''+co.name+'\',\''+actId+'\')" style="background:none;border:none;cursor:pointer;color:#c7c7cc;font-size:11px;width:22px;height:22px;display:flex;align-items:center;justify-content:center"><i class="ti ti-trash"></i></button>'
           +'</div>'
         +'</div>'
-        +'<div style="display:flex;flex-direction:column;gap:5px">'+slots+'</div>'
-        +(filledCount===totalSlots&&totalSlots>0
-          ?'<button onclick="activateSlots(\''+co.name+'\',\''+actId+'\')" style="margin-top:7px;width:100%;height:28px;background:#1d9e75;color:#fff;-webkit-text-fill-color:#fff;border:none;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:3px"><i class="ti ti-rocket" style="font-size:10px"></i> Activate → Send to Wallets</button>':''
+        +'<div style="display:flex;flex-direction:column;gap:4px">'+slots+'</div>'
+        +(filledCount===totalSlots&&totalSlots>0&&act.status_label!=='Activated'
+          ?'<button onclick="activateSlots(\''+co.name+'\',\''+actId+'\')" style="margin-top:6px;width:100%;height:26px;background:#1d9e75;color:#fff;-webkit-text-fill-color:#fff;border:none;border-radius:7px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:3px"><i class="ti ti-rocket" style="font-size:10px"></i> Activate → Send to Wallets</button>':''
         )
-        +'</div>';
+      +'</div>';
     }).join('');
 
-    return'<div style="background:#fff;border:1.5px solid '+cardBorder+';border-radius:12px;margin-bottom:10px;overflow:hidden">'
-      +'<div style="padding:12px 14px;border-bottom:1.5px solid '+cardBorder+';display:flex;justify-content:space-between;align-items:center;background:'+headerBg+'">'
+    return '<div style="background:#fff;border:1.5px solid '+cardBorder+';border-radius:11px;margin-bottom:8px;overflow:hidden">'
+      +'<div style="padding:9px 12px;border-bottom:1.5px solid '+cardBorder+';display:flex;justify-content:space-between;align-items:center;background:'+headerBg+'">'
         +'<div>'
-          +'<div style="font-size:13px;font-weight:700;color:#1d1d1f">'+co.name+'</div>'
-          +'<div style="font-size:10px;color:#8e8e93;margin-top:2px">'+f(co.committed)+' committed · '+f(totalPlanned)+' planned</div>'
+          +'<div style="font-size:12px;font-weight:700;color:#1d1d1f">'+co.name+'</div>'
+          +'<div style="font-size:9px;color:#8e8e93;margin-top:1px">'+f(co.committed)+' committed · '+f(totalPlanned)+' planned</div>'
         +'</div>'
-        +'<button onclick="openAddActivation(\''+co.name+'\')" style="background:#1d1d1f;color:#fff;-webkit-text-fill-color:#fff;border:none;border-radius:7px;padding:4px 10px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:3px"><i class="ti ti-plus" style="font-size:10px"></i> Add Activation</button>'
+        +'<button onclick="openAddActivation(\''+co.name+'\')" style="background:#1d1d1f;color:#fff;-webkit-text-fill-color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:3px"><i class="ti ti-plus" style="font-size:10px"></i> Add</button>'
       +'</div>'
-      +'<div style="padding:10px 14px">'+(acts.length===0?'<div style="text-align:center;padding:16px;color:#aeaeb2;font-size:11px">No activations yet — click Add Activation</div>':actsHtml)+'</div>'
+      +'<div style="padding:8px 12px">'
+        +budgetWarning(co, totalPlanned)
+        +(acts.length===0?'<div style="text-align:center;padding:12px;color:#aeaeb2;font-size:10px">No activations yet</div>':actsHtml)
+      +'</div>'
     +'</div>';
   }).join('');
 
-  // ===== RIGHT: Impact Panel =====
-  // Collect all slotted athletes and their impact
+  // ── Right: Impact summary ──
   const slottedMap={};
   Object.entries(plannerSlots).forEach(([coName,acts])=>{
     Object.entries(acts).forEach(([actId,act])=>{
@@ -4411,7 +4471,8 @@ function buildActivationPlanner(){
         if(!akey) return;
         if(!slottedMap[akey]) slottedMap[akey]={totalFee:0,activations:[]};
         slottedMap[akey].totalFee+=(act.fee||0);
-        slottedMap[akey].activations.push({co:coName,label:act.label,fee:act.fee||0});
+        const typeStr=(act.types||[typeToKey(act.type||'Other')]).map(t=>typeLabels[t]||t).join('+');
+        slottedMap[akey].activations.push({co:coName,label:act.label,fee:act.fee||0,types:typeStr,date:act.date||'',status:act.status_label||'Draft'});
       });
     });
   });
@@ -4425,109 +4486,189 @@ function buildActivationPlanner(){
     const curSch=a.sch.find(x=>x.mo===CUR&&(x.yr||2026)===2026);
     const curNIL=curSch&&curSch.a>0?curSch.a:0;
     const nilOk=nilRemAfter>=0;
-    return'<div style="background:#fff;border:1.5px solid #e5e5ea;border-radius:9px;padding:10px 12px;margin-bottom:8px">'
-      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
+    const multiSlotted=data.activations.length>1;
+    return '<div style="background:#fff;border:1.5px solid '+(multiSlotted?'#b7791f':'#e5e5ea')+';border-radius:9px;padding:9px 11px;margin-bottom:7px">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">'
         +'<div style="font-size:11px;font-weight:700;color:#1d1d1f">'+a.f+' '+a.l+'</div>'
-        +'<div style="font-size:9px;font-weight:700;color:#1d9e75;background:#e8f8f2;border-radius:4px;padding:2px 6px">+'+f(data.totalFee)+'</div>'
+        +'<div style="display:flex;align-items:center;gap:4px">'
+          +(multiSlotted?'<div style="font-size:7px;font-weight:700;color:#b7791f;background:#fff8e8;border-radius:3px;padding:1px 5px">'+data.activations.length+' ACTS</div>':'')
+          +'<div style="font-size:9px;font-weight:700;color:#1d9e75;background:#e8f8f2;border-radius:4px;padding:2px 6px">+'+f(data.totalFee)+'</div>'
+        +'</div>'
       +'</div>'
-      +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:6px">'
-        +'<div style="border-radius:6px;padding:4px 6px;background:'+(nilOk?'#f0ebff':'#fff0f3')+'">'
-          +'<div style="font-size:8px;font-weight:600;color:'+(nilOk?'#8e44ad':'#c0392b')+'">NIL REM</div>'
-          +'<div style="font-size:9px;color:#8e8e93;text-decoration:line-through">'+f(nilRem)+'</div>'
-          +'<div style="font-size:11px;font-weight:700;color:'+(nilOk?'#8e44ad':'#c0392b')+'">'+f(nilRemAfter)+'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;margin-bottom:5px">'
+        +'<div style="border-radius:5px;padding:3px 5px;background:'+(nilOk?'#f0ebff':'#fff0f3')+'">'
+          +'<div style="font-size:7px;font-weight:600;color:'+(nilOk?'#8e44ad':'#c0392b')+'">NIL REM</div>'
+          +'<div style="font-size:8px;color:#8e8e93;text-decoration:line-through">'+f(nilRem)+'</div>'
+          +'<div style="font-size:10px;font-weight:700;color:'+(nilOk?'#8e44ad':'#c0392b')+'">'+f(nilRemAfter)+'</div>'
         +'</div>'
-        +'<div style="border-radius:6px;padding:4px 6px;background:#e8f8f2">'
-          +'<div style="font-size:8px;font-weight:600;color:#1d9e75">BANKED</div>'
-          +'<div style="font-size:9px;color:#8e8e93;text-decoration:line-through">'+f(banked)+'</div>'
-          +'<div style="font-size:11px;font-weight:700;color:#1d9e75">'+f(bankedAfter)+'</div>'
+        +'<div style="border-radius:5px;padding:3px 5px;background:#e8f8f2">'
+          +'<div style="font-size:7px;font-weight:600;color:#1d9e75">BANKED</div>'
+          +'<div style="font-size:8px;color:#8e8e93;text-decoration:line-through">'+f(banked)+'</div>'
+          +'<div style="font-size:10px;font-weight:700;color:#1d9e75">'+f(bankedAfter)+'</div>'
         +'</div>'
-        +'<div style="border-radius:6px;padding:4px 6px;background:#eef6ff">'
-          +'<div style="font-size:8px;font-weight:600;color:#2980b9">'+CUR+' NIL</div>'
-          +'<div style="font-size:9px;color:#8e8e93">—</div>'
-          +'<div style="font-size:11px;font-weight:700;color:#2980b9">'+(curNIL>0?f(curNIL):'-')+'</div>'
+        +'<div style="border-radius:5px;padding:3px 5px;background:#eef6ff">'
+          +'<div style="font-size:7px;font-weight:600;color:#2980b9">'+CUR+' NIL</div>'
+          +'<div style="font-size:8px;color:#8e8e93">—</div>'
+          +'<div style="font-size:10px;font-weight:700;color:#2980b9">'+(curNIL>0?f(curNIL):'-')+'</div>'
         +'</div>'
       +'</div>'
       +'<div style="display:flex;flex-direction:column;gap:2px">'
-        +data.activations.map(ac=>'<div style="font-size:9px;color:#8e8e93"><span style="font-weight:600;color:#3c3c43">'+ac.co+'</span> · '+ac.label+' · '+f(ac.fee)+'</div>').join('')
+        +data.activations.map(ac=>{
+          const sc=statusColors[ac.status]||'#8e8e93';
+          return '<div style="display:flex;align-items:center;gap:4px;font-size:9px;color:#8e8e93">'
+            +'<div style="width:5px;height:5px;border-radius:50%;background:'+sc+';flex-shrink:0"></div>'
+            +'<span style="font-weight:600;color:#3c3c43">'+ac.co+'</span>'
+            +' · '+ac.label
+            +(ac.date?' · '+ac.date:'')
+            +' · '+f(ac.fee)
+            +'<span style="margin-left:auto;font-size:7px;font-weight:700;color:'+sc+';background:'+sc+'22;border-radius:3px;padding:1px 4px">'+ac.status+'</span>'
+          +'</div>';
+        }).join('')
       +'</div>'
-      +(nilOk?'':'<div style="margin-top:5px;font-size:9px;font-weight:700;color:#c0392b;background:#fff0f3;border-radius:4px;padding:2px 6px">Over NIL contract limit</div>')
+      +(!nilOk?'<div style="margin-top:4px;font-size:8px;font-weight:700;color:#c0392b;background:#fff0f3;border-radius:4px;padding:2px 6px">Over NIL contract limit</div>':'')
     +'</div>';
   }).join('');
 
   const totalSlottedValue=Object.values(slottedMap).reduce((s,d)=>s+d.totalFee,0);
   const slottedCount=Object.keys(slottedMap).length;
+  const overLimitCount=Object.entries(slottedMap).filter(([akey,d])=>{
+    const a=A.find(x=>x.f+'_'+x.l===akey);return a&&(a.contract-a.paid-d.totalFee)<0;
+  }).length;
+
+  // Export button
+  const exportBtn='<button onclick="exportPlannerBoard()" style="display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;border:1.5px solid #e5e5ea;background:#fff;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;color:#3c3c43"><i class="ti ti-file-export" style="font-size:10px"></i> Export</button>';
 
   const impactPanel='<div style="border-bottom:1.5px solid #e5e5ea;padding-bottom:10px;margin-bottom:10px">'
-    +'<div style="font-size:13px;font-weight:700;color:#1d1d1f">Impact Summary</div>'
-    +'<div style="font-size:10px;color:#8e8e93;margin-top:2px">'+slottedCount+' athletes slotted · '+f(totalSlottedValue)+' planned</div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">'
+      +'<div style="font-size:13px;font-weight:700;color:#1d1d1f">Impact Summary</div>'
+      +exportBtn
     +'</div>'
-    +(slottedCount===0
-      ?'<div style="text-align:center;padding:30px 10px;color:#aeaeb2;font-size:11px;line-height:1.5">Drag athletes into activation slots to see projected impact</div>'
-      :impactRows);
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
+      +'<div style="font-size:10px;color:#8e8e93">'+slottedCount+' athletes slotted</div>'
+      +'<div style="font-size:10px;color:#1d9e75;font-weight:600">'+f(totalSlottedValue)+' planned</div>'
+      +(overLimitCount>0?'<div style="font-size:10px;color:#c0392b;font-weight:600">'+overLimitCount+' over contract</div>':'')
+    +'</div>'
+  +'</div>'
+  +(slottedCount===0
+    ?'<div style="text-align:center;padding:24px 8px;color:#aeaeb2;font-size:11px;line-height:1.5">Drag athletes into activation slots to see projected impact</div>'
+    :impactRows);
 
-  return'<div style="display:grid;grid-template-columns:1fr 260px 280px;gap:16px;align-items:start;min-height:0">'
-    // LEFT
+  return '<div style="display:grid;grid-template-columns:340px 240px 1fr;gap:14px;align-items:start;min-height:0">'
+    // LEFT - company boards (narrower)
     +'<div style="overflow-y:auto;max-height:calc(100vh - 180px)">'+companyBoards+'</div>'
-    // CENTER - bench
+    // CENTER - bench (wider)
     +'<div style="position:sticky;top:0">'
-      +'<div style="border-bottom:1.5px solid #e5e5ea;padding-bottom:10px;margin-bottom:10px">'
-        +'<div style="font-size:13px;font-weight:700;color:#1d1d1f;margin-bottom:6px">Athlete Bench</div>'
+      +'<div style="border-bottom:1.5px solid #e5e5ea;padding-bottom:8px;margin-bottom:8px">'
+        +'<div style="font-size:12px;font-weight:700;color:#1d1d1f;margin-bottom:5px">Athlete Bench</div>'
         +'<div style="display:flex;flex-wrap:wrap;gap:4px">'+sportTabs+'</div>'
       +'</div>'
-      +'<div style="display:flex;flex-direction:column;gap:7px;max-height:calc(100vh - 240px);overflow-y:auto">'
+      +'<div style="display:flex;flex-direction:column;gap:6px;max-height:calc(100vh - 240px);overflow-y:auto">'
         +(benchAthletes.length===0?'<div style="text-align:center;padding:20px;color:#aeaeb2;font-size:11px">No athletes in this sport</div>':benchAthletes.map(athleteCardHtml).join(''))
       +'</div>'
     +'</div>'
-    // RIGHT - impact
-    +'<div style="position:sticky;top:0;background:#f9f9f9;border-radius:12px;padding:14px;border:1.5px solid #e5e5ea;max-height:calc(100vh - 180px);overflow-y:auto">'+impactPanel+'</div>'
+    // RIGHT - impact panel (widest)
+    +'<div style="position:sticky;top:0;background:#f9f9f9;border-radius:12px;padding:12px 14px;border:1.5px solid #e5e5ea;max-height:calc(100vh - 180px);overflow-y:auto">'+impactPanel+'</div>'
   +'</div>';
 }
 
-function openAddActivation(coName){
+function openAddActivation(coName, editActId){
   const existing=document.getElementById('act-plan-modal');if(existing)existing.remove();
   const ov=document.createElement('div');ov.id='act-plan-modal';
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1400;display:flex;align-items:center;justify-content:center';
+  const isEdit=!!(editActId&&plannerSlots[coName]?.[editActId]);
+  const existing_act=isEdit?plannerSlots[coName][editActId]:null;
   const types=['Social Post','In-Person Appearance','Content Creation','Autograph Signing','Tailgate','Meet & Greet','Other'];
-  ov.innerHTML='<div style="background:#fff;border-radius:16px;width:420px;box-shadow:0 30px 80px rgba(0,0,0,.25);overflow:hidden">'
-    +'<div style="background:#1d1d1f;padding:14px 18px;display:flex;justify-content:space-between;align-items:center">'
-      +'<div><div style="font-size:14px;font-weight:700;color:#fff">Add Activation</div><div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:1px">'+coName+'</div></div>'
+  const statuses=['Draft','Confirmed','Activated'];
+  const statusColors={Draft:'#8e8e93',Confirmed:'#b7791f',Activated:'#1d9e75'};
+  const existingTypes=existing_act?.types||[];
+  const existingStatus=existing_act?.status_label||'Draft';
+
+  const typeChecks=types.map(t=>{
+    const tkey=typeToKey(t);
+    const checked=isEdit&&existingTypes.includes(tkey);
+    return '<label style="display:flex;align-items:center;gap:7px;padding:6px 10px;border:1.5px solid '+(checked?'#1d1d1f':'#e5e5ea')+';border-radius:7px;cursor:pointer;font-size:11px;font-weight:500;transition:all .1s" class="act-type-lbl">'
+      +'<input type="checkbox" class="ap-type-chk" value="'+tkey+'" '+(checked?'checked':'')+' style="cursor:pointer;accent-color:#1d1d1f">'
+      +'<span>'+t+'</span></label>';
+  }).join('');
+
+  const statusBtns=statuses.map(s=>{
+    const active=s===existingStatus;
+    const c=statusColors[s];
+    return '<button type="button" class="ap-status-btn" data-val="'+s+'" onclick="document.querySelectorAll(\'.ap-status-btn\').forEach(b=>{b.style.background=\'transparent\';b.style.color=\'#8e8e93\';b.style.borderColor=\'#e5e5ea\'});this.style.background=\''+c+'22\';this.style.color=\''+c+'\';this.style.borderColor=\''+c+'\'" style="padding:5px 12px;border-radius:6px;border:1.5px solid '+(active?c:'#e5e5ea')+';background:'+(active?c+'22':'transparent')+';color:'+(active?c:'#8e8e93')+';-webkit-text-fill-color:'+(active?c:'#8e8e93')+';font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .1s">'+s+'</button>';
+  }).join('');
+
+  ov.innerHTML='<div style="background:#fff;border-radius:16px;width:460px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.25);overflow:hidden">'
+    +'<div style="background:#1d1d1f;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0">'
+      +'<div><div style="font-size:14px;font-weight:700;color:#fff">'+(isEdit?'Edit':'Add')+' Activation</div><div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:1px">'+coName+'</div></div>'
       +'<button onclick="document.getElementById(\'act-plan-modal\').remove()" style="background:rgba(255,255,255,.12);border:none;border-radius:8px;width:28px;height:28px;cursor:pointer;color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center">&#x2715;</button>'
     +'</div>'
-    +'<div style="padding:16px;display:flex;flex-direction:column;gap:10px">'
+    +'<div style="padding:16px 18px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;flex:1">'
+      // Activation name
       +'<div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Activation Name</div>'
-        +'<input id="ap-label" placeholder="e.g. Tailgate Social Posts" style="width:100%;height:36px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box"></div>'
-      +'<div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Type</div>'
-        +'<select id="ap-type" style="width:100%;height:36px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;background:#f9f9f9">'
-        +types.map(t=>'<option>'+t+'</option>').join('')
-        +'</select></div>'
-      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+        +'<input id="ap-label" placeholder="e.g. Tailgate Social Posts" value="'+(existing_act?.label||'')+'" style="width:100%;height:36px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box"></div>'
+      // Types - checkboxes
+      +'<div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Deliverable Types <span style="font-weight:400;text-transform:none;letter-spacing:0">(select all that apply)</span></div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">'+typeChecks+'</div></div>'
+      // Date + fee + slots row
+      +'<div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:10px">'
+        +'<div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Date</div>'
+          +'<input id="ap-date" type="date" value="'+(existing_act?.date||'')+'" style="width:100%;height:36px;padding:0 10px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box"></div>'
         +'<div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Fee Per Athlete</div>'
           +'<div style="display:flex;align-items:center;border:1.5px solid #e5e5ea;border-radius:8px;overflow:hidden;background:#f9f9f9">'
-            +'<span style="padding:0 10px;color:#8e44ad;font-weight:700;border-right:1px solid #e5e5ea;height:36px;display:flex;align-items:center">$</span>'
-            +'<input id="ap-fee" type="number" placeholder="0" style="border:none;background:transparent;flex:1;height:36px;padding:0 10px;font-size:13px;font-family:inherit;outline:none">'
+            +'<span style="padding:0 9px;color:#8e44ad;font-weight:700;border-right:1px solid #e5e5ea;height:36px;display:flex;align-items:center">$</span>'
+            +'<input id="ap-fee" type="number" placeholder="0" value="'+(existing_act?.fee||'')+'" style="border:none;background:transparent;flex:1;height:36px;padding:0 9px;font-size:13px;font-family:inherit;outline:none">'
           +'</div></div>'
-        +'<div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px"># of Athlete Slots</div>'
-          +'<input id="ap-slots" type="number" min="1" max="50" value="1" style="width:100%;height:36px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box"></div>'
+        +'<div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Slots</div>'
+          +'<input id="ap-slots" type="number" min="1" max="50" value="'+((existing_act?.slots||[]).length||1)+'" style="width:100%;height:36px;padding:0 10px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box"></div>'
       +'</div>'
+      // Status
+      +'<div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Status</div>'
+        +'<div style="display:flex;gap:6px">'+statusBtns+'</div></div>'
+      // Notes
+      +'<div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Notes / Deliverables</div>'
+        +'<textarea id="ap-notes" placeholder="Specific instructions, deliverables, requirements..." style="width:100%;height:72px;padding:8px 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:12px;font-family:inherit;outline:none;resize:vertical;box-sizing:border-box;line-height:1.4">'+(existing_act?.notes||'')+'</textarea></div>'
     +'</div>'
-    +'<div style="padding:12px 16px;border-top:1px solid #f2f2f7;display:flex;justify-content:space-between;background:#fafafa">'
+    +'<div style="padding:12px 18px;border-top:1px solid #f2f2f7;display:flex;justify-content:space-between;background:#fafafa;flex-shrink:0">'
       +'<button onclick="document.getElementById(\'act-plan-modal\').remove()" style="height:34px;padding:0 16px;border-radius:8px;border:1.5px solid #e5e5ea;background:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Cancel</button>'
-      +'<button onclick="saveActivation(\''+coName+'\')" style="height:34px;padding:0 18px;border-radius:8px;border:none;background:#1d1d1f;color:#fff;-webkit-text-fill-color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Add Activation</button>'
+      +'<button onclick="saveActivation(\''+coName+'\','+(isEdit?'\''+editActId+'\'':'null')+')" style="height:34px;padding:0 18px;border-radius:8px;border:none;background:#1d1d1f;color:#fff;-webkit-text-fill-color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">'+(isEdit?'Save Changes':'Add Activation')+'</button>'
     +'</div>'
   +'</div>';
   document.body.appendChild(ov);
+
+  // Style type checkboxes on click
+  ov.querySelectorAll('.ap-type-chk').forEach(chk=>{
+    const lbl=chk.closest('label');
+    chk.addEventListener('change',()=>{
+      lbl.style.borderColor=chk.checked?'#1d1d1f':'#e5e5ea';
+      lbl.style.background=chk.checked?'#f2f2f7':'';
+    });
+    if(chk.checked){lbl.style.background='#f2f2f7';}
+  });
+
   setTimeout(()=>document.getElementById('ap-label')?.focus(),100);
 }
 
-function saveActivation(coName){
+function saveActivation(coName, editActId){
   const label=(document.getElementById('ap-label')?.value||'').trim();
   if(!label){alert('Please enter an activation name');return;}
-  const type=document.getElementById('ap-type')?.value||'Other';
+  const checkedTypes=[...document.querySelectorAll('.ap-type-chk:checked')].map(c=>c.value);
+  if(!checkedTypes.length){alert('Select at least one deliverable type');return;}
   const fee=parseFloat(document.getElementById('ap-fee')?.value)||0;
-  const numSlots=parseInt(document.getElementById('ap-slots')?.value)||1;
+  const date=document.getElementById('ap-date')?.value||'';
+  const notes=document.getElementById('ap-notes')?.value||'';
+  const statusBtn=document.querySelector('.ap-status-btn[style*="22"],.ap-status-btn:not([style])');
+  const status_label=document.querySelector('.ap-status-btn[data-val]')
+    ? ([...document.querySelectorAll('.ap-status-btn')].find(b=>b.style.background&&b.style.background!=='transparent')?.dataset?.val||'Draft')
+    : 'Draft';
   if(!plannerSlots[coName]) plannerSlots[coName]={};
-  const actId='act-'+Date.now();
-  plannerSlots[coName][actId]={label,type,fee,slots:Array(numSlots).fill(null)};
+  const isEdit=editActId&&plannerSlots[coName][editActId];
+  const actId=isEdit?editActId:'act-'+Date.now();
+  const numSlots=parseInt(document.getElementById('ap-slots')?.value)||1;
+  const existingSlots=isEdit?(plannerSlots[coName][actId].slots||[]):[];
+  // Preserve filled slots, pad or trim to new count
+  let slots=existingSlots.slice(0,numSlots);
+  while(slots.length<numSlots) slots.push(null);
+  plannerSlots[coName][actId]={label,types:checkedTypes,fee,date,notes,status_label,slots};
   document.getElementById('act-plan-modal').remove();
   savePlannerState();
   renderCos();
@@ -4606,6 +4747,71 @@ function loadPlannerState(){
   try{const s=localStorage.getItem('triumphPlannerSlots');if(s) plannerSlots=JSON.parse(s);}catch(e){}
 }
 
+function exportPlannerBoard(){
+  const lines=[];
+  const now=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  lines.push('Triumph NIL — Activation Planner Export');
+  lines.push('Generated: '+now);
+  lines.push('');
+
+  // Summary
+  const slottedMap={};
+  Object.entries(plannerSlots).forEach(([coName,acts])=>{
+    Object.entries(acts).forEach(([actId,act])=>{
+      (act.slots||[]).forEach(akey=>{
+        if(!akey) return;
+        if(!slottedMap[akey]) slottedMap[akey]={totalFee:0,activations:[]};
+        slottedMap[akey].totalFee+=(act.fee||0);
+        slottedMap[akey].activations.push({co:coName,label:act.label,fee:act.fee||0,date:act.date||'',status:act.status_label||'Draft'});
+      });
+    });
+  });
+
+  const totalVal=Object.values(slottedMap).reduce((s,d)=>s+d.totalFee,0);
+  lines.push('SUMMARY');
+  lines.push('Athletes slotted: '+Object.keys(slottedMap).length);
+  lines.push('Total planned value: $'+totalVal.toLocaleString());
+  lines.push('');
+
+  // By Company
+  CO.forEach(co=>{
+    const acts=plannerSlots[co.name];if(!acts||Object.keys(acts).length===0) return;
+    lines.push('═══ '+co.name.toUpperCase()+' ═══');
+    Object.entries(acts).forEach(([actId,act])=>{
+      const filled=(act.slots||[]).filter(Boolean);
+      if(!filled.length) return;
+      lines.push('  '+act.label+(act.date?' ['+act.date+']':'')+' — '+act.status_label||'Draft');
+      lines.push('  Fee: $'+(act.fee||0).toLocaleString()+'/athlete · '+filled.length+' athletes · Total: $'+(filled.length*(act.fee||0)).toLocaleString());
+      if(act.notes) lines.push('  Notes: '+act.notes);
+      filled.forEach(akey=>{
+        const a=A.find(x=>x.f+'_'+x.l===akey);
+        if(a) lines.push('    · '+a.f+' '+a.l+' ('+a.pos+')');
+      });
+      lines.push('');
+    });
+  });
+
+  // By Athlete
+  lines.push('BY ATHLETE');
+  Object.entries(slottedMap).forEach(([akey,data])=>{
+    const a=A.find(x=>x.f+'_'+x.l===akey);if(!a) return;
+    const nilRem=a.contract-a.paid;
+    const after=nilRem-data.totalFee;
+    lines.push('  '+a.f+' '+a.l+' ('+a.pos+') +$'+data.totalFee.toLocaleString());
+    lines.push('    NIL Rem: $'+nilRem.toLocaleString()+' → $'+after.toLocaleString()+(after<0?' [OVER LIMIT]':''));
+    data.activations.forEach(ac=>lines.push('    · '+ac.co+': '+ac.label+(ac.date?' on '+ac.date:'')+' ($'+ac.fee.toLocaleString()+')'));
+    lines.push('');
+  });
+
+  const blob=new Blob([lines.join('\n')],{type:'text/plain'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='triumph-activation-plan.txt';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+
 async function saveCompanyPriorities(){
   try{
     await Promise.all(CO.map((c,i)=>sb.from('companies').update({priority:i,rank_number:i+1,committed:c.committed,athletes:JSON.stringify(c.athletes||[]),partner_type:c.partner_type||null}).eq('id',c.id)));
@@ -4672,14 +4878,13 @@ function coCardHtml(c,i){
   const cardBg=pm?pm.bg:'#fff';
   const cardBorder=pm?pm.border:'#e5e5ea';
   const sn=c.name.replace(/'/g,"\\'");
+  // Partner type shown inside company detail, not on card badge
   const partnerBadge=pm
-    ?('<div onclick="partnerQuickSelect(\'' +sn+ '\',event);event.stopPropagation()" style="display:inline-flex;align-items:center;gap:4px;background:'+pm.bg+';border:1px solid '+pm.border+';border-radius:5px;padding:2px 7px;cursor:pointer;margin-bottom:6px">'
+    ?('<div style="display:inline-flex;align-items:center;gap:4px;background:'+pm.bg+';border:1px solid '+pm.border+';border-radius:5px;padding:2px 7px;margin-bottom:6px">'
       +'<div style="width:6px;height:6px;border-radius:50%;background:'+pm.text+'"></div>'
       +'<span style="font-size:9px;font-weight:700;color:'+pm.text+';-webkit-text-fill-color:'+pm.text+';text-transform:uppercase;letter-spacing:.05em">'+(pm.short||pm.label)+'</span>'
-      +'<i class="ti ti-chevron-down" style="font-size:8px;color:'+pm.text+'"></i></div>')
-    :('<div onclick="partnerQuickSelect(\'' +sn+ '\',event);event.stopPropagation()" style="display:inline-flex;align-items:center;gap:4px;background:#f2f2f7;border:1px dashed #d1d1d6;border-radius:5px;padding:2px 7px;cursor:pointer;margin-bottom:6px">'
-      +'<span style="font-size:9px;font-weight:600;color:#aeaeb2;-webkit-text-fill-color:#aeaeb2">Tag partner</span>'
-      +'<i class="ti ti-chevron-down" style="font-size:8px;color:#aeaeb2"></i></div>');
+      +'</div>')
+    :'';
   return '<div class="cocard" draggable="true" data-co="'+c.name+'" onclick="openCo(\'' +sn+ '\')" style="background:'+cardBg+';border-color:'+cardBorder+'">'
     +'<div class="cork '+rkc+'">#'+(i+1)+'</div>'
     +partnerBadge
