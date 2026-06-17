@@ -4608,17 +4608,17 @@ function openPipelineModal(id){
         +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">NIL Potential</div>'
           +'<div style="display:flex;align-items:center;border:1.5px solid #e5e5ea;border-radius:7px;overflow:hidden">'
             +'<span style="padding:0 10px;color:#8e44ad;font-weight:700;border-right:1px solid #e5e5ea;height:34px;display:flex;align-items:center">$</span>'
-            +'<input id="pl-potential" type="number" value="'+(p?p.nil_potential:'')+'" placeholder="0" style="border:none;flex:1;height:34px;padding:0 10px;font-size:12px;font-family:inherit;outline:none">'
+            +'<input id="pl-potential" type="text" value="'+(p&&p.nil_potential?Number(p.nil_potential).toLocaleString():'')+'" placeholder="0" onblur="fmtCurrencyInput(this)" oninput="plCurrencyInput(this)" style="border:none;flex:1;height:34px;padding:0 10px;font-size:12px;font-family:inherit;outline:none">'
           +'</div></div>'
         +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Fee Per Athlete</div>'
           +'<div style="display:flex;align-items:center;border:1.5px solid #e5e5ea;border-radius:7px;overflow:hidden">'
             +'<span style="padding:0 10px;color:#2980b9;font-weight:700;border-right:1px solid #e5e5ea;height:34px;display:flex;align-items:center">$</span>'
-            +'<input id="pl-athlete-fee" type="number" value="'+(p?p.athlete_fee:'')+'" placeholder="0" style="border:none;flex:1;height:34px;padding:0 10px;font-size:12px;font-family:inherit;outline:none">'
+            +'<input id="pl-athlete-fee" type="text" value="'+(p&&p.athlete_fee?Number(p.athlete_fee).toLocaleString():'')+'" placeholder="0" onblur="fmtCurrencyInput(this)" oninput="plCurrencyInput(this)" style="border:none;flex:1;height:34px;padding:0 10px;font-size:12px;font-family:inherit;outline:none">'
           +'</div></div>'
         +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">NIL Cleared</div>'
           +'<div style="display:flex;align-items:center;border:1.5px solid #e5e5ea;border-radius:7px;overflow:hidden">'
             +'<span style="padding:0 10px;color:#1d9e75;font-weight:700;border-right:1px solid #e5e5ea;height:34px;display:flex;align-items:center">$</span>'
-            +'<input id="pl-cleared" type="number" value="'+(p?p.nil_cleared:'')+'" placeholder="0" style="border:none;flex:1;height:34px;padding:0 10px;font-size:12px;font-family:inherit;outline:none">'
+            +'<input id="pl-cleared" type="text" value="'+(p&&p.nil_cleared?Number(p.nil_cleared).toLocaleString():'')+'" placeholder="0" onblur="fmtCurrencyInput(this)" oninput="plCurrencyInput(this)" style="border:none;flex:1;height:34px;padding:0 10px;font-size:12px;font-family:inherit;outline:none">'
           +'</div></div>'
       +'</div>'
       +'<div style="padding:14px 18px;border-bottom:1px solid #f2f2f7">'
@@ -4733,9 +4733,9 @@ async function savePLOpportunity(id){
   var partner_type=document.getElementById('pl-partner')?.value||'';
   var act_types=[...document.querySelectorAll('.pl-type-chk:checked')].map(function(c){return c.value;});
   var athletes=parseInt(document.getElementById('pl-athletes')?.value)||0;
-  var nil_potential=parseFloat(document.getElementById('pl-potential')?.value)||0;
-  var athlete_fee=parseFloat(document.getElementById('pl-athlete-fee')?.value)||0;
-  var nil_cleared=parseFloat(document.getElementById('pl-cleared')?.value)||0;
+  var nil_potential=parseFloat((document.getElementById('pl-potential')?.value||'').replace(/,/g,''))||0;
+  var athlete_fee=parseFloat((document.getElementById('pl-athlete-fee')?.value||'').replace(/,/g,''))||0;
+  var nil_cleared=parseFloat((document.getElementById('pl-cleared')?.value||'').replace(/,/g,''))||0;
   var inbound_via=document.getElementById('pl-via')?.value||'Call';
   var inbound_date=document.getElementById('pl-idate')?.value||null;
   var inbound_by=document.getElementById('pl-by')?.value||'Mitch';
@@ -5377,6 +5377,16 @@ const PARTNER_TYPES=[
   {key:'mccc',label:'Montgomery Co. Chamber',short:'MCCC',bg:'#fefbe8',border:'#e8d870',text:'#7a6a00'},
   {key:'independent',label:'Independent',bg:'#f3f0fb',border:'#c5b8f0',text:'#5b21b6'}
 ];
+function plCurrencyInput(el){
+  var v=el.value.replace(/[^0-9]/g,'');
+  el.value=v?Number(v).toLocaleString():'';
+}
+function fmtCurrencyInput(el){
+  var raw=parseFloat((el.value||'').replace(/,/g,''));
+  if(!isNaN(raw)&&raw>0) el.value=raw.toLocaleString();
+  else el.value='';
+}
+
 function partnerMeta(key){return PARTNER_TYPES.find(p=>p.key===key)||null;}
 
 async function setPartnerType(coName,key){
