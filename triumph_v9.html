@@ -4366,7 +4366,7 @@ function renderCos(){
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
       +'<div style="display:flex;gap:6px">'
       +modeBtn('pipeline','Pipeline','layout-kanban')
-      +modeBtn('roster','Roster','building-store')
+      +modeBtn('roster','Company Roster','building-store')
       +modeBtn('planner','Activation Planner','layout-board')
       +'</div>'
       +rightBtn
@@ -4388,10 +4388,18 @@ function renderCos(){
     return;
   }
 
-  document.getElementById('co-body').innerHTML=header
-    +(CO.length===0?'<div style="text-align:center;padding:60px 20px;color:#8e8e93"><div style="font-size:32px;margin-bottom:12px">🏢</div><div style="font-size:14px;font-weight:600;color:#1d1d1f;margin-bottom:4px">No companies yet</div><div style="font-size:12px">Click Add Company to get started</div></div>'
-      :'<div class="cogrid" id="co-drag-grid">'+CO.map((c,i)=>coCardHtml(c,i)).join('')+'</div>');
-  if(CO.length>0) initDrag();
+  document.getElementById('co-body').innerHTML=header+buildCompanyRoster();
+  document.querySelectorAll('.cr-sort').forEach(function(th){
+    th.addEventListener('click',function(){
+      var col=th.dataset.col;
+      if(window._crSortCol===col){window._crSortDir=(window._crSortDir||'desc')==='desc'?'asc':'desc';}
+      else{window._crSortCol=col;window._crSortDir='desc';}
+      document.getElementById('co-body').innerHTML=header+buildCompanyRoster();
+      document.querySelectorAll('.cr-sort').forEach(function(t){
+        t.querySelector('.cr-arrow').textContent=t.dataset.col===window._crSortCol?(window._crSortDir==='desc'?'\u2193':'\u2191'):'';
+      });
+    });
+  });
 }
 
 // ===== PIPELINE =====
@@ -5245,6 +5253,94 @@ function partnerQuickSelect(coName,e){
   const close=ev=>{if(!menu.contains(ev.target)){menu.remove();document.removeEventListener('click',close);}};
   setTimeout(()=>document.addEventListener('click',close),50);
 }
+
+function buildCompanyRoster(){
+  // Compute NILGo stats per company from athlete Wallets data
+  function coStats(coName){
+    var submitted=0,submittedAmt=0,cleared=0,clearedAmt=0,athletes=0;
+    A.forEach(function(a){
+      var matched=false;
+      (a.deals||[]).forEach(function(d){
+        if(!d.n||d.n!==coName) return;
+        if(d.status==='pending'||d.status==='approved'){
+          submitted++;submittedAmt+=(d.t||0);
+          if(!matched){athletes++;matched=true;}
+        }
+        if(d.status==='approved'){
+          cleared++;clearedAmt+=(d.t||0);
+        }
+      });
+    });
+    return{submitted,submittedAmt,cleared,clearedAmt,athletes};
+  }
+
+  var rows=CO.map(function(c){
+    var s=coStats(c.name);
+    var pm=typeof PARTNER_TYPES!=='undefined'?PARTNER_TYPES.find(function(p){return p.key===c.partner_type;}):null;
+    return{c,s,pm};
+  });
+
+  // Sort
+  var sortCol=window._crSortCol||'name';
+  var sortDir=window._crSortDir||'asc';
+  rows.sort(function(a,b){
+    var av,bv;
+    if(sortCol==='name'){av=a.c.name.toLowerCase();bv=b.c.name.toLowerCase();}
+    else if(sortCol==='submitted'){av=a.s.submitted;bv=b.s.submitted;}
+    else if(sortCol==='submittedAmt'){av=a.s.submittedAmt;bv=b.s.submittedAmt;}
+    else if(sortCol==='cleared'){av=a.s.cleared;bv=b.s.cleared;}
+    else if(sortCol==='clearedAmt'){av=a.s.clearedAmt;bv=b.s.clearedAmt;}
+    else{av=a.c.committed||0;bv=b.c.committed||0;}
+    if(av<bv) return sortDir==='asc'?-1:1;
+    if(av>bv) return sortDir==='asc'?1:-1;
+    return 0;
+  });
+
+  var totSub=0,totSubAmt=0,totClr=0,totClrAmt=0;
+  rows.forEach(function(r){totSub+=r.s.submitted;totSubAmt+=r.s.submittedAmt;totClr+=r.s.cleared;totClrAmt+=r.s.clearedAmt;});
+
+  function hdr(col,lbl){
+    var isCur=window._crSortCol===col;
+    var arrow=isCur?(window._crSortDir==='desc'?'↓':'↑'):'';
+    return '<th class="cr-th cr-sort cr-num" data-col="'+col+'" style="text-align:right;padding:9px 14px;cursor:pointer;user-select:none;white-space:nowrap">'+lbl+' <span class="cr-arrow" style="font-size:10px;color:#2980b9">'+arrow+'</span></th>';
+  }
+
+  if(CO.length===0) return '<div style="text-align:center;padding:60px;color:#8e8e93;font-size:13px">No companies yet — click Add Company to get started</div>';
+
+  var tableHtml='<table style="width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;border:0.5px solid #e5e5ea">'
+    +'<thead><tr style="background:#f9f9f9">'
+      +'<th class="cr-th cr-sort" data-col="name" style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.06em;padding:9px 14px;text-align:left;cursor:pointer;user-select:none">Company <span class="cr-arrow" style="font-size:10px;color:#2980b9">'+((!window._crSortCol||window._crSortCol==='name')?(window._crSortDir==='asc'?'↑':'↓'):'')+'</span></th>'
+      +hdr('submitted','Deals Submitted')
+      +hdr('submittedAmt','$ Submitted')
+      +hdr('cleared','Deals Cleared')
+      +hdr('clearedAmt','$ Cleared')
+    +'</tr></thead>'
+    +'<tbody>'
+    +rows.map(function(r){
+      var c=r.c,s=r.s,pm=r.pm;
+      return '<tr style="cursor:pointer;border-bottom:0.5px solid #f2f2f7" onclick="openCo(\''+c.name+'\')" onmouseenter="this.querySelectorAll(\'td\').forEach(function(td){td.style.background=\'#f9f9f9\'})" onmouseleave="this.querySelectorAll(\'td\').forEach(function(td){td.style.background=\'\';})">'
+        +'<td style="padding:11px 14px">'
+          +'<div style="font-size:12px;font-weight:600;color:#1d1d1f">'+c.name+'</div>'
+          +(pm?'<div style="display:flex;align-items:center;gap:4px;margin-top:2px"><div style="width:5px;height:5px;border-radius:50%;background:'+pm.text+'"></div><span style="font-size:9px;color:#8e8e93">'+pm.label+'</span></div>':'')
+        +'</td>'
+        +'<td style="padding:11px 14px;text-align:right;font-size:12px;font-weight:500;color:#1d1d1f">'+(s.submitted>0?s.submitted:'—')+'</td>'
+        +'<td style="padding:11px 14px;text-align:right;font-size:12px;font-weight:500;color:'+(s.submittedAmt>0?'#b7791f':'#d1d1d6')+'">'+(s.submittedAmt>0?f(s.submittedAmt):'—')+'</td>'
+        +'<td style="padding:11px 14px;text-align:right;font-size:12px;font-weight:500;color:#1d1d1f">'+(s.cleared>0?s.cleared:'—')+'</td>'
+        +'<td style="padding:11px 14px;text-align:right;font-size:12px;font-weight:600;color:'+(s.clearedAmt>0?'#1d9e75':'#d1d1d6')+'">'+(s.clearedAmt>0?f(s.clearedAmt):'—')+'</td>'
+      +'</tr>';
+    }).join('')
+    +'<tr style="background:#f9f9f9;border-top:1.5px solid #e5e5ea">'
+      +'<td style="padding:10px 14px;font-size:11px;font-weight:600;color:#1d1d1f">Totals</td>'
+      +'<td style="padding:10px 14px;text-align:right;font-size:12px;font-weight:700;color:#1d1d1f">'+totSub+'</td>'
+      +'<td style="padding:10px 14px;text-align:right;font-size:12px;font-weight:700;color:#b7791f">'+f(totSubAmt)+'</td>'
+      +'<td style="padding:10px 14px;text-align:right;font-size:12px;font-weight:700;color:#1d1d1f">'+totClr+'</td>'
+      +'<td style="padding:10px 14px;text-align:right;font-size:12px;font-weight:700;color:#1d9e75">'+f(totClrAmt)+'</td>'
+    +'</tr>'
+    +'</tbody></table>';
+
+  return tableHtml;
+}
+
 
 function coCardHtml(c,i){
   const s=coSpent(c),r=c.committed-s,pct=Math.round(s/c.committed*100);
