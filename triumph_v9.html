@@ -4636,7 +4636,8 @@ function openPipelineModal(id){
         +fld('pl-sow-sent','SOWs Sent',p?p.sow_sent:'','number','0')
         +fld('pl-sow-total','SOWs Total',p?p.sow_total:'','number','0')
       +'</div>'
-      +'<div style="padding:14px 18px;border-bottom:1px solid #f2f2f7;display:grid;grid-template-columns:1fr 2fr;gap:10px">'
+      +'<div style="padding:14px 18px;border-bottom:1px solid #f2f2f7;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">'
+        +fld('pl-event-date','Event Date',p?p.event_date:'','date','')
         +fld('pl-nilgo','NILGo Submitted',p?p.nilgo_submitted:'','date','')
         +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Activation Notes</div>'
           +'<textarea id="pl-notes" style="width:100%;height:58px;padding:8px 10px;border:1.5px solid #e5e5ea;border-radius:7px;font-size:12px;font-family:inherit;outline:none;resize:none;box-sizing:border-box;line-height:1.4" placeholder="Key details, requirements, timing...">'+(p?p.notes:'')+'</textarea></div>'
