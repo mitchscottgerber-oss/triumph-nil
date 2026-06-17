@@ -1122,9 +1122,12 @@ async function loadFromSupabase(){
       revShare[k][r.month+'_'+(r.year||2026)]=r.amount;
     });
 
-    // Load companies
+    // Load companies — deduplicate by id in case of Supabase dupes
     CO.length=0;
+    const seenCoIds=new Set();
     (companiesData||[]).forEach(c=>{
+      if(seenCoIds.has(c.id)) return;
+      seenCoIds.add(c.id);
       CO.push({
         id:c.id,
         name:c.name,
@@ -1560,8 +1563,8 @@ async function saveNewCompany(){
       }
     }
     const newPartnerType=document.getElementById('co-partner-val')?.value||'';
-    CO.push({id:newCo.id,name,committed,athletes:athleteObjs,priority:CO.length-1,partner_type:newPartnerType});
     document.getElementById('add-co-overlay').remove();
+    await loadFromSupabase();
     renderCos();
     syncStatus('Company added ✓');
   }catch(e){
