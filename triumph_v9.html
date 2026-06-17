@@ -1906,8 +1906,8 @@ function rAnnual(list,filterMos){
             const iC=mo===CUR&&yr===2026;
             return '<td class="'+(iC?'curbg':'')+'" style="background:#fff0f3!important">'+(rv>0?'<div style="font-size:11.5px;font-weight:500;color:#c0392b">'+f(rv)+'</div>':'<span style="color:#e5e5ea">—</span>')+'</td>';
           }).join('')+
+          '<td style="background:#fff5f7"></td>'+
           '<td style="text-align:right;font-weight:700;font-size:12px;color:'+(rvTot>0?'#c0392b':'#d1d1d6')+';background:#fff0f3">'+(rvTot>0?f(rvTot):'—')+'</td>'+
-          '<td style="background:#fff0f3"></td>'+
           '<td style="background:#f9f9f9"></td>'+
         '</tr>';
         html+='<tr id="'+rsExpId+'" style="display:none"><td colspan="'+(totalCols+1)+'" style="padding:10px 16px 12px;background:#fff5f7;border-top:0.5px solid #f5c6d0;border-bottom:0.5px solid #f5c6d0"><div style="display:flex;gap:36px;font-size:12px"><div><div style="font-size:9px;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">RS Contract</div><div style="font-weight:600;color:#1d1d1f;font-size:13px">'+f(a.rsContract||0)+'</div></div><div><div style="font-size:9px;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">RS Paid Out</div><div style="font-weight:600;color:#1d9e75;font-size:13px">'+f(a.rsPaid||0)+'</div></div><div><div style="font-size:9px;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">RS Remaining</div><div style="font-weight:700;color:#c0392b;font-size:13px">'+f(rsRem)+'</div></div></div></td></tr>';
