@@ -4329,7 +4329,7 @@ function renderCos(){
 }
 // ===== ACTIVATION PLANNER =====
 // plannerSlots: { coName: { actId: { label, type, fee, slots: [athleteKey|null, ...] } } }
-let plannerSlots={};
+let plannerSlots={},plannerCollapsed={};
 
 function buildActivationPlanner(){
   if(CO.length===0) return '<div style="text-align:center;padding:60px;color:#8e8e93"><div style="font-size:14px;font-weight:600;color:#1d1d1f;margin-bottom:4px">No companies yet</div><div style="font-size:12px">Add a company first, then plan activations here</div></div>';
@@ -4448,18 +4448,22 @@ function buildActivationPlanner(){
       +'</div>';
     }).join('');
 
+    const coKey='planner-co-'+co.name;
+    const isCollapsed=!!plannerCollapsed[coKey];
+    const filledTotal=acts.reduce((s,[,act])=>s+(act.slots||[]).filter(Boolean).length,0);
+    const totalSlotCount=acts.reduce((s,[,act])=>s+(act.slots||[]).length,0);
     return '<div style="background:#fff;border:1.5px solid '+cardBorder+';border-radius:11px;margin-bottom:8px;overflow:hidden">'
-      +'<div style="padding:9px 12px;border-bottom:1.5px solid '+cardBorder+';display:flex;justify-content:space-between;align-items:center;background:'+headerBg+'">'
-        +'<div>'
-          +'<div style="font-size:12px;font-weight:700;color:#1d1d1f">'+co.name+'</div>'
-          +'<div style="font-size:9px;color:#8e8e93;margin-top:1px">'+f(co.committed)+' committed · '+f(totalPlanned)+' planned</div>'
+      +'<div style="padding:9px 12px;border-bottom:'+(isCollapsed?'none':'1.5px solid '+cardBorder)+';display:flex;justify-content:space-between;align-items:center;background:'+headerBg+';cursor:pointer" onclick="togglePlannerCo(\''+coKey+'\')" >'
+        +'<div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">'
+          +'<i class="ti ti-chevron-'+(isCollapsed?'right':'down')+'" style="font-size:12px;color:#8e8e93;flex-shrink:0"></i>'
+          +'<div style="min-width:0">'
+            +'<div style="font-size:12px;font-weight:700;color:#1d1d1f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+co.name+'</div>'
+            +'<div style="font-size:9px;color:#8e8e93;margin-top:1px">'+f(co.committed)+' committed'+(totalPlanned>0?' · '+f(totalPlanned)+' planned':'')+(totalSlotCount>0?' · '+filledTotal+'/'+totalSlotCount+' filled':'')+'</div>'
+          +'</div>'
         +'</div>'
-        +'<button onclick="openAddActivation(\''+co.name+'\')" style="background:#1d1d1f;color:#fff;-webkit-text-fill-color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:3px"><i class="ti ti-plus" style="font-size:10px"></i> Add</button>'
+        +'<button onclick="event.stopPropagation();openAddActivation(\''+co.name+'\')" style="background:#1d1d1f;color:#fff;-webkit-text-fill-color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:3px;flex-shrink:0"><i class="ti ti-plus" style="font-size:10px"></i> Add</button>'
       +'</div>'
-      +'<div style="padding:8px 12px">'
-        +budgetWarning(co, totalPlanned)
-        +(acts.length===0?'<div style="text-align:center;padding:12px;color:#aeaeb2;font-size:10px">No activations yet</div>':actsHtml)
-      +'</div>'
+      +(isCollapsed?'':'<div style="padding:8px 12px">'+budgetWarning(co,totalPlanned)+(acts.length===0?'<div style="text-align:center;padding:12px;color:#aeaeb2;font-size:10px">No activations yet</div>':actsHtml)+'</div>')
     +'</div>';
   }).join('');
 
@@ -4738,6 +4742,11 @@ function initPlannerDrag(){
     });
     el.addEventListener('dragend',()=>{el.style.opacity='1';});
   });
+}
+
+function togglePlannerCo(key){
+  plannerCollapsed[key]=!plannerCollapsed[key];
+  renderCos();
 }
 
 function savePlannerState(){
