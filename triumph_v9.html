@@ -4597,7 +4597,7 @@ function openPipelineModal(id){
             +['Call','Email','Text','Referral'].map(function(v){return '<option'+(p&&p.inbound_via===v?' selected':'')+'>'+v+'</option>';}).join('')
             +'</select></div>'
           +fld('pl-idate','Date',p?p.inbound_date:'','date','')
-          '<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Athletes</div>'+'<input id="pl-athletes" type="number" value="'+(p?p.athletes:'')+'" placeholder="0" oninput="plAutoFee()" style="width:100%;height:34px;padding:0 10px;border:1.5px solid #e5e5ea;border-radius:7px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box">'+'</div>'
+          +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Athletes</div>'+'<input id="pl-athletes" type="number" value="'+(p?p.athletes:'')+'" placeholder="0" oninput="plAutoFee()" style="width:100%;height:34px;padding:0 10px;border:1.5px solid #e5e5ea;border-radius:7px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box">'+'</div>'
           +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Sport</div>'
             +'<select id="pl-sport" style="width:100%;height:34px;padding:0 10px;border:1.5px solid #e5e5ea;border-radius:7px;font-size:12px;font-family:inherit;outline:none;background:#fff">'
             +[{v:'Football',k:'Football'},{v:"Men's Basketball",k:'Basketball-M'},{v:"Women's Basketball",k:'Basketball-W'},{v:'Baseball',k:'Baseball'}].map(function(o){return '<option value="'+o.k+'"'+(p&&p.sport===o.k?' selected':'')+'>'+o.v+'</option>';}).join('')
