@@ -622,6 +622,31 @@ select.aa-inp{appearance:auto}
 .rpttbl tr.tot td{background:#f9f9f9;font-weight:700;border-top:2px solid #e5e5ea}
 .rptfooter{padding:12px 18px;border-top:1px solid #e5e5ea;background:#f9f9f9;display:flex;align-items:center;justify-content:space-between}
 .rptfnote{font-size:10px;color:#aeaeb2;-webkit-text-fill-color:#aeaeb2}
+
+/* ===== PIPELINE ===== */
+.pl-board{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;align-items:start}
+.pl-col{background:var(--pl-col-bg,#f9f9f9);border-radius:10px;padding:8px;min-height:200px}
+.pl-col-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.pl-col-lbl{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.pl-col-ct{font-size:9px;font-weight:500;background:#fff;border-radius:3px;padding:1px 5px;color:#8e8e93}
+.pl-card{background:#fff;border-radius:8px;border:1px solid #e5e5ea;padding:9px 10px;margin-bottom:6px;cursor:pointer;transition:box-shadow .1s}
+.pl-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.pl-confirmed{border-color:#1d9e75!important}
+.pl-card-name{font-size:12px;font-weight:600;color:#1d1d1f;margin-bottom:2px}
+.pl-card-partner{font-size:9px;color:#8e8e93;display:flex;align-items:center;gap:4px;margin-bottom:4px}
+.pl-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.pl-card-type{font-size:9px;color:#8e8e93;margin-bottom:7px}
+.pl-stats{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.pl-stat{background:#f9f9f9;border-radius:5px;padding:4px 6px}
+.pl-cleared{margin-top:4px;background:#e8f8f2!important;grid-column:span 2}
+.pl-sl{font-size:7px;font-weight:500;color:#8e8e93;text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px}
+.pl-sv{font-size:10px;font-weight:500;color:#1d1d1f}
+.pl-confirm-row{display:flex;align-items:center;gap:6px;margin-top:7px;padding-top:6px;border-top:0.5px solid #f2f2f7;cursor:pointer}
+.pl-confirm-row span{font-size:9px;color:#8e8e93}
+.pl-confirm-on span{color:#1d9e75;font-weight:500}
+.pl-chk{width:13px;height:13px;border-radius:3px;border:1.5px solid #d1d1d6;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pl-chk-on{background:#1d9e75;border-color:#1d9e75}
+.pl-empty{text-align:center;padding:16px 8px;color:#aeaeb2;font-size:10px}
 </style>
 </head>
 <body>
@@ -1158,6 +1183,7 @@ async function loadFromSupabase(){
         budget:typeof e.budget==='object'?e.budget:(e.budget?JSON.parse(e.budget):{expenses:[],nilgoActivations:[]})
       });
     });
+    await loadPipeline();
   } catch(e){
     syncStatus('Sync error: '+e.message, false);
   }
@@ -4299,7 +4325,8 @@ function cP(){showRoster();aF();}
 
 /* ===== COMPANIES ===== */
 let dragSrc=null,coGridMode='grid';
-let coPageMode='roster';
+let coPageMode='pipeline';
+let PL=[]; // pipeline opportunities
 let rowView='both'; // 'both' | 'nil' | 'rs'
 let showFutureYears=false;
 
@@ -4331,14 +4358,24 @@ function setCoPageMode(mode){
 
 function renderCos(){
   curCo=null;openMo=null;coView='annual';
+  const modeBtn=(mode,label,icon)=>'<button onclick="setCoPageMode(\''+mode+'\')" style="padding:6px 14px;border-radius:8px;border:1.5px solid '+(coPageMode===mode?'#1d1d1f':'#e5e5ea')+';background:'+(coPageMode===mode?'#1d1d1f':'#fff')+';color:'+(coPageMode===mode?'#fff':'#8e8e93')+';-webkit-text-fill-color:'+(coPageMode===mode?'#fff':'#8e8e93')+';font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px">'+(icon?'<i class="ti ti-'+icon+'" style="font-size:12px"></i> ':'')+label+'</button>';
+  const rightBtn=coPageMode==='pipeline'
+    ?'<button class="btn btn-dark" onclick="openPipelineModal(null)" style="height:30px;font-size:11px;display:flex;align-items:center;gap:4px"><i class="ti ti-plus"></i> Log Opportunity</button>'
+    :'<button class="btn btn-dark" onclick="openAddCompany()" style="height:30px;font-size:11px;display:flex;align-items:center;gap:4px"><i class="ti ti-building-store"></i> Add Company</button>';
   const header=
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
       +'<div style="display:flex;gap:6px">'
-        +'<button onclick="setCoPageMode(\'roster\')" style="padding:6px 14px;border-radius:8px;border:1.5px solid '+(coPageMode==='roster'?'#1d1d1f':'#e5e5ea')+';background:'+(coPageMode==='roster'?'#1d1d1f':'#fff')+';color:'+(coPageMode==='roster'?'#fff':'#8e8e93')+';-webkit-text-fill-color:'+(coPageMode==='roster'?'#fff':'#8e8e93')+';font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Companies</button>'
-        +'<button onclick="setCoPageMode(\'planner\')" style="padding:6px 14px;border-radius:8px;border:1.5px solid '+(coPageMode==='planner'?'#1d1d1f':'#e5e5ea')+';background:'+(coPageMode==='planner'?'#1d1d1f':'#fff')+';color:'+(coPageMode==='planner'?'#fff':'#8e8e93')+';-webkit-text-fill-color:'+(coPageMode==='planner'?'#fff':'#8e8e93')+';font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px"><i class="ti ti-layout-board" style="font-size:12px"></i> Activation Planner</button>'
+      +modeBtn('pipeline','Pipeline','layout-kanban')
+      +modeBtn('roster','Roster','building-store')
+      +modeBtn('planner','Activation Planner','layout-board')
       +'</div>'
-      +'<button class="btn btn-dark" onclick="openAddCompany()" style="height:30px;font-size:11px;display:flex;align-items:center;gap:4px"><i class="ti ti-building-store"></i> Add Company</button>'
+      +rightBtn
     +'</div>';
+
+  if(coPageMode==='pipeline'){
+    document.getElementById('co-body').innerHTML=header+buildPipeline();
+    return;
+  }
 
   if(coPageMode==='planner'){
     try{
@@ -4356,6 +4393,306 @@ function renderCos(){
       :'<div class="cogrid" id="co-drag-grid">'+CO.map((c,i)=>coCardHtml(c,i)).join('')+'</div>');
   if(CO.length>0) initDrag();
 }
+
+// ===== PIPELINE =====
+const PL_STAGES=['Inbound','Evaluating','MSA Out','SOW Out','NILGo Submission','Active','Complete'];
+const PL_STAGE_COLORS={'Inbound':'#8e8e93','Evaluating':'#2980b9','MSA Out':'#b7791f','SOW Out':'#8e44ad','NILGo Submission':'#c0392b','Active':'#1d9e75','Complete':'#1d1d1f'};
+const PL_PARTNER_META={playfly:{label:'Playfly',dot:'#1565a8'},bpg:{label:'Blacksburg Partnership Group',dot:'#7a1f1f'},mccc:{label:'Montgomery Co. Chamber',dot:'#7a6a00'},independent:{label:'Independent',dot:'#5b21b6'}};
+
+async function loadPipeline(){
+  try{
+    const {data,error}=await sb.from('pipeline').select('*').order('created_at',{ascending:false});
+    if(error) throw error;
+    PL.length=0;
+    (data||[]).forEach(r=>PL.push({
+      id:r.id,name:r.name,stage:r.stage||'Inbound',partner_type:r.partner_type||'',
+      act_types:Array.isArray(r.act_types)?r.act_types:(r.act_types?JSON.parse(r.act_types):[]),
+      athletes:r.athletes||0,nil_potential:r.nil_potential||0,nil_cleared:r.nil_cleared||0,
+      confirmed:r.confirmed||false,contact_name:r.contact_name||'',contact_title:r.contact_title||'',
+      contact_phone:r.contact_phone||'',contact_email:r.contact_email||'',
+      inbound_via:r.inbound_via||'Call',inbound_date:r.inbound_date||'',inbound_by:r.inbound_by||'',
+      msa_sent:r.msa_sent||'',msa_signed:r.msa_signed||'',sow_sent:r.sow_sent||0,sow_total:r.sow_total||0,
+      nilgo_submitted:r.nilgo_submitted||'',notes:r.notes||'',
+      log:Array.isArray(r.log)?r.log:(r.log?JSON.parse(r.log):[])
+    }));
+  }catch(e){console.warn('Pipeline load:',e);}
+}
+
+function buildPipeline(){
+  const cols=PL_STAGES.map(function(stage){
+    const cards=PL.filter(function(p){return p.stage===stage;});
+    const sc=PL_STAGE_COLORS[stage];
+    const showConfirm=['SOW Out','NILGo Submission','Active','Complete'].includes(stage);
+    const showCleared=['Active','Complete'].includes(stage);
+    const cardsHtml=cards.map(function(p){
+      const pm=PL_PARTNER_META[p.partner_type];
+      const types=(p.act_types||[]).join(' · ')||'—';
+      const sid=p.id;
+      return '<div class="pl-card'+(p.confirmed?' pl-confirmed':'')+'" onclick="openPipelineModal(\''+sid+'\')">'
+        +'<div class="pl-card-name">'+p.name+'</div>'
+        +(pm?'<div class="pl-card-partner"><div class="pl-dot" style="background:'+pm.dot+'"></div>'+pm.label+'</div>':'<div class="pl-card-partner" style="color:#d1d1d6">No partner</div>')
+        +'<div class="pl-card-type">'+types+'</div>'
+        +'<div class="pl-stats">'
+          +'<div class="pl-stat"><div class="pl-sl">Athletes</div><div class="pl-sv">'+(p.athletes||'TBD')+'</div></div>'
+          +'<div class="pl-stat"><div class="pl-sl">Potential</div><div class="pl-sv" style="color:#8e44ad">'+(p.nil_potential>0?f(p.nil_potential):'—')+'</div></div>'
+        +'</div>'
+        +(showCleared&&p.nil_cleared>0?'<div class="pl-stat pl-cleared"><div class="pl-sl" style="color:#1d9e75">Cleared</div><div class="pl-sv" style="color:#1d9e75">'+f(p.nil_cleared)+'</div></div>':'')
+        +(showConfirm?'<div class="pl-confirm-row'+(p.confirmed?' pl-confirm-on':'')+'" onclick="event.stopPropagation();togglePLConfirm(\''+sid+'\')">'
+          +'<div class="pl-chk'+(p.confirmed?' pl-chk-on':'')+'">'+( p.confirmed?'<i class="ti ti-check" style="font-size:9px;color:#fff"></i>':'')+'</div>'
+          +'<span>'+(p.confirmed?'Ready to activate':'Mark ready')+'</span>'
+          +'</div>':'')
+      +'</div>';
+    }).join('');
+
+    return '<div class="pl-col">'
+      +'<div class="pl-col-hd"><span class="pl-col-lbl" style="color:'+sc+'">'+stage+'</span><span class="pl-col-ct">'+cards.length+'</span></div>'
+      +(cardsHtml||'<div class="pl-empty">No opportunities</div>')
+    +'</div>';
+  }).join('');
+  return '<div class="pl-board">'+cols+'</div>';
+}
+
+async function togglePLConfirm(id){
+  const p=PL.find(function(x){return x.id===id;});
+  if(!p) return;
+  p.confirmed=!p.confirmed;
+  try{await sb.from('pipeline').update({confirmed:p.confirmed}).eq('id',id);}catch(e){console.warn(e);}
+  renderCos();
+}
+
+function openPipelineModal(id){
+  const isNew=!id||id==='null';
+  const p=isNew?null:PL.find(function(x){return x.id===id;});
+  const ex=document.getElementById('pl-modal');if(ex) ex.remove();
+  const ov=document.createElement('div');
+  ov.id='pl-modal';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1400;display:flex;align-items:center;justify-content:center;padding:20px';
+
+  const curStage=p?p.stage:'Inbound';
+  const stageBtns=PL_STAGES.map(function(s){
+    const active=curStage===s;
+    const c=PL_STAGE_COLORS[s];
+    return '<button type="button" class="pl-stage-btn" data-stage="'+s+'" data-color="'+c+'" style="padding:4px 9px;border-radius:6px;border:1.5px solid '+(active?c:'#e5e5ea')+';background:'+(active?c+'22':'transparent')+';color:'+(active?c:'#8e8e93')+';-webkit-text-fill-color:'+(active?c:'#8e8e93')+';font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">'+s+'</button>';
+  }).join('');
+
+  const partnerSel=['','playfly','bpg','mccc','independent'].map(function(k){
+    const lbl=k?(PL_PARTNER_META[k]?PL_PARTNER_META[k].label:k):'No partner tag';
+    return '<option value="'+k+'"'+((p?p.partner_type||'':'')=== k?' selected':'')+'>'+lbl+'</option>';
+  }).join('');
+
+  const typeChecks=['Appearance','Social Content'].map(function(t){
+    const checked=p&&p.act_types&&p.act_types.includes(t);
+    return '<label style="display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer">'
+      +'<input type="checkbox" class="pl-type-chk" value="'+t+'"'+(checked?' checked':'')+' style="accent-color:#1d1d1f;cursor:pointer"> '+t+'</label>';
+  }).join('');
+
+  const logHtml=(p&&p.log&&p.log.length>0)?[...p.log].reverse().map(function(entry){
+    const chBg={Call:'#f2f2f7',Email:'#eef6ff',Text:'#f3f0fb',Referral:'#e8f8f2'};
+    const chTx={Call:'#6c6c70',Email:'#1565a8',Text:'#5b21b6',Referral:'#1d9e75'};
+    return '<div style="border:0.5px solid #e5e5ea;border-radius:8px;padding:8px 10px;margin-bottom:6px">'
+      +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'
+        +'<span style="font-size:10px;font-weight:600;color:#1d1d1f">'+entry.who+'</span>'
+        +'<span style="font-size:8px;font-weight:500;padding:1px 6px;border-radius:3px;background:'+(chBg[entry.channel]||'#f2f2f7')+';color:'+(chTx[entry.channel]||'#6c6c70')+'">'+entry.channel+'</span>'
+        +'<span style="font-size:9px;color:#8e8e93;margin-left:auto">'+entry.date+'</span>'
+      +'</div>'
+      +'<div style="font-size:10px;color:#1d1d1f;line-height:1.5">'+entry.note+'</div>'
+    +'</div>';
+  }).join(''):'<div style="text-align:center;padding:16px;color:#aeaeb2;font-size:11px">No entries yet</div>';
+
+  function fld(fid,lbl,val,type,ph){
+    return '<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">'+lbl+'</div>'
+      +'<input id="'+fid+'" type="'+(type||'text')+'" value="'+(val||'')+'" placeholder="'+(ph||'')+'" style="width:100%;height:34px;padding:0 10px;border:1.5px solid #e5e5ea;border-radius:7px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box">'
+    +'</div>';
+  }
+
+  const pid=id||'__new__';
+  ov.innerHTML='<div style="background:#fff;border-radius:16px;width:740px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.25);overflow:hidden">'
+    +'<div style="background:#1d1d1f;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0">'
+      +'<div style="font-size:14px;font-weight:700;color:#fff">'+(isNew?'Log Opportunity':(p?p.name:'Opportunity'))+'</div>'
+      +'<button onclick="document.getElementById(\'pl-modal\').remove()" style="background:rgba(255,255,255,.12);border:none;border-radius:8px;width:28px;height:28px;cursor:pointer;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center">&#x2715;</button>'
+    +'</div>'
+    +'<div style="padding:10px 18px;border-bottom:1px solid #f2f2f7;display:flex;flex-wrap:wrap;gap:4px;flex-shrink:0">'+stageBtns+'</div>'
+    +'<div style="flex:1;overflow-y:auto">'
+      +'<div style="padding:14px 18px;border-bottom:1px solid #f2f2f7;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">'
+        +fld('pl-name','Sponsor / Company',p?p.name:'','text','e.g. Kroger')
+        +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Partner Channel</div>'
+          +'<select id="pl-partner" style="width:100%;height:34px;padding:0 10px;border:1.5px solid #e5e5ea;border-radius:7px;font-size:12px;font-family:inherit;outline:none;background:#fff">'+partnerSel+'</select></div>'
+        +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Activation Type</div>'
+          +'<div style="display:flex;gap:14px">'+typeChecks+'</div></div>'
+      +'</div>'
+      +'<div style="padding:14px 18px;border-bottom:1px solid #f2f2f7">'
+        +'<div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Inbound</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px">'
+          +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Via</div>'
+            +'<select id="pl-via" style="width:100%;height:34px;padding:0 10px;border:1.5px solid #e5e5ea;border-radius:7px;font-size:12px;font-family:inherit;outline:none;background:#fff">'
+            +['Call','Email','Text','Referral'].map(function(v){return '<option'+(p&&p.inbound_via===v?' selected':'')+'>'+v+'</option>';}).join('')
+            +'</select></div>'
+          +fld('pl-idate','Date',p?p.inbound_date:'','date','')
+          +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Logged By</div>'
+            +'<select id="pl-by" style="width:100%;height:34px;padding:0 10px;border:1.5px solid #e5e5ea;border-radius:7px;font-size:12px;font-family:inherit;outline:none;background:#fff">'
+            +['Mitch','Robyn','Kelly'].map(function(v){return '<option'+(p&&p.inbound_by===v?' selected':'')+'>'+v+'</option>';}).join('')
+            +'</select></div>'
+          +fld('pl-athletes','Athletes',p?p.athletes:'','number','0')
+        +'</div>'
+      +'</div>'
+      +'<div style="padding:14px 18px;border-bottom:1px solid #f2f2f7;display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+        +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">NIL Potential</div>'
+          +'<div style="display:flex;align-items:center;border:1.5px solid #e5e5ea;border-radius:7px;overflow:hidden">'
+            +'<span style="padding:0 10px;color:#8e44ad;font-weight:700;border-right:1px solid #e5e5ea;height:34px;display:flex;align-items:center">$</span>'
+            +'<input id="pl-potential" type="number" value="'+(p?p.nil_potential:'')+'" placeholder="0" style="border:none;flex:1;height:34px;padding:0 10px;font-size:12px;font-family:inherit;outline:none">'
+          +'</div></div>'
+        +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">NIL Cleared</div>'
+          +'<div style="display:flex;align-items:center;border:1.5px solid #e5e5ea;border-radius:7px;overflow:hidden">'
+            +'<span style="padding:0 10px;color:#1d9e75;font-weight:700;border-right:1px solid #e5e5ea;height:34px;display:flex;align-items:center">$</span>'
+            +'<input id="pl-cleared" type="number" value="'+(p?p.nil_cleared:'')+'" placeholder="0" style="border:none;flex:1;height:34px;padding:0 10px;font-size:12px;font-family:inherit;outline:none">'
+          +'</div></div>'
+      +'</div>'
+      +'<div style="padding:14px 18px;border-bottom:1px solid #f2f2f7">'
+        +'<div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Contact</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px">'
+          +fld('pl-cname','Name',p?p.contact_name:'','text','Full name')
+          +fld('pl-ctitle','Title',p?p.contact_title:'','text','e.g. Marketing Dir.')
+          +fld('pl-cphone','Phone',p?p.contact_phone:'','text','555-000-0000')
+          +fld('pl-cemail','Email',p?p.contact_email:'','email','email@co.com')
+        +'</div>'
+      +'</div>'
+      +'<div style="padding:14px 18px;border-bottom:1px solid #f2f2f7;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px">'
+        +fld('pl-msa-sent','MSA Sent',p?p.msa_sent:'','date','')
+        +fld('pl-msa-signed','MSA Signed',p?p.msa_signed:'','date','')
+        +fld('pl-sow-sent','SOWs Sent',p?p.sow_sent:'','number','0')
+        +fld('pl-sow-total','SOWs Total',p?p.sow_total:'','number','0')
+      +'</div>'
+      +'<div style="padding:14px 18px;border-bottom:1px solid #f2f2f7;display:grid;grid-template-columns:1fr 2fr;gap:10px">'
+        +fld('pl-nilgo','NILGo Submitted',p?p.nilgo_submitted:'','date','')
+        +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Activation Notes</div>'
+          +'<textarea id="pl-notes" style="width:100%;height:58px;padding:8px 10px;border:1.5px solid #e5e5ea;border-radius:7px;font-size:12px;font-family:inherit;outline:none;resize:none;box-sizing:border-box;line-height:1.4" placeholder="Key details, requirements, timing...">'+(p?p.notes:'')+'</textarea></div>'
+      +'</div>'
+      +'<div style="padding:14px 18px">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+          +'<div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em">Conversation Log</div>'
+          +'<button onclick="togglePLLogForm()" style="font-size:10px;padding:3px 10px;border-radius:6px;border:1.5px solid #e5e5ea;background:#fff;cursor:pointer;font-family:inherit;font-weight:600">+ Add Entry</button>'
+        +'</div>'
+        +'<div id="pl-log-form" style="display:none;background:#f9f9f9;border-radius:8px;padding:10px;margin-bottom:10px;border:1px solid #e5e5ea">'
+          +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">'
+            +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Who</div>'
+              +'<select id="pl-log-who" style="width:100%;height:32px;padding:0 8px;border:1.5px solid #e5e5ea;border-radius:6px;font-size:11px;font-family:inherit;outline:none;background:#fff">'
+              +['Mitch','Robyn','Kelly'].map(function(v){return '<option>'+v+'</option>';}).join('')+'</select></div>'
+            +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Channel</div>'
+              +'<select id="pl-log-ch" style="width:100%;height:32px;padding:0 8px;border:1.5px solid #e5e5ea;border-radius:6px;font-size:11px;font-family:inherit;outline:none;background:#fff">'
+              +['Call','Email','Text','Referral'].map(function(v){return '<option>'+v+'</option>';}).join('')+'</select></div>'
+            +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Date</div>'
+              +'<input id="pl-log-date" type="date" value="'+new Date().toISOString().slice(0,10)+'" style="width:100%;height:32px;padding:0 8px;border:1.5px solid #e5e5ea;border-radius:6px;font-size:11px;font-family:inherit;outline:none;box-sizing:border-box"></div>'
+          +'</div>'
+          +'<textarea id="pl-log-note" placeholder="What was discussed..." style="width:100%;height:60px;padding:8px;border:1.5px solid #e5e5ea;border-radius:6px;font-size:11px;font-family:inherit;outline:none;resize:none;box-sizing:border-box;line-height:1.4"></textarea>'
+          +'<div style="display:flex;justify-content:flex-end;gap:6px;margin-top:6px">'
+            +'<button onclick="togglePLLogForm()" style="height:28px;padding:0 12px;border-radius:6px;border:1.5px solid #e5e5ea;background:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Cancel</button>'
+            +'<button onclick="addPLLogEntry(\''+pid+'\')" style="height:28px;padding:0 12px;border-radius:6px;border:none;background:#1d1d1f;color:#fff;-webkit-text-fill-color:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Save Entry</button>'
+          +'</div>'
+        +'</div>'
+        +logHtml
+      +'</div>'
+    +'</div>'
+    +'<div style="padding:12px 18px;border-top:1px solid #f2f2f7;display:flex;justify-content:space-between;align-items:center;background:#fafafa;flex-shrink:0">'
+      +(!isNew?'<button onclick="deletePLOpportunity(\''+pid+'\')" style="height:32px;padding:0 14px;border-radius:8px;border:1.5px solid #fecaca;background:#fff0f0;color:#c0392b;-webkit-text-fill-color:#c0392b;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Delete</button>':'<div></div>')
+      +'<div style="display:flex;gap:8px">'
+        +'<button onclick="document.getElementById(\'pl-modal\').remove()" style="height:32px;padding:0 14px;border-radius:8px;border:1.5px solid #e5e5ea;background:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Cancel</button>'
+        +'<button onclick="savePLOpportunity(\''+pid+'\')" style="height:32px;padding:0 16px;border-radius:8px;border:none;background:#1d1d1f;color:#fff;-webkit-text-fill-color:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">'+(isNew?'Add Opportunity':'Save Changes')+'</button>'
+      +'</div>'
+    +'</div>'
+  +'</div>';
+  document.body.appendChild(ov);
+  ov.querySelectorAll('.pl-stage-btn').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var c=btn.dataset.color;
+      ov.querySelectorAll('.pl-stage-btn').forEach(function(b){
+        b.style.borderColor='#e5e5ea';b.style.background='transparent';
+        b.style.color='#8e8e93';b.style.webkitTextFillColor='#8e8e93';
+      });
+      btn.style.borderColor=c;btn.style.background=c+'22';
+      btn.style.color=c;btn.style.webkitTextFillColor=c;
+    });
+  });
+}
+
+function togglePLLogForm(){
+  var form=document.getElementById('pl-log-form');
+  if(form) form.style.display=form.style.display==='none'?'block':'none';
+}
+
+async function addPLLogEntry(id){
+  var who=document.getElementById('pl-log-who')?.value||'Mitch';
+  var channel=document.getElementById('pl-log-ch')?.value||'Call';
+  var date=document.getElementById('pl-log-date')?.value||new Date().toISOString().slice(0,10);
+  var note=(document.getElementById('pl-log-note')?.value||'').trim();
+  if(!note){alert('Please enter a note');return;}
+  var entry={who,channel,date,note};
+  var isNew=id==='__new__';
+  if(!isNew){
+    var p=PL.find(function(x){return x.id===id;});
+    if(p){
+      p.log=p.log||[];
+      p.log.push(entry);
+      try{await sb.from('pipeline').update({log:JSON.stringify(p.log)}).eq('id',id);}catch(e){console.warn(e);}
+    }
+  } else {
+    window._plPendingLog=window._plPendingLog||[];
+    window._plPendingLog.push(entry);
+  }
+  document.getElementById('pl-modal').remove();
+  openPipelineModal(isNew?null:id);
+}
+
+async function savePLOpportunity(id){
+  var isNew=id==='__new__'||!id||id==='null';
+  var name=(document.getElementById('pl-name')?.value||'').trim();
+  if(!name){alert('Please enter a company name');return;}
+  var stageBtns=[...document.querySelectorAll('.pl-stage-btn')];
+  var activeStageBtn=stageBtns.find(function(b){return b.style.background&&b.style.background!=='transparent'&&b.style.background!=='';});
+  var stage=activeStageBtn?activeStageBtn.dataset.stage:'Inbound';
+  var partner_type=document.getElementById('pl-partner')?.value||'';
+  var act_types=[...document.querySelectorAll('.pl-type-chk:checked')].map(function(c){return c.value;});
+  var athletes=parseInt(document.getElementById('pl-athletes')?.value)||0;
+  var nil_potential=parseFloat(document.getElementById('pl-potential')?.value)||0;
+  var nil_cleared=parseFloat(document.getElementById('pl-cleared')?.value)||0;
+  var inbound_via=document.getElementById('pl-via')?.value||'Call';
+  var inbound_date=document.getElementById('pl-idate')?.value||'';
+  var inbound_by=document.getElementById('pl-by')?.value||'Mitch';
+  var contact_name=document.getElementById('pl-cname')?.value||'';
+  var contact_title=document.getElementById('pl-ctitle')?.value||'';
+  var contact_phone=document.getElementById('pl-cphone')?.value||'';
+  var contact_email=document.getElementById('pl-cemail')?.value||'';
+  var msa_sent=document.getElementById('pl-msa-sent')?.value||'';
+  var msa_signed=document.getElementById('pl-msa-signed')?.value||'';
+  var sow_sent=parseInt(document.getElementById('pl-sow-sent')?.value)||0;
+  var sow_total=parseInt(document.getElementById('pl-sow-total')?.value)||0;
+  var nilgo_submitted=document.getElementById('pl-nilgo')?.value||'';
+  var notes=document.getElementById('pl-notes')?.value||'';
+  var payload={name,stage,partner_type,act_types:JSON.stringify(act_types),athletes,nil_potential,nil_cleared,
+    inbound_via,inbound_date,inbound_by,contact_name,contact_title,contact_phone,contact_email,
+    msa_sent,msa_signed,sow_sent,sow_total,nilgo_submitted,notes};
+  try{
+    if(!isNew){
+      await sb.from('pipeline').update(payload).eq('id',id);
+    } else {
+      var pending=window._plPendingLog||[];
+      delete window._plPendingLog;
+      payload.log=JSON.stringify(pending);
+      await sb.from('pipeline').insert(payload);
+    }
+  }catch(e){alert('Save error: '+e.message);return;}
+  document.getElementById('pl-modal').remove();
+  await loadPipeline();
+  renderCos();
+}
+
+async function deletePLOpportunity(id){
+  if(!confirm('Delete this opportunity?')) return;
+  try{await sb.from('pipeline').delete().eq('id',id);}catch(e){alert('Delete error: '+e.message);return;}
+  document.getElementById('pl-modal').remove();
+  await loadPipeline();
+  renderCos();
+}
+
 // ===== ACTIVATION PLANNER =====
 // plannerSlots: { coName: { actId: { label, type, fee, slots: [athleteKey|null, ...] } } }
 let plannerSlots={},plannerCollapsed={};
