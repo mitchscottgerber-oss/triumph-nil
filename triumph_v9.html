@@ -4408,7 +4408,7 @@ async function loadPipeline(){
       confirmed:r.confirmed||false,contact_name:r.contact_name||'',contact_title:r.contact_title||'',
       contact_phone:r.contact_phone||'',contact_email:r.contact_email||'',
       inbound_via:r.inbound_via||'Call',inbound_date:r.inbound_date||'',inbound_by:r.inbound_by||'',
-      sport:r.sport||'Football',planner_created:r.planner_created||false,
+      sport:r.sport||'Football',planner_created:r.planner_created||false,event_date:r.event_date||'',
       msa_sent:r.msa_sent||'',msa_signed:r.msa_signed||'',sow_sent:r.sow_sent||0,sow_total:r.sow_total||0,
       nilgo_submitted:r.nilgo_submitted||'',notes:r.notes||'',
       log:Array.isArray(r.log)?r.log:(r.log?JSON.parse(r.log):[])
@@ -4429,7 +4429,7 @@ function buildPipeline(){
       return '<div class="pl-card'+(p.confirmed?' pl-confirmed':'')+'" draggable="true" data-plid="'+sid+'" onclick="openPipelineModal(\''+sid+'\')" onmousedown="event.stopPropagation?null:null" ondragstart="plDragStart(event,\''+sid+'\')" ondragend="plDragEnd(event)">'
         +'<div class="pl-card-name">'+p.name+'</div>'
         +(pm?'<div class="pl-card-partner"><div class="pl-dot" style="background:'+pm.dot+'"></div>'+pm.label+'</div>':'<div class="pl-card-partner" style="color:#d1d1d6">No partner</div>')
-        +'<div class="pl-card-type">'+types+'</div>'
+        +'<div class="pl-card-type">'+types+'</div>'        +((p.event_date&&(p.act_types||[]).some(function(t){return t==='Appearance';}))?'<div style="font-size:9px;color:#b7791f;font-weight:500;margin-bottom:4px">'+p.event_date+'</div>':'')
         +'<div class="pl-stats">'
           +'<div class="pl-stat"><div class="pl-sl">Athletes</div><div class="pl-sv">'+(p.athletes||'TBD')+'</div></div>'
           +'<div class="pl-stat"><div class="pl-sl">Potential</div><div class="pl-sv" style="color:#8e44ad">'+(p.nil_potential>0?f(p.nil_potential):'—')+'</div></div>'
@@ -4597,7 +4597,7 @@ function openPipelineModal(id){
             +['Call','Email','Text','Referral'].map(function(v){return '<option'+(p&&p.inbound_via===v?' selected':'')+'>'+v+'</option>';}).join('')
             +'</select></div>'
           +fld('pl-idate','Date',p?p.inbound_date:'','date','')
-          +fld('pl-athletes','Athletes',p?p.athletes:'','number','0')
+          '<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Athletes</div>'+'<input id="pl-athletes" type="number" value="'+(p?p.athletes:'')+'" placeholder="0" oninput="plAutoFee()" style="width:100%;height:34px;padding:0 10px;border:1.5px solid #e5e5ea;border-radius:7px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box">'+'</div>'
           +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Sport</div>'
             +'<select id="pl-sport" style="width:100%;height:34px;padding:0 10px;border:1.5px solid #e5e5ea;border-radius:7px;font-size:12px;font-family:inherit;outline:none;background:#fff">'
             +[{v:'Football',k:'Football'},{v:"Men's Basketball",k:'Basketball-M'},{v:"Women's Basketball",k:'Basketball-W'},{v:'Baseball',k:'Baseball'}].map(function(o){return '<option value="'+o.k+'"'+(p&&p.sport===o.k?' selected':'')+'>'+o.v+'</option>';}).join('')
@@ -4608,7 +4608,7 @@ function openPipelineModal(id){
         +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">NIL Potential</div>'
           +'<div style="display:flex;align-items:center;border:1.5px solid #e5e5ea;border-radius:7px;overflow:hidden">'
             +'<span style="padding:0 10px;color:#8e44ad;font-weight:700;border-right:1px solid #e5e5ea;height:34px;display:flex;align-items:center">$</span>'
-            +'<input id="pl-potential" type="text" value="'+(p&&p.nil_potential?Number(p.nil_potential).toLocaleString():'')+'" placeholder="0" onblur="fmtCurrencyInput(this)" oninput="plCurrencyInput(this)" style="border:none;flex:1;height:34px;padding:0 10px;font-size:12px;font-family:inherit;outline:none">'
+            +'<input id="pl-potential" type="text" value="'+(p&&p.nil_potential?Number(p.nil_potential).toLocaleString():'')+'" placeholder="0" onblur="fmtCurrencyInput(this)" oninput="plCurrencyInput(this);plAutoFee()" style="border:none;flex:1;height:34px;padding:0 10px;font-size:12px;font-family:inherit;outline:none">'
           +'</div></div>'
         +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Fee Per Athlete</div>'
           +'<div style="display:flex;align-items:center;border:1.5px solid #e5e5ea;border-radius:7px;overflow:hidden">'
@@ -4748,11 +4748,12 @@ async function savePLOpportunity(id){
   var sow_sent=parseInt(document.getElementById('pl-sow-sent')?.value)||0;
   var sow_total=parseInt(document.getElementById('pl-sow-total')?.value)||0;
   var nilgo_submitted=document.getElementById('pl-nilgo')?.value||null;
+  var event_date=document.getElementById('pl-event-date')?.value||null;
   var notes=document.getElementById('pl-notes')?.value||'';
   var sport=document.getElementById('pl-sport')?.value||'Football';
   var payload={name,stage,partner_type,act_types:act_types,athletes,athlete_fee,nil_potential,nil_cleared,sport,
     inbound_via,inbound_date:inbound_date||null,inbound_by,contact_name,contact_title,contact_phone,contact_email,
-    msa_sent:msa_sent||null,msa_signed:msa_signed||null,sow_sent,sow_total,nilgo_submitted:nilgo_submitted||null,notes};
+    msa_sent:msa_sent||null,msa_signed:msa_signed||null,sow_sent,sow_total,nilgo_submitted:nilgo_submitted||null,event_date:event_date||null,notes};
   try{
     if(!isNew){
       await sb.from('pipeline').update(payload).eq('id',id);
@@ -5377,6 +5378,16 @@ const PARTNER_TYPES=[
   {key:'mccc',label:'Montgomery Co. Chamber',short:'MCCC',bg:'#fefbe8',border:'#e8d870',text:'#7a6a00'},
   {key:'independent',label:'Independent',bg:'#f3f0fb',border:'#c5b8f0',text:'#5b21b6'}
 ];
+function plAutoFee(){
+  var potRaw=parseFloat((document.getElementById('pl-potential')?.value||'').replace(/,/g,''))||0;
+  var ath=parseInt(document.getElementById('pl-athletes')?.value)||0;
+  var feeEl=document.getElementById('pl-athlete-fee');
+  if(feeEl&&potRaw>0&&ath>0){
+    var fee=Math.round(potRaw/ath);
+    feeEl.value=fee.toLocaleString();
+  }
+}
+
 function plCurrencyInput(el){
   var v=el.value.replace(/[^0-9]/g,'');
   el.value=v?Number(v).toLocaleString():'';
