@@ -4586,9 +4586,12 @@ function openPipelineModal(id){
         +fld('pl-name','Sponsor / Company',p?p.name:'','text','e.g. Kroger')
         +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Partner Channel</div>'
           +'<select id="pl-partner" style="width:100%;height:34px;padding:0 10px;border:1.5px solid #e5e5ea;border-radius:7px;font-size:12px;font-family:inherit;outline:none;background:#fff">'+partnerSel+'</select></div>'
+        +'<div></div>'
+      +'</div>'
+      +'<div style="padding:0 18px 14px;border-bottom:1px solid #f2f2f7;display:grid;grid-template-columns:1fr 1fr;gap:10px">'
         +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Activation Type</div>'
           +'<div style="display:flex;gap:14px">'+typeChecks+'</div></div>'
-      +'</div>'
+        +fld('pl-event-date','Event Date',p?p.event_date:'','date','')
       +'<div style="padding:14px 18px;border-bottom:1px solid #f2f2f7">'
         +'<div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Inbound</div>'
         +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px">'
@@ -4636,8 +4639,7 @@ function openPipelineModal(id){
         +fld('pl-sow-sent','SOWs Sent',p?p.sow_sent:'','number','0')
         +fld('pl-sow-total','SOWs Total',p?p.sow_total:'','number','0')
       +'</div>'
-      +'<div style="padding:14px 18px;border-bottom:1px solid #f2f2f7;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">'
-        +fld('pl-event-date','Event Date',p?p.event_date:'','date','')
+      +'<div style="padding:14px 18px;border-bottom:1px solid #f2f2f7;display:grid;grid-template-columns:1fr 2fr;gap:10px">'
         +fld('pl-nilgo','NILGo Submitted',p?p.nilgo_submitted:'','date','')
         +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Activation Notes</div>'
           +'<textarea id="pl-notes" style="width:100%;height:58px;padding:8px 10px;border:1.5px solid #e5e5ea;border-radius:7px;font-size:12px;font-family:inherit;outline:none;resize:none;box-sizing:border-box;line-height:1.4" placeholder="Key details, requirements, timing...">'+(p?p.notes:'')+'</textarea></div>'
