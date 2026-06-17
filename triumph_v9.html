@@ -4408,6 +4408,7 @@ async function loadPipeline(){
       confirmed:r.confirmed||false,contact_name:r.contact_name||'',contact_title:r.contact_title||'',
       contact_phone:r.contact_phone||'',contact_email:r.contact_email||'',
       inbound_via:r.inbound_via||'Call',inbound_date:r.inbound_date||'',inbound_by:r.inbound_by||'',
+      sport:r.sport||'Football',planner_created:r.planner_created||false,
       msa_sent:r.msa_sent||'',msa_signed:r.msa_signed||'',sow_sent:r.sow_sent||0,sow_total:r.sow_total||0,
       nilgo_submitted:r.nilgo_submitted||'',notes:r.notes||'',
       log:Array.isArray(r.log)?r.log:(r.log?JSON.parse(r.log):[])
@@ -4491,6 +4492,30 @@ async function plDrop(e, stage){
   p.stage=stage;
   try{
     await sb.from('pipeline').update({stage:stage}).eq('id',id);
+    // Auto-create activation in planner when moving to Evaluating (only once)
+    if(stage==='Evaluating'&&!p.planner_created){
+      var coName=p.name;
+      if(!plannerSlots[coName]) plannerSlots[coName]={};
+      var alreadyExists=Object.values(plannerSlots[coName]).some(function(a){return a.from_pipeline===id;});
+      if(!alreadyExists){
+        var actId='act-'+Date.now();
+        var numSlots=p.athletes||1;
+        var actTypes=(p.act_types||[]).map(function(t){return t==='Appearance'?'appearance':t==='Social Content'?'social':'other';});
+        plannerSlots[coName][actId]={
+          label:p.name+(p.inbound_date?' ('+p.inbound_date+')':''),
+          types:actTypes.length?actTypes:['appearance'],
+          fee:0,date:p.inbound_date||'',notes:'Auto-created from pipeline',
+          status_label:'Draft',slots:Array(numSlots).fill(null),
+          from_pipeline:id,sport:p.sport||'Football'
+        };
+        savePlannerState();
+        // Mark pipeline record as planner_created
+        p.planner_created=true;
+        await sb.from('pipeline').update({planner_created:true}).eq('id',id);
+        // Set planner sport tab to match
+        window._plannerSportTab=p.sport||'Football';
+      }
+    }
   }catch(err){console.warn('Pipeline stage update:',err);}
   renderCos();
 }
@@ -4573,6 +4598,10 @@ function openPipelineModal(id){
             +'</select></div>'
           +fld('pl-idate','Date',p?p.inbound_date:'','date','')
           +fld('pl-athletes','Athletes',p?p.athletes:'','number','0')
+          +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Sport</div>'
+            +'<select id="pl-sport" style="width:100%;height:34px;padding:0 10px;border:1.5px solid #e5e5ea;border-radius:7px;font-size:12px;font-family:inherit;outline:none;background:#fff">'
+            +[{v:'Football',k:'Football'},{v:"Men's Basketball",k:'Basketball-M'},{v:"Women's Basketball",k:'Basketball-W'},{v:'Baseball',k:'Baseball'}].map(function(o){return '<option value="'+o.k+'"'+(p&&p.sport===o.k?' selected':'')+'>'+o.v+'</option>';}).join('')
+            +'</select></div>'
         +'</div>'
       +'</div>'
       +'<div style="padding:14px 18px;border-bottom:1px solid #f2f2f7;display:grid;grid-template-columns:1fr 1fr;gap:10px">'
@@ -4714,7 +4743,8 @@ async function savePLOpportunity(id){
   var sow_total=parseInt(document.getElementById('pl-sow-total')?.value)||0;
   var nilgo_submitted=document.getElementById('pl-nilgo')?.value||null;
   var notes=document.getElementById('pl-notes')?.value||'';
-  var payload={name,stage,partner_type,act_types:act_types,athletes,nil_potential,nil_cleared,
+  var sport=document.getElementById('pl-sport')?.value||'Football';
+  var payload={name,stage,partner_type,act_types:act_types,athletes,nil_potential,nil_cleared,sport,
     inbound_via,inbound_date:inbound_date||null,inbound_by,contact_name,contact_title,contact_phone,contact_email,
     msa_sent:msa_sent||null,msa_signed:msa_signed||null,sow_sent,sow_total,nilgo_submitted:nilgo_submitted||null,notes};
   try{
@@ -4798,6 +4828,64 @@ function buildActivationPlanner(){
   }
 
   const benchAthletes=A.filter(a=>(a.sport||'Football')===activeSportTab);
+
+  // ── Priority scoring for suggestions ──
+  function scorePriority(a){
+    const banked=a.banked-a.paid;
+    const nilRem=a.contract-a.paid;
+    const curSch=a.sch.find(x=>x.mo===CUR&&(x.yr||2026)===2026);
+    const curNIL=curSch&&curSch.a>0?curSch.a:0;
+    // High: can't cover month payment
+    if(banked<curNIL) return{level:'High',color:'#c0392b',bg:'#fff0f3',reason:"Can't cover "+CUR+" payment"};
+    // High: near zero NIL balance
+    if(nilRem<=20000&&nilRem>0) return{level:'High',color:'#c0392b',bg:'#fff0f3',reason:'NIL balance near $0'};
+    // Medium: banked barely covers month
+    if(banked<curNIL*1.5) return{level:'Medium',color:'#b7791f',bg:'#fffbe6',reason:'Banked covers month, limited buffer'};
+    // Low: well covered
+    return{level:'Low',color:'#1d9e75',bg:'#e8f8f2',reason:'Well covered'};
+  }
+
+  // Find pipeline-linked activations to get sport filter
+  const pipelineActs=[];
+  Object.values(plannerSlots).forEach(co=>Object.values(co).forEach(act=>{
+    if(act.from_pipeline&&act.sport) pipelineActs.push({sport:act.sport,label:act.label});
+  }));
+  const activePipelineSport=pipelineActs.find(a=>a.sport===activeSportTab);
+
+  // Suggested athletes: sport-filtered, sorted by priority score
+  const suggestedAthletes=benchAthletes.map(a=>{
+    return{a,score:scorePriority(a)};
+  }).sort((x,y)=>{
+    const order={High:0,Medium:1,Low:2};
+    return order[x.score.level]-order[y.score.level];
+  });
+
+  function suggestedCardHtml(item){
+    const a=item.a;const sc=item.score;
+    const akey=a.f+'_'+a.l;
+    const banked=a.banked-a.paid;
+    const nilRem=a.contract-a.paid;
+    const curSch=a.sch.find(x=>x.mo===CUR&&(x.yr||2026)===2026);
+    const curNIL=curSch&&curSch.a>0?curSch.a:0;
+    let plannedFee=0;
+    Object.values(plannerSlots).forEach(co=>Object.values(co).forEach(act=>{
+      if((act.slots||[]).includes(akey)) plannedFee+=(act.fee||0);
+    }));
+    const isSlotted=plannedFee>0;
+    return '<div class="planner-athlete" draggable="true" data-akey="'+akey+'"'
+      +' style="background:#fff;border:1.5px solid '+(isSlotted?'#1d9e75':sc.color)+';border-radius:10px;padding:9px 11px;cursor:grab;user-select:none;position:relative"'
+      +' onmouseenter="this.style.boxShadow=\'0 4px 12px rgba(0,0,0,.1)\'" onmouseleave="this.style.boxShadow=\'none\'">'
+      +'<div style="position:absolute;top:8px;right:8px;background:'+sc.bg+';border:1px solid '+sc.color+';border-radius:4px;font-size:7px;font-weight:700;color:'+sc.color+';-webkit-text-fill-color:'+sc.color+';padding:1px 5px">'+sc.level+'</div>'
+      +'<div style="font-size:11px;font-weight:700;color:#1d1d1f;margin-bottom:1px;padding-right:46px">'+a.f+' '+a.l+'</div>'
+      +'<div style="font-size:9px;color:'+sc.color+';margin-bottom:5px">'+sc.reason+'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px">'
+        +'<div style="background:#f0ebff;border-radius:4px;padding:3px 5px"><div style="font-size:7px;color:#8e44ad;font-weight:700">NIL REM</div><div style="font-size:10px;font-weight:700;color:#8e44ad">'+f(nilRem)+'</div></div>'
+        +'<div style="background:#e8f8f2;border-radius:4px;padding:3px 5px"><div style="font-size:7px;color:#1d9e75;font-weight:700">BANKED</div><div style="font-size:10px;font-weight:700;color:#1d9e75">'+f(banked)+'</div></div>'
+        +'<div style="background:#eef6ff;border-radius:4px;padding:3px 5px"><div style="font-size:7px;color:#2980b9;font-weight:700">'+CUR+' NIL</div><div style="font-size:10px;font-weight:700;color:#2980b9">'+(curNIL>0?f(curNIL):'-')+'</div></div>'
+      +'</div>'
+    +'</div>';
+  }
+
   const sportTabs=allSports.map(sp=>{
     const sc=sportColors[sp]||{bg:'#f2f2f7',text:'#3c3c43'};
     const active=sp===activeSportTab;
@@ -4996,7 +5084,20 @@ function buildActivationPlanner(){
         +'<div style="display:flex;flex-wrap:wrap;gap:4px">'+sportTabs+'</div>'
       +'</div>'
       +'<div style="display:flex;flex-direction:column;gap:6px;max-height:calc(100vh - 240px);overflow-y:auto">'
-        +(benchAthletes.length===0?'<div style="text-align:center;padding:20px;color:#aeaeb2;font-size:11px">No athletes in this sport</div>':benchAthletes.map(athleteCardHtml).join(''))
+        +(benchAthletes.length===0?'<div style="text-align:center;padding:20px;color:#aeaeb2;font-size:11px">No athletes in this sport</div>'
+          :(activePipelineSport
+            ?('<div style="margin-bottom:10px">'
+              +'<div style="font-size:9px;font-weight:700;color:#c0392b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;display:flex;align-items:center;gap:4px">'
+                +'<div style="width:6px;height:6px;border-radius:50%;background:#c0392b"></div>'
+                +'Suggested — '+activePipelineSport.label
+              +'</div>'
+              +suggestedAthletes.map(suggestedCardHtml).join('')
+            +'</div>'
+            +'<div style="font-size:9px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">All Athletes</div>'
+            +benchAthletes.map(athleteCardHtml).join(''))
+            :benchAthletes.map(athleteCardHtml).join('')
+          )
+        )
       +'</div>'
     +'</div>'
     // RIGHT - impact panel (widest)
