@@ -4572,10 +4572,6 @@ function openPipelineModal(id){
             +['Call','Email','Text','Referral'].map(function(v){return '<option'+(p&&p.inbound_via===v?' selected':'')+'>'+v+'</option>';}).join('')
             +'</select></div>'
           +fld('pl-idate','Date',p?p.inbound_date:'','date','')
-          +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Logged By</div>'
-            +'<select id="pl-by" style="width:100%;height:34px;padding:0 10px;border:1.5px solid #e5e5ea;border-radius:7px;font-size:12px;font-family:inherit;outline:none;background:#fff">'
-            +['Mitch','Robyn','Kelly'].map(function(v){return '<option'+(p&&p.inbound_by===v?' selected':'')+'>'+v+'</option>';}).join('')
-            +'</select></div>'
           +fld('pl-athletes','Athletes',p?p.athletes:'','number','0')
         +'</div>'
       +'</div>'
