@@ -629,7 +629,7 @@ select.aa-inp{appearance:auto}
 .pl-col-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .pl-col-lbl{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
 .pl-col-ct{font-size:9px;font-weight:500;background:#fff;border-radius:3px;padding:1px 5px;color:#8e8e93}
-.pl-card{background:#fff;border-radius:8px;border:1px solid #e5e5ea;padding:9px 10px;margin-bottom:6px;cursor:pointer;transition:box-shadow .1s}
+.pl-card{background:#fff;border-radius:8px;border:1px solid #e5e5ea;padding:9px 10px;margin-bottom:6px;cursor:grab;transition:box-shadow .1s,opacity .15s}
 .pl-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.08)}
 .pl-confirmed{border-color:#1d9e75!important}
 .pl-card-name{font-size:12px;font-weight:600;color:#1d1d1f;margin-bottom:2px}
@@ -4436,7 +4436,7 @@ function buildPipeline(){
       const pm=PL_PARTNER_META[p.partner_type];
       const types=(p.act_types||[]).join(' · ')||'—';
       const sid=p.id;
-      return '<div class="pl-card'+(p.confirmed?' pl-confirmed':'')+'" onclick="openPipelineModal(\''+sid+'\')">'
+      return '<div class="pl-card'+(p.confirmed?' pl-confirmed':'')+'" draggable="true" data-plid="'+sid+'" onclick="openPipelineModal(\''+sid+'\')" onmousedown="event.stopPropagation?null:null" ondragstart="plDragStart(event,\''+sid+'\')" ondragend="plDragEnd(event)">'
         +'<div class="pl-card-name">'+p.name+'</div>'
         +(pm?'<div class="pl-card-partner"><div class="pl-dot" style="background:'+pm.dot+'"></div>'+pm.label+'</div>':'<div class="pl-card-partner" style="color:#d1d1d6">No partner</div>')
         +'<div class="pl-card-type">'+types+'</div>'
@@ -4452,13 +4452,60 @@ function buildPipeline(){
       +'</div>';
     }).join('');
 
-    return '<div class="pl-col">'
+    return '<div class="pl-col" data-stage="'+stage+'" ondragover="plDragOver(event)" ondragleave="plDragLeave(event)" ondrop="plDrop(event,\''+stage+'\')"  style="transition:background .1s,outline .1s">'
       +'<div class="pl-col-hd"><span class="pl-col-lbl" style="color:'+sc+'">'+stage+'</span><span class="pl-col-ct">'+cards.length+'</span></div>'
       +(cardsHtml||'<div class="pl-empty">No opportunities</div>')
     +'</div>';
   }).join('');
   return '<div class="pl-board">'+cols+'</div>';
 }
+
+function plDragStart(e, id){
+  window._plDragId=id;
+  e.dataTransfer.effectAllowed='move';
+  e.dataTransfer.setData('text/plain',id);
+  setTimeout(function(){
+    var el=document.querySelector('[data-plid="'+id+'"]');
+    if(el) el.style.opacity='0.4';
+  },0);
+}
+
+function plDragEnd(e){
+  document.querySelectorAll('[data-plid]').forEach(function(el){el.style.opacity='1';});
+  document.querySelectorAll('.pl-col').forEach(function(col){
+    col.style.background='';col.style.outline='';
+  });
+}
+
+function plDragOver(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+  var col=e.currentTarget;
+  col.style.background='#eef6ff';
+  col.style.outline='2px solid #2980b9';
+  col.style.outlineOffset='-2px';
+}
+
+function plDragLeave(e){
+  var col=e.currentTarget;
+  col.style.background='';col.style.outline='';
+}
+
+async function plDrop(e, stage){
+  e.preventDefault();
+  var col=e.currentTarget;
+  col.style.background='';col.style.outline='';
+  var id=window._plDragId||e.dataTransfer.getData('text/plain');
+  if(!id) return;
+  var p=PL.find(function(x){return x.id===id;});
+  if(!p||p.stage===stage) return;
+  p.stage=stage;
+  try{
+    await sb.from('pipeline').update({stage:stage}).eq('id',id);
+  }catch(err){console.warn('Pipeline stage update:',err);}
+  renderCos();
+}
+
 
 async function togglePLConfirm(id){
   const p=PL.find(function(x){return x.id===id;});
