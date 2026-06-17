@@ -4729,6 +4729,22 @@ async function savePLOpportunity(id){
       delete window._plPendingLog;
       payload.log=pending;
       await sb.from('pipeline').insert(payload);
+      // Also add to companies roster if not already there
+      var existingCo=CO.find(function(c){return c.name.toLowerCase()===name.toLowerCase();});
+      if(!existingCo){
+        try{
+          var {data:newCo}=await sb.from('companies').insert({
+            name:name,
+            committed:0,
+            priority:CO.length,
+            rank_number:CO.length+1,
+            logo_initial:name[0].toUpperCase(),
+            partner_type:partner_type||null,
+            athletes:JSON.stringify([])
+          }).select().single();
+          if(newCo) CO.push({id:newCo.id,name,committed:0,athletes:[],priority:CO.length-1,partner_type:partner_type||''});
+        }catch(coErr){console.warn('Could not auto-add to companies:',coErr);}
+      }
     }
   }catch(e){alert('Save error: '+e.message);return;}
   document.getElementById('pl-modal').remove();
