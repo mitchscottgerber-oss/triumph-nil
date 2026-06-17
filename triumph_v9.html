@@ -4615,10 +4615,17 @@ function openPipelineModal(id){
       ov.querySelectorAll('.pl-stage-btn').forEach(function(b){
         b.style.borderColor='#e5e5ea';b.style.background='transparent';
         b.style.color='#8e8e93';b.style.webkitTextFillColor='#8e8e93';
+        b.dataset.active='0';
       });
       btn.style.borderColor=c;btn.style.background=c+'22';
       btn.style.color=c;btn.style.webkitTextFillColor=c;
+      btn.dataset.active='1';
     });
+  });
+  // Mark the currently active stage on open
+  ov.querySelectorAll('.pl-stage-btn').forEach(function(btn){
+    if(btn.style.background&&btn.style.background!=='transparent') btn.dataset.active='1';
+    else btn.dataset.active='0';
   });
 }
 
@@ -4654,8 +4661,8 @@ async function savePLOpportunity(id){
   var isNew=id==='__new__'||!id||id==='null';
   var name=(document.getElementById('pl-name')?.value||'').trim();
   if(!name){alert('Please enter a company name');return;}
-  var stageBtns=[...document.querySelectorAll('.pl-stage-btn')];
-  var activeStageBtn=stageBtns.find(function(b){return b.style.background&&b.style.background!=='transparent'&&b.style.background!=='';});
+  // Stage: use data-active attribute set by click handler
+  var activeStageBtn=[...document.querySelectorAll('.pl-stage-btn')].find(function(b){return b.dataset.active==='1';});
   var stage=activeStageBtn?activeStageBtn.dataset.stage:'Inbound';
   var partner_type=document.getElementById('pl-partner')?.value||'';
   var act_types=[...document.querySelectorAll('.pl-type-chk:checked')].map(function(c){return c.value;});
@@ -4663,28 +4670,28 @@ async function savePLOpportunity(id){
   var nil_potential=parseFloat(document.getElementById('pl-potential')?.value)||0;
   var nil_cleared=parseFloat(document.getElementById('pl-cleared')?.value)||0;
   var inbound_via=document.getElementById('pl-via')?.value||'Call';
-  var inbound_date=document.getElementById('pl-idate')?.value||'';
+  var inbound_date=document.getElementById('pl-idate')?.value||null;
   var inbound_by=document.getElementById('pl-by')?.value||'Mitch';
   var contact_name=document.getElementById('pl-cname')?.value||'';
   var contact_title=document.getElementById('pl-ctitle')?.value||'';
   var contact_phone=document.getElementById('pl-cphone')?.value||'';
   var contact_email=document.getElementById('pl-cemail')?.value||'';
-  var msa_sent=document.getElementById('pl-msa-sent')?.value||'';
-  var msa_signed=document.getElementById('pl-msa-signed')?.value||'';
+  var msa_sent=document.getElementById('pl-msa-sent')?.value||null;
+  var msa_signed=document.getElementById('pl-msa-signed')?.value||null;
   var sow_sent=parseInt(document.getElementById('pl-sow-sent')?.value)||0;
   var sow_total=parseInt(document.getElementById('pl-sow-total')?.value)||0;
-  var nilgo_submitted=document.getElementById('pl-nilgo')?.value||'';
+  var nilgo_submitted=document.getElementById('pl-nilgo')?.value||null;
   var notes=document.getElementById('pl-notes')?.value||'';
-  var payload={name,stage,partner_type,act_types:JSON.stringify(act_types),athletes,nil_potential,nil_cleared,
-    inbound_via,inbound_date,inbound_by,contact_name,contact_title,contact_phone,contact_email,
-    msa_sent,msa_signed,sow_sent,sow_total,nilgo_submitted,notes};
+  var payload={name,stage,partner_type,act_types:act_types,athletes,nil_potential,nil_cleared,
+    inbound_via,inbound_date:inbound_date||null,inbound_by,contact_name,contact_title,contact_phone,contact_email,
+    msa_sent:msa_sent||null,msa_signed:msa_signed||null,sow_sent,sow_total,nilgo_submitted:nilgo_submitted||null,notes};
   try{
     if(!isNew){
       await sb.from('pipeline').update(payload).eq('id',id);
     } else {
       var pending=window._plPendingLog||[];
       delete window._plPendingLog;
-      payload.log=JSON.stringify(pending);
+      payload.log=pending;
       await sb.from('pipeline').insert(payload);
     }
   }catch(e){alert('Save error: '+e.message);return;}
