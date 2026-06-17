@@ -1828,37 +1828,46 @@ function rAnnual(list,filterMos){
     const rsExpId='rs-exp-'+idx;
     const totalCols=4+cols.length+2;
 
-    // NIL row (blue)
-    if(rowView!=='rs') html+='<tr class="athlete-nil-row" style="cursor:pointer;background:#eef6ff" onclick="oProf(\'' + key + '\')">'
-      +'<td style="position:sticky;left:0;z-index:1;background:#eef6ff;border-right:1px solid #f2f2f7">'
-        +'<div style="font-weight:600;font-size:12.5px">'+a.f+' '+a.l+'</div>'
-        +'<div style="display:flex;gap:4px;margin-top:2px">'
-          +'<span style="font-size:9px;background:#f2f2f7;padding:1px 5px;border-radius:4px;color:#8e8e93">'+a.pos+'</span>'
-          +(rvTot>0?'<span style="font-size:9px;background:#fff0f3;padding:1px 5px;border-radius:4px;color:#c0392b">RS</span>':'')
-        +'</div>'
-      +'</td>'
-      +'<td style="text-align:right;background:#e8f8f2"><span style="font-size:12px;font-weight:600;color:'+(isBankLow?'#e34040':'#1d9e75')+'">'+f(banked)+'</span></td>'
-      +'<td style="text-align:right;background:#f0ebff;cursor:pointer" onclick="event.stopPropagation();raToggle(\'' + nilExpId + '\',\'' + rsExpId + '\',\'nil\',' + idx + ')">'
-        +'<div style="font-weight:600;color:#8e44ad;font-size:12px">'+f(nilRem)+'</div>'
-        +'<div style="font-size:9px;color:#8e44ad;margin-top:1px" id="nh-'+idx+'">▼ detail</div>'
-      +'</td>'
-      +cols.map(({mo,yr})=>{
-        const s=a.sch.find(x=>x.mo===mo&&(x.yr||2026)===yr);
-        const iC=mo===CUR&&yr===2026;
-        const bg='background:#eef6ff!important;';
-        if(!s||s.a===0) return'<td class="'+(iC?'curbg':'')+'" style="'+bg+'"><span style="color:#e5e5ea">-</span></td>';
-        return'<td class="'+(iC?'curbg':'')+'" style="'+bg+'">'
-          +'<div style="font-size:11.5px;font-weight:500'+(s.p?';color:#8e8e93':'')+'">'+f(s.a)+'</div>'
-          +(s.p?'<div class="mc-paid-badge">✓</div>':'')
-        +'</td>';
-      }).join('')
-      +'<td style="text-align:right;font-weight:700;font-size:12px;color:#2980b9;background:#eef6ff">'+f(nilTot)+'</td>'
-      +'<td style="background:#fff0f3"></td>'
-      +'<td style="background:#f9f9f9"></td>'
-    +'</tr>';
+    // NIL row — always show athlete name; hide NIL data when RS-only
+    const rsOnly=rowView==='rs';
+    html+='<tr class="athlete-nil-row" style="cursor:pointer;background:'+(rsOnly?'#fff':'#eef6ff')+'" onclick="oProf(\''+key+'\')">'+
+      '<td style="position:sticky;left:0;z-index:1;background:'+(rsOnly?'#fff':'#eef6ff')+';border-right:1px solid #f2f2f7">'+
+        '<div style="font-weight:600;font-size:12.5px">'+a.f+' '+a.l+'</div>'+
+        '<div style="display:flex;gap:4px;margin-top:2px">'+
+          '<span style="font-size:9px;background:#f2f2f7;padding:1px 5px;border-radius:4px;color:#8e8e93">'+a.pos+'</span>'+
+          (rvTot>0?'<span style="font-size:9px;background:#fff0f3;padding:1px 5px;border-radius:4px;color:#c0392b">RS</span>':'')+
+        '</div>'+
+      '</td>';
+    if(rsOnly){
+      html+=
+        '<td style="background:#fff"></td>'+
+        '<td style="background:#fff"></td>'+
+        cols.map(()=>'<td style="background:#fff"></td>').join('')+
+        '<td style="background:#fff"></td>'+
+        '<td style="background:#fff"></td>'+
+        '<td style="background:#fff"></td>';
+    } else {
+      html+=
+        '<td style="text-align:right;background:#e8f8f2"><span style="font-size:12px;font-weight:600;color:'+(isBankLow?'#e34040':'#1d9e75')+'">'+f(banked)+'</span></td>'+
+        '<td style="text-align:right;background:#f0ebff;cursor:pointer" onclick="event.stopPropagation();raToggle(\''+nilExpId+'\',\''+rsExpId+'\',\'nil\','+idx+')">'+
+          '<div style="font-weight:600;color:#8e44ad;font-size:12px">'+f(nilRem)+'</div>'+
+          '<div style="font-size:9px;color:#8e44ad;margin-top:1px" id="nh-'+idx+'">▼ detail</div>'+
+        '</td>'+
+        cols.map(({mo,yr})=>{
+          const s=a.sch.find(x=>x.mo===mo&&(x.yr||2026)===yr);
+          const iC=mo===CUR&&yr===2026;
+          const bg='background:#eef6ff!important;';
+          if(!s||s.a===0) return '<td class="'+(iC?'curbg':'')+'" style="'+bg+'"><span style="color:#e5e5ea">-</span></td>';
+          return '<td class="'+(iC?'curbg':'')+'" style="'+bg+'"><div style="font-size:11.5px;font-weight:500'+(s.p?';color:#8e8e93':'')+'">' +f(s.a)+'</div>'+(s.p?'<div class="mc-paid-badge">✓</div>':'')+'</td>';
+        }).join('')+
+        '<td style="text-align:right;font-weight:700;font-size:12px;color:#2980b9;background:#eef6ff">'+f(nilTot)+'</td>'+
+        '<td style="background:#fff0f3"></td>'+
+        '<td style="background:#f9f9f9"></td>';
+    }
+    html+='</tr>';
 
     // NIL expand row
-    if(rowView!=='rs') html+='<tr id="'+nilExpId+'" style="display:none">'
+    if(!rsOnly) html+='<tr id="'+nilExpId+'" style="display:none">'
       +'<td colspan="'+(totalCols+1)+'" style="padding:10px 16px 12px;background:#f0f6ff;border-top:0.5px solid #b3d4f5;border-bottom:0.5px solid #b3d4f5">'
         +'<div style="display:flex;gap:36px;font-size:12px">'
           +'<div><div style="font-size:9px;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">NIL Contract</div><div style="font-weight:600;color:#1d1d1f;font-size:13px">'+f(a.contract)+'</div></div>'
