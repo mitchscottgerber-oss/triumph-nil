@@ -1877,22 +1877,36 @@ function rAnnual(list,filterMos){
       +'</td>'
     +'</tr>';
 
-    // RS row (pink)
-    if(rowView!=='nil') html+='<tr style="background:#fff5f7;cursor:pointer" onclick="oProf(\'' + key + '\')">'
-      +'<td style="padding:3px 10px 8px 22px;font-size:9px;color:#c0392b;font-weight:600;text-transform:uppercase;letter-spacing:.05em;position:sticky;left:0;background:#fff5f7;border-right:1px solid #f5c6d0">↳ Rev Share</td>'
-      +'<td style="background:#fff5f7"></td>'
-      +'<td style="text-align:right;background:#fff0f3;cursor:pointer" onclick="event.stopPropagation();raToggle(\'' + rsExpId + '\',\'' + nilExpId + '\',\'rs\',' + idx + ')">'
-        +((a.rsContract||0)>0
-          ?'<div style="font-weight:600;color:#c0392b;font-size:12px">'+f(rsRem)+'</div><div style="font-size:9px;color:#aeaeb2;margin-top:1px" id="rh-'+idx+'">▼ detail</div>'
-          :'<span style="color:#d1d1d6;font-size:11px">—</span>')
-      +'</td>'
-      +cols.map(({mo,yr})=>{const rv=getRev(a,mo,yr);const iC=mo===CUR&&yr===2026;const bg='background:#fff0f3!important;';
-        return'<td class="'+(iC?'curbg':'')+'" style="text-align:center;'+bg+'">'+(rv>0?'<span style="font-size:11px;font-weight:600;color:#c0392b">'+f(rv)+'</span>':'<span style="color:#e5e5ea;font-size:10px">—</span>')+'</td>';
-      }).join('')
-      +'<td style="background:#fff5f7"></td>'
-      +'<td style="text-align:right;font-size:11px;font-weight:700;color:'+(rvTot>0?'#c0392b':'#d1d1d6')+';background:#fff0f3">'+(rvTot>0?f(rvTot):'—')+'</td>'
-      +'<td style="background:#f9f9f9"></td>'
-    +'</tr>';
+    // RS row (pink) — matches NIL row structure: name, banked, RS rem, monthly amounts
+    if(rowView!=='nil'){
+      const rsBankLow=(a.rsPaid||0)<(getRev(a,CUR,2026)||0);
+      html+='<tr style="background:#fff5f7;cursor:pointer" onclick="oProf(\''+key+'\')">'+
+        '<td style="position:sticky;left:0;z-index:1;background:#fff5f7;border-right:1px solid #f5c6d0">'+
+          '<div style="font-weight:600;font-size:12.5px;color:#1d1d1f">'+a.f+' '+a.l+'</div>'+
+          '<div style="display:flex;gap:4px;margin-top:2px">'+
+            '<span style="font-size:9px;background:#f2f2f7;padding:1px 5px;border-radius:4px;color:#8e8e93">'+a.pos+'</span>'+
+            '<span style="font-size:9px;background:#fff0f3;padding:1px 5px;border-radius:4px;color:#c0392b">RS</span>'+
+          '</div>'+
+        '</td>'+
+        '<td style="text-align:right;background:#fce8ea">'+
+          ((a.rsContract||0)>0?'<span style="font-size:12px;font-weight:600;color:'+(rsBankLow?'#e34040':'#c0392b')+'">'+f(a.rsPaid||0)+'</span>':'<span style="color:#d1d1d6">—</span>')+
+        '</td>'+
+        '<td style="text-align:right;background:#fff0f3;cursor:pointer" onclick="event.stopPropagation();raToggle(\''+rsExpId+'\',\''+nilExpId+'\',\'rs\','+idx+')">'+
+          ((a.rsContract||0)>0
+            ?'<div style="font-weight:600;color:#c0392b;font-size:12px">'+f(rsRem)+'</div><div style="font-size:9px;color:#aeaeb2;margin-top:1px" id="rh-'+idx+'">▼ detail</div>'
+            :'<span style="color:#d1d1d6;font-size:11px">—</span>')+
+        '</td>'+
+        cols.map(({mo,yr})=>{
+          const rv=getRev(a,mo,yr);
+          const iC=mo===CUR&&yr===2026;
+          const bg='background:#fff0f3!important;';
+          return '<td class="'+(iC?'curbg':'')+'" style="'+bg+'">'+(rv>0?'<div style="font-size:11.5px;font-weight:500;color:#c0392b">'+f(rv)+'</div>':'<span style="color:#e5e5ea">—</span>')+'</td>';
+        }).join('')+
+        '<td style="text-align:right;font-weight:700;font-size:12px;color:'+(rvTot>0?'#c0392b':'#d1d1d6')+';background:#fff0f3">'+(rvTot>0?f(rvTot):'—')+'</td>'+
+        '<td style="background:#fff0f3"></td>'+
+        '<td style="background:#f9f9f9"></td>'+
+      '</tr>';
+    }
 
     // RS expand row
     if(rowView!=='nil') html+='<tr id="'+rsExpId+'" style="display:none">'
