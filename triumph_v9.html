@@ -4403,8 +4403,8 @@ function renderCos(){
 }
 
 // ===== PIPELINE =====
-const PL_STAGES=['Inbound','Evaluating','MSA Out','Active','SOW Template Needed','NILGo','Activation Completed'];
-const PL_STAGE_COLORS={'Inbound':'#8e8e93','Evaluating':'#2980b9','MSA Out':'#b7791f','Active':'#1d9e75','SOW Template Needed':'#8e44ad','NILGo':'#c0392b','Activation Completed':'#1d1d1f'};
+const PL_STAGES=['Inbound','Evaluating','MSA Out','Active'];
+const PL_STAGE_COLORS={'Inbound':'#8e8e93','Evaluating':'#2980b9','MSA Out':'#b7791f','Active':'#1d9e75'};
 const PL_PARTNER_META={playfly:{label:'Playfly',dot:'#1565a8'},bpg:{label:'Blacksburg Partnership Group',dot:'#7a1f1f'},mccc:{label:'Montgomery Co. Chamber',dot:'#7a6a00'},independent:{label:'Independent',dot:'#5b21b6'}};
 
 async function loadPipeline(){
@@ -4430,8 +4430,8 @@ function buildPipeline(){
   const cols=PL_STAGES.map(function(stage){
     const cards=PL.filter(function(p){return p.stage===stage;});
     const sc=PL_STAGE_COLORS[stage];
-    const showConfirm=['SOW Template Needed','NILGo','Active','Activation Completed'].includes(stage);
-    const showCleared=['NILGo','Active','Activation Completed'].includes(stage);
+    const showConfirm=['Active'].includes(stage);
+    const showCleared=['Active'].includes(stage);
     const cardsHtml=cards.map(function(p){
       const pm=PL_PARTNER_META[p.partner_type];
       const types=(p.act_types||[]).join(' · ')||'—';
