@@ -4404,7 +4404,7 @@ async function loadPipeline(){
     (data||[]).forEach(r=>PL.push({
       id:r.id,name:r.name,stage:r.stage||'Inbound',partner_type:r.partner_type||'',
       act_types:Array.isArray(r.act_types)?r.act_types:(r.act_types?JSON.parse(r.act_types):[]),
-      athletes:r.athletes||0,nil_potential:r.nil_potential||0,nil_cleared:r.nil_cleared||0,
+      athletes:r.athletes||0,athlete_fee:r.athlete_fee||0,nil_potential:r.nil_potential||0,nil_cleared:r.nil_cleared||0,
       confirmed:r.confirmed||false,contact_name:r.contact_name||'',contact_title:r.contact_title||'',
       contact_phone:r.contact_phone||'',contact_email:r.contact_email||'',
       inbound_via:r.inbound_via||'Call',inbound_date:r.inbound_date||'',inbound_by:r.inbound_by||'',
@@ -4504,7 +4504,7 @@ async function plDrop(e, stage){
         plannerSlots[coName][actId]={
           label:p.name+(p.inbound_date?' ('+p.inbound_date+')':''),
           types:actTypes.length?actTypes:['appearance'],
-          fee:0,date:p.inbound_date||'',notes:'Auto-created from pipeline',
+          fee:p.athlete_fee||0,date:p.inbound_date||'',notes:'Auto-created from pipeline',
           status_label:'Draft',slots:Array(numSlots).fill(null),
           from_pipeline:id,sport:p.sport||'Football'
         };
@@ -4604,11 +4604,16 @@ function openPipelineModal(id){
             +'</select></div>'
         +'</div>'
       +'</div>'
-      +'<div style="padding:14px 18px;border-bottom:1px solid #f2f2f7;display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+      +'<div style="padding:14px 18px;border-bottom:1px solid #f2f2f7;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">'
         +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">NIL Potential</div>'
           +'<div style="display:flex;align-items:center;border:1.5px solid #e5e5ea;border-radius:7px;overflow:hidden">'
             +'<span style="padding:0 10px;color:#8e44ad;font-weight:700;border-right:1px solid #e5e5ea;height:34px;display:flex;align-items:center">$</span>'
             +'<input id="pl-potential" type="number" value="'+(p?p.nil_potential:'')+'" placeholder="0" style="border:none;flex:1;height:34px;padding:0 10px;font-size:12px;font-family:inherit;outline:none">'
+          +'</div></div>'
+        +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Fee Per Athlete</div>'
+          +'<div style="display:flex;align-items:center;border:1.5px solid #e5e5ea;border-radius:7px;overflow:hidden">'
+            +'<span style="padding:0 10px;color:#2980b9;font-weight:700;border-right:1px solid #e5e5ea;height:34px;display:flex;align-items:center">$</span>'
+            +'<input id="pl-athlete-fee" type="number" value="'+(p?p.athlete_fee:'')+'" placeholder="0" style="border:none;flex:1;height:34px;padding:0 10px;font-size:12px;font-family:inherit;outline:none">'
           +'</div></div>'
         +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">NIL Cleared</div>'
           +'<div style="display:flex;align-items:center;border:1.5px solid #e5e5ea;border-radius:7px;overflow:hidden">'
@@ -4729,6 +4734,7 @@ async function savePLOpportunity(id){
   var act_types=[...document.querySelectorAll('.pl-type-chk:checked')].map(function(c){return c.value;});
   var athletes=parseInt(document.getElementById('pl-athletes')?.value)||0;
   var nil_potential=parseFloat(document.getElementById('pl-potential')?.value)||0;
+  var athlete_fee=parseFloat(document.getElementById('pl-athlete-fee')?.value)||0;
   var nil_cleared=parseFloat(document.getElementById('pl-cleared')?.value)||0;
   var inbound_via=document.getElementById('pl-via')?.value||'Call';
   var inbound_date=document.getElementById('pl-idate')?.value||null;
@@ -4744,7 +4750,7 @@ async function savePLOpportunity(id){
   var nilgo_submitted=document.getElementById('pl-nilgo')?.value||null;
   var notes=document.getElementById('pl-notes')?.value||'';
   var sport=document.getElementById('pl-sport')?.value||'Football';
-  var payload={name,stage,partner_type,act_types:act_types,athletes,nil_potential,nil_cleared,sport,
+  var payload={name,stage,partner_type,act_types:act_types,athletes,athlete_fee,nil_potential,nil_cleared,sport,
     inbound_via,inbound_date:inbound_date||null,inbound_by,contact_name,contact_title,contact_phone,contact_email,
     msa_sent:msa_sent||null,msa_signed:msa_signed||null,sow_sent,sow_total,nilgo_submitted:nilgo_submitted||null,notes};
   try{
