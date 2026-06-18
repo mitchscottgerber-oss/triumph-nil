@@ -4583,17 +4583,17 @@ function openPipelineModal(id){
     +'<div style="padding:10px 18px;border-bottom:1px solid #f2f2f7;display:flex;flex-wrap:wrap;gap:4px;flex-shrink:0">'+stageBtns+'</div>'
     +'<div style="flex:1;overflow-y:auto">'
       +'<div style="padding:14px 18px;border-bottom:1px solid #f2f2f7;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">'
-        +fld('pl-name','Sponsor / Company',p?p.name:'','text','e.g. Kroger')
+      +'<div style="padding:14px 18px;border-bottom:1px solid #f2f2f7;display:grid;grid-template-columns:1fr 1fr;gap:10px">'
         +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Partner Channel</div>'
           +'<select id="pl-partner" style="width:100%;height:34px;padding:0 10px;border:1.5px solid #e5e5ea;border-radius:7px;font-size:12px;font-family:inherit;outline:none;background:#fff">'+partnerSel+'</select></div>'
         +'<div></div>'
-      +'</div>'
       +'<div style="padding:0 18px 14px;border-bottom:1px solid #f2f2f7;display:grid;grid-template-columns:1fr 1fr;gap:10px">'
-        +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Activation Type</div>'
+      +'<div style="padding:14px 18px;border-bottom:1px solid #f2f2f7;display:grid;grid-template-columns:1fr 1fr;gap:10px">'
           +'<div style="display:flex;gap:14px">'+typeChecks+'</div></div>'
         +fld('pl-event-date','Event Date',p?p.event_date:'','date','')
+        +fld('pl-event-date','Event Date',p?p.event_date:'','date','')
+      +'</div>'
       +'<div style="padding:14px 18px;border-bottom:1px solid #f2f2f7">'
-        +'<div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Inbound</div>'
         +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px">'
           +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Via</div>'
             +'<select id="pl-via" style="width:100%;height:34px;padding:0 10px;border:1.5px solid #e5e5ea;border-radius:7px;font-size:12px;font-family:inherit;outline:none;background:#fff">'
