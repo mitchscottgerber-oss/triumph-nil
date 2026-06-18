@@ -4690,7 +4690,7 @@ function openPipelineModal(id){
       +'<div style="padding:14px 18px">'
         +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
           +'<div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em">Conversation Log</div>'
-          +'<button onclick="togglePLLogForm()" style="font-size:10px;padding:3px 10px;border-radius:6px;border:1.5px solid #e5e5ea;background:#fff;cursor:pointer;font-family:inherit;font-weight:600">+ Add Entry</button>'
+          +(isNew?'':'<button onclick="togglePLLogForm()" style="font-size:10px;padding:3px 10px;border-radius:6px;border:1.5px solid #e5e5ea;background:#fff;cursor:pointer;font-family:inherit;font-weight:600">+ Add Entry</button>')
         +'</div>'
         +'<div id="pl-log-form" style="display:none;background:#f9f9f9;border-radius:8px;padding:10px;margin-bottom:10px;border:1px solid #e5e5ea">'
           +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">'
