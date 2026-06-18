@@ -4747,7 +4747,7 @@ function togglePLLogForm(){
 }
 
 async function addPLLogEntry(id){
-  var who=document.getElementById('pl-log-who')?.value||'Mitch';
+  var who=document.getElementById('pl-log-who')?.value||'Mitch Gerber';
   var channel=document.getElementById('pl-log-ch')?.value||'Call';
   var date=document.getElementById('pl-log-date')?.value||new Date().toISOString().slice(0,10);
   var note=(document.getElementById('pl-log-note')?.value||'').trim();
@@ -4759,13 +4759,19 @@ async function addPLLogEntry(id){
     if(p){
       p.log=p.log||[];
       p.log.push(entry);
-      try{await sb.from('pipeline').update({log:p.log}).eq('id',id);}catch(e){console.warn(e);}
+      var res=await sb.from('pipeline').update({log:p.log}).eq('id',id);
+      if(res.error){
+        alert('Save error: '+res.error.message);
+        p.log.pop();
+        return;
+      }
     }
   } else {
     window._plPendingLog=window._plPendingLog||[];
     window._plPendingLog.push(entry);
   }
   document.getElementById('pl-modal').remove();
+  if(!isNew) await loadPipeline();
   openPipelineModal(isNew?null:id);
 }
 
