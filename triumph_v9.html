@@ -4841,7 +4841,7 @@ async function deletePLOpportunity(id){
 
 // ===== ACTIVATION PLANNER =====
 // plannerSlots: { coName: { actId: { label, type, fee, slots: [athleteKey|null, ...] } } }
-let plannerSlots={},plannerCollapsed={};
+let plannerSlots={},plannerCollapsed={},plannerHidden=new Set();
 
 function buildActivationPlanner(){
   if(CO.length===0) return '<div style="text-align:center;padding:60px;color:#8e8e93"><div style="font-size:14px;font-weight:600;color:#1d1d1f;margin-bottom:4px">No companies yet</div><div style="font-size:12px">Add a company first, then plan activations here</div></div>';
@@ -4960,7 +4960,7 @@ function buildActivationPlanner(){
   }
 
   // ── Left: Company boards ──
-  const companyBoards=CO.map(co=>{
+  const companyBoards=CO.filter(co=>!plannerHidden.has(co.name)).map(co=>{
     if(!plannerSlots[co.name]) plannerSlots[co.name]={};
     const acts=Object.entries(plannerSlots[co.name]);
     const totalPlanned=acts.reduce((s,[,act])=>s+(act.fee||0)*(act.slots||[]).filter(Boolean).length,0);
@@ -5333,25 +5333,12 @@ function initPlannerDrag(){
 }
 
 function removePlannerCompany(coName){
-  if(!coName){console.warn('removePlannerCompany: no coName');return;}
-  // Use inline confirm instead of browser confirm()
-  const existing=document.getElementById('planner-del-confirm');
-  if(existing) existing.remove();
-  const toast=document.createElement('div');
-  toast.id='planner-del-confirm';
-  toast.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1d1d1f;color:#fff;border-radius:12px;padding:12px 18px;display:flex;align-items:center;gap:12px;z-index:3000;box-shadow:0 8px 28px rgba(0,0,0,.3);font-size:12px;font-family:-apple-system,sans-serif';
-  toast.innerHTML='<span>Remove <b>'+coName+'</b> from planner?</span>'
-    +'<button onclick="document.getElementById(\'planner-del-confirm\').remove()" style="background:rgba(255,255,255,.15);border:none;border-radius:6px;padding:4px 10px;color:#fff;cursor:pointer;font-size:11px;font-family:inherit">Cancel</button>'
-    +'<button id="planner-del-ok" style="background:#c0392b;border:none;border-radius:6px;padding:4px 10px;color:#fff;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit">Remove</button>';
-  document.body.appendChild(toast);
-  document.getElementById('planner-del-ok').onclick=function(){
-    toast.remove();
-    delete plannerSlots[coName];
-    delete plannerCollapsed['planner-co-'+coName];
-    savePlannerState();
-    renderCos();
-  };
-  setTimeout(()=>{if(document.getElementById('planner-del-confirm')) toast.remove();},6000);
+  if(!coName) return;
+  plannerHidden.add(coName);
+  delete plannerSlots[coName];
+  delete plannerCollapsed['planner-co-'+coName];
+  savePlannerState();
+  renderCos();
 }
 
 function togglePlannerCo(key){
@@ -5360,10 +5347,14 @@ function togglePlannerCo(key){
 }
 
 function savePlannerState(){
-  try{localStorage.setItem('triumphPlannerSlots',JSON.stringify(plannerSlots));}catch(e){}
+  try{
+    localStorage.setItem('triumphPlannerSlots',JSON.stringify(plannerSlots));
+    localStorage.setItem('triumphPlannerHidden',JSON.stringify([...plannerHidden]));
+  }catch(e){}
 }
 function loadPlannerState(){
   try{const s=localStorage.getItem('triumphPlannerSlots');if(s) plannerSlots=JSON.parse(s);}catch(e){}
+  try{const h=localStorage.getItem('triumphPlannerHidden');if(h) plannerHidden=new Set(JSON.parse(h));}catch(e){}
 }
 
 function exportPlannerBoard(){
