@@ -4844,7 +4844,7 @@ async function deletePLOpportunity(id){
 let plannerSlots={},plannerCollapsed={},plannerHidden=new Set();
 
 function buildActivationPlanner(){
-  if(CO.length===0) return '<div style="text-align:center;padding:60px;color:#8e8e93"><div style="font-size:14px;font-weight:600;color:#1d1d1f;margin-bottom:4px">No companies yet</div><div style="font-size:12px">Add a company first, then plan activations here</div></div>';
+  if(CO.length===0||companyBoards.length===0) return '<div style="text-align:center;padding:60px;color:#8e8e93"><div style="font-size:14px;font-weight:600;color:#1d1d1f;margin-bottom:4px">No active opportunities</div><div style="font-size:12px">Move a pipeline opportunity to Evaluating to start planning activations here</div></div>';
 
   const sportOrder=['Football','Baseball','Basketball-M','Basketball-W'];
   const sportLabels={Football:'Football',Baseball:'Baseball','Basketball-M':"Men's Basketball",'Basketball-W':"Women's Basketball"};
@@ -4960,7 +4960,9 @@ function buildActivationPlanner(){
   }
 
   // ── Left: Company boards ──
-  const companyBoards=CO.filter(co=>!plannerHidden.has(co.name)).map(co=>{
+  const plannerStages=['Evaluating','MSA Out','Active'];
+  const pipelineCoNames=new Set(PL.filter(p=>plannerStages.includes(p.stage)).map(p=>p.name));
+  const companyBoards=CO.filter(co=>!plannerHidden.has(co.name)&&pipelineCoNames.has(co.name)).map(co=>{
     if(!plannerSlots[co.name]) plannerSlots[co.name]={};
     const acts=Object.entries(plannerSlots[co.name]);
     const totalPlanned=acts.reduce((s,[,act])=>s+(act.fee||0)*(act.slots||[]).filter(Boolean).length,0);
