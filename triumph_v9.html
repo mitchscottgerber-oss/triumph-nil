@@ -4569,7 +4569,7 @@ function openPipelineModal(id){
   const ex=document.getElementById('pl-modal');if(ex) ex.remove();
   const ov=document.createElement('div');
   ov.id='pl-modal';
-  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1400;display:flex;align-items:center;justify-content:center;padding:20px';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1400;display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto';
 
   const curStage=p?p.stage:'Inbound';
   const stageBtns=PL_STAGES.map(function(s){
@@ -4759,7 +4759,7 @@ async function addPLLogEntry(id){
     if(p){
       p.log=p.log||[];
       p.log.push(entry);
-      try{await sb.from('pipeline').update({log:JSON.stringify(p.log)}).eq('id',id);}catch(e){console.warn(e);}
+      try{await sb.from('pipeline').update({log:p.log}).eq('id',id);}catch(e){console.warn(e);}
     }
   } else {
     window._plPendingLog=window._plPendingLog||[];
@@ -4806,8 +4806,7 @@ async function savePLOpportunity(id){
     } else {
       var pending=window._plPendingLog||[];
       delete window._plPendingLog;
-      payload.log=pending;
-      await sb.from('pipeline').insert(payload);
+      payload.log=pending;      await sb.from('pipeline').insert(payload);
       // Also add to companies roster if not already there
       var existingCo=CO.find(function(c){return c.name.toLowerCase()===name.toLowerCase();});
       if(!existingCo){
