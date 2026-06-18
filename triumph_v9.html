@@ -4358,13 +4358,13 @@ function setCoPageMode(mode){
 
 function renderCos(){
   curCo=null;openMo=null;coView='annual';
-  const modeBtn=(mode,label,icon)=>'<button onclick="setCoPageMode(\''+mode+'\')" style="padding:6px 14px;border-radius:8px;border:1.5px solid '+(coPageMode===mode?'#1d1d1f':'#e5e5ea')+';background:'+(coPageMode===mode?'#1d1d1f':'#fff')+';color:'+(coPageMode===mode?'#fff':'#8e8e93')+';-webkit-text-fill-color:'+(coPageMode===mode?'#fff':'#8e8e93')+';font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px">'+(icon?'<i class="ti ti-'+icon+'" style="font-size:12px"></i> ':'')+label+'</button>';
+  const modeBtn=(mode,label,icon)=>'<button onclick="setCoPageMode(\''+mode+'\')" style="padding:8px 18px;border-radius:8px;border:none;background:'+(coPageMode===mode?'#fff':'transparent')+';color:'+(coPageMode===mode?'#1d1d1f':'#8e8e93')+';-webkit-text-fill-color:'+(coPageMode===mode?'#1d1d1f':'#8e8e93')+';font-size:13px;font-weight:'+(coPageMode===mode?600:500)+';cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;box-shadow:'+(coPageMode===mode?'"0 1px 4px rgba(0,0,0,.1)"':'none')+';transition:all .15s">'+(icon?'<i class="ti ti-'+icon+'" style="font-size:13px"></i> ':'')+label+'</button>';
   const rightBtn=coPageMode==='pipeline'
     ?'<button class="btn btn-dark" onclick="openPipelineModal(null)" style="height:30px;font-size:11px;display:flex;align-items:center;gap:4px"><i class="ti ti-plus"></i> Log Opportunity</button>'
     :'<button class="btn btn-dark" onclick="openAddCompany()" style="height:30px;font-size:11px;display:flex;align-items:center;gap:4px"><i class="ti ti-building-store"></i> Add Company</button>';
   const header=
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
-      +'<div style="display:flex;gap:6px">'
+      +'<div style="display:flex;background:#f2f2f7;border-radius:10px;padding:3px;gap:2px">'
       +modeBtn('pipeline','Pipeline','layout-kanban')
       +modeBtn('roster','Company Roster','building-store')
       +(USER_ROLE!=='activation'?modeBtn('planner','Activation Planner','layout-board'):'')
@@ -5298,7 +5298,7 @@ function openAddActivation(coName, editActId){
       +'</div>'
       // Status
       +'<div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Status</div>'
-        +'<div style="display:flex;gap:6px">'+statusBtns+'</div></div>'
+      +'<div style="display:flex;background:#f2f2f7;border-radius:10px;padding:3px;gap:2px">'
       // Notes
       +'<div><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Notes / Deliverables</div>'
         +'<textarea id="ap-notes" placeholder="Specific instructions, deliverables, requirements..." style="width:100%;height:72px;padding:8px 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:12px;font-family:inherit;outline:none;resize:vertical;box-sizing:border-box;line-height:1.4">'+(existing_act?.notes||'')+'</textarea></div>'
