@@ -4405,6 +4405,8 @@ function renderCos(){
 
 // ===== PIPELINE =====
 const PL_STAGES=['Inbound','Evaluating','MSA Out','Active'];
+let plViewMode='kanban'; // 'kanban' | 'list'
+let plChannelFilter='all'; // 'all' | 'playfly' | 'bpg' | 'mccc' | 'independent'
 const PL_STAGE_COLORS={'Inbound':'#8e8e93','Evaluating':'#2980b9','MSA Out':'#b7791f','Active':'#1d9e75'};
 const PL_PARTNER_META={playfly:{label:'Playfly',dot:'#1565a8'},bpg:{label:'Blacksburg Partnership Group',dot:'#7a1f1f'},mccc:{label:'Montgomery Co. Chamber',dot:'#7a6a00'},independent:{label:'Independent',dot:'#5b21b6'}};
 
@@ -4428,9 +4430,67 @@ async function loadPipeline(){
   }catch(e){console.warn('Pipeline load:',e);}
 }
 
+function buildPipelineList(filtered){
+  if(!filtered||filtered.length===0) return '<div style="text-align:center;padding:40px;color:#aeaeb2;font-size:12px">No opportunities match this filter</div>';
+  const stageColors={'Inbound':'#8e8e93','Evaluating':'#2980b9','MSA Out':'#b7791f','Active':'#1d9e75'};
+  const partnerLabels={playfly:'Playfly',bpg:'BPG',mccc:'MCCC',independent:'Independent'};
+  const rows=filtered.map(function(p){
+    const sc=stageColors[p.stage]||'#8e8e93';
+    const pm=PL_PARTNER_META[p.partner_type];
+    return '<tr onclick="openPipelineModal(\''+p.id+'\')" style="cursor:pointer;border-bottom:0.5px solid #f2f2f7" onmouseenter="this.querySelectorAll(\'td\').forEach(function(td){td.style.background=\'#f9f9f9\'})" onmouseleave="this.querySelectorAll(\'td\').forEach(function(td){td.style.background=\'\'})">'
+      +'<td style="padding:10px 14px;font-size:12px;font-weight:600;color:#1d1d1f">'+p.name+'</td>'
+      +'<td style="padding:10px 14px">'+(pm?'<div style="display:flex;align-items:center;gap:4px"><div style="width:6px;height:6px;border-radius:50%;background:'+pm.dot+'"></div><span style="font-size:11px;color:#6c6c70">'+pm.label+'</span></div>':'<span style="font-size:11px;color:#d1d1d6">—</span>')+'</td>'
+      +'<td style="padding:10px 14px"><span style="font-size:10px;font-weight:600;color:'+sc+';background:'+sc+'18;border-radius:4px;padding:2px 8px">'+p.stage+'</span></td>'
+      +'<td style="padding:10px 14px;font-size:11px;color:#6c6c70">'+(p.act_types&&p.act_types.length?p.act_types.join(' · '):'—')+'</td>'
+      +'<td style="padding:10px 14px;font-size:11px;color:#b7791f">'+(p.event_date||'—')+'</td>'
+      +'<td style="padding:10px 14px;text-align:right;font-size:11px;color:#1d1d1f">'+(p.athletes||'—')+'</td>'
+      +'<td style="padding:10px 14px;text-align:right;font-size:11px;font-weight:600;color:#8e44ad">'+(p.nil_potential>0?f(p.nil_potential):'—')+'</td>'
+      +'<td style="padding:10px 14px;text-align:right;font-size:11px;font-weight:600;color:#1d9e75">'+(p.nil_cleared>0?f(p.nil_cleared):'—')+'</td>'
+    +'</tr>';
+  }).join('');
+  return '<div style="background:#fff;border-radius:10px;border:0.5px solid #e5e5ea;overflow:hidden">'
+    +'<table style="width:100%;border-collapse:collapse">'
+    +'<thead><tr style="background:#f9f9f9">'
+      +'<th style="padding:9px 14px;text-align:left;font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;border-bottom:0.5px solid #e5e5ea">Company</th>'
+      +'<th style="padding:9px 14px;text-align:left;font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;border-bottom:0.5px solid #e5e5ea">Partner</th>'
+      +'<th style="padding:9px 14px;text-align:left;font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;border-bottom:0.5px solid #e5e5ea">Stage</th>'
+      +'<th style="padding:9px 14px;text-align:left;font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;border-bottom:0.5px solid #e5e5ea">Type</th>'
+      +'<th style="padding:9px 14px;text-align:left;font-size:9px;font-weight:600;color:#b7791f;text-transform:uppercase;letter-spacing:.05em;border-bottom:0.5px solid #e5e5ea">Event Date</th>'
+      +'<th style="padding:9px 14px;text-align:right;font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;border-bottom:0.5px solid #e5e5ea">Athletes</th>'
+      +'<th style="padding:9px 14px;text-align:right;font-size:9px;font-weight:600;color:#8e44ad;text-transform:uppercase;letter-spacing:.05em;border-bottom:0.5px solid #e5e5ea">Potential</th>'
+      +'<th style="padding:9px 14px;text-align:right;font-size:9px;font-weight:600;color:#1d9e75;text-transform:uppercase;letter-spacing:.05em;border-bottom:0.5px solid #e5e5ea">Cleared</th>'
+    +'</tr></thead>'
+    +'<tbody>'+rows+'</tbody>'
+    +'</table>'
+  +'</div>';
+}
+
 function buildPipeline(){
+  // Filter bar
+  const chLabels={all:'All',playfly:'Playfly',bpg:'BPG',mccc:'MCCC',independent:'Independent'};
+  const chColors={all:'#1d1d1f',playfly:'#1565a8',bpg:'#7a1f1f',mccc:'#7a6a00',independent:'#5b21b6'};
+  const filterBar='<div style="display:flex;align-items:center;gap:20px;margin-bottom:14px">'
+    +'<div style="display:flex;gap:5px">'
+    +Object.keys(chLabels).map(function(k){
+      const active=plChannelFilter===k;
+      const c=chColors[k];
+      return '<button onclick="plChannelFilter=\''+k+'\';renderCos()" style="padding:4px 12px;border-radius:6px;border:1.5px solid '+(active?c:'#e5e5ea')+';background:'+(active?c+'18':'transparent')+';color:'+(active?c:'#8e8e93')+';-webkit-text-fill-color:'+(active?c:'#8e8e93')+';font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">'+chLabels[k]+'</button>';
+    }).join('')
+    +'</div>'
+    +'<div style="margin-left:auto;display:flex;gap:4px">'
+    +'<button onclick="plViewMode=\'kanban\';renderCos()" style="padding:4px 10px;border-radius:6px;border:1.5px solid '+(plViewMode==='kanban'?'#1d1d1f':'#e5e5ea')+';background:'+(plViewMode==='kanban'?'#1d1d1f':'transparent')+';color:'+(plViewMode==='kanban'?'#fff':'#8e8e93')+';-webkit-text-fill-color:'+(plViewMode==='kanban'?'#fff':'#8e8e93')+';font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px"><i class="ti ti-layout-kanban" style="font-size:11px"></i> Board</button>'
+    +'<button onclick="plViewMode=\'list\';renderCos()" style="padding:4px 10px;border-radius:6px;border:1.5px solid '+(plViewMode==='list'?'#1d1d1f':'#e5e5ea')+';background:'+(plViewMode==='list'?'#1d1d1f':'transparent')+';color:'+(plViewMode==='list'?'#fff':'#8e8e93')+';-webkit-text-fill-color:'+(plViewMode==='list'?'#fff':'#8e8e93')+';font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px"><i class="ti ti-list" style="font-size:11px"></i> List</button>'
+    +'</div>'
+  +'</div>';
+
+  // Filter PL by channel
+  const filtered=plChannelFilter==='all'?PL:PL.filter(function(p){return (p.partner_type||'')=== plChannelFilter;});
+
+  if(plViewMode==='list') return filterBar+buildPipelineList(filtered);
+
   const cols=PL_STAGES.map(function(stage){
-    const cards=PL.filter(function(p){return p.stage===stage;});
+    const stageFiltered=filtered.filter(function(p){return p.stage===stage;});
+    const cards=stageFiltered;
     const sc=PL_STAGE_COLORS[stage];
     const showConfirm=['Active'].includes(stage);
     const showCleared=['Active'].includes(stage);
@@ -4459,7 +4519,7 @@ function buildPipeline(){
       +(cardsHtml||'<div class="pl-empty">No opportunities</div>')
     +'</div>';
   }).join('');
-  return '<div class="pl-board">'+cols+'</div>';
+  return filterBar+'<div class="pl-board">'+cols+'</div>';
 }
 
 function plDragStart(e, id){
@@ -5369,18 +5429,86 @@ function togglePlannerCo(key){
   renderCos();
 }
 
-function savePlannerState(){
+async function savePlannerState(){
+  const payload={slots:JSON.stringify(plannerSlots),hidden:JSON.stringify([...plannerHidden])};
   try{
-    localStorage.setItem('triumphPlannerSlots',JSON.stringify(plannerSlots));
-    localStorage.setItem('triumphPlannerHidden',JSON.stringify([...plannerHidden]));
-  }catch(e){}
+    // Shared state — upsert single row keyed 'shared'
+    await sb.from('planner_state').upsert({id:'shared',slots:JSON.stringify(plannerSlots),hidden:JSON.stringify([...plannerHidden])},{onConflict:'id'});
+  }catch(e){
+    // Fallback to localStorage if table doesn't exist yet
+    try{localStorage.setItem('triumphPlannerSlots',JSON.stringify(plannerSlots));localStorage.setItem('triumphPlannerHidden',JSON.stringify([...plannerHidden]));}catch(le){}
+  }
 }
-function loadPlannerState(){
+async function loadPlannerState(){
+  try{
+    const {data,error}=await sb.from('planner_state').select('*').eq('id','shared').single();
+    if(data&&!error){
+      if(data.slots) plannerSlots=JSON.parse(data.slots);
+      if(data.hidden) plannerHidden=new Set(JSON.parse(data.hidden));
+      return;
+    }
+  }catch(e){}
+  // Fallback to localStorage
   try{const s=localStorage.getItem('triumphPlannerSlots');if(s) plannerSlots=JSON.parse(s);}catch(e){}
   try{const h=localStorage.getItem('triumphPlannerHidden');if(h) plannerHidden=new Set(JSON.parse(h));}catch(e){}
 }
 
 function exportPlannerBoard(){
+  const lines=[];
+  const now=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  lines.push('TRIUMPH NIL — ACTIVATION PLANNER');
+  lines.push('Generated: '+now);
+  lines.push('');
+
+  let totalVal=0,totalAthletes=0;
+
+  CO.forEach(function(co){
+    const acts=plannerSlots[co.name];
+    if(!acts||Object.keys(acts).length===0) return;
+    const hasSlots=Object.values(acts).some(function(a){return (a.slots||[]).some(Boolean);});
+    if(!hasSlots) return;
+
+    lines.push('══════════════════════════════');
+    lines.push(co.name.toUpperCase());
+    lines.push('══════════════════════════════');
+
+    Object.values(acts).forEach(function(act){
+      const filled=(act.slots||[]).filter(Boolean);
+      if(!filled.length) return;
+      const actTotal=filled.length*(act.fee||0);
+      totalVal+=actTotal;
+      totalAthletes+=filled.length;
+
+      lines.push('');
+      lines.push('  Activation: '+act.label+(act.date?' ['+act.date+']':''));
+      lines.push('  Status: '+(act.status_label||'Draft'));
+      lines.push('  Types: '+((act.types||[]).join(', ')||'—'));
+      lines.push('  Fee: $'+(act.fee||0).toLocaleString()+'/athlete × '+filled.length+' = $'+actTotal.toLocaleString());
+      if(act.notes) lines.push('  Notes: '+act.notes);
+      lines.push('  Athletes:');
+      filled.forEach(function(akey){
+        const a=A.find(function(x){return x.f+'_'+x.l===akey;});
+        if(a) lines.push('    • '+a.f+' '+a.l+' ('+a.pos+') — NIL Rem: $'+(a.contract-a.paid).toLocaleString());
+      });
+    });
+    lines.push('');
+  });
+
+  lines.push('══════════════════════════════');
+  lines.push('TOTALS');
+  lines.push('Total athletes: '+totalAthletes);
+  lines.push('Total value: $'+totalVal.toLocaleString());
+  lines.push('══════════════════════════════');
+
+  const blob=new Blob([lines.join('\n')],{type:'text/plain'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='triumph-activation-plan-'+now.replace(/[, ]/g,'-')+'.txt';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  syncStatus('Exported ✓');
+}
+function exportPlannerBoard_OLD(){
   const lines=[];
   const now=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
   lines.push('Triumph NIL — Activation Planner Export');
@@ -5551,8 +5679,13 @@ function buildCompanyRoster(){
     var cards=companies.map(function(c){
       var s=coStats(c.name);
       var sn=c.name.replace(/'/g,"\\'");
+      var athCount=0;
+      A.forEach(function(a){if((a.deals||[]).some(function(d){return d.n===c.name;})) athCount++;});
       return '<div style="background:#fff;border-radius:8px;border:1px solid #e5e5ea;padding:9px 11px;margin-bottom:5px;cursor:pointer;transition:box-shadow .1s" onclick="openCo(\''+sn+'\')" onmouseenter="this.style.boxShadow=\'0 2px 8px rgba(0,0,0,.08)\'" onmouseleave="this.style.boxShadow=\'none\'">'
-        +'<div style="font-size:12px;font-weight:600;color:#1d1d1f">'+c.name+'</div>'
+        +'<div style="display:flex;justify-content:space-between;align-items:center">'
+          +'<div style="font-size:12px;font-weight:600;color:#1d1d1f">'+c.name+'</div>'
+          +(athCount>0?'<div style="font-size:9px;font-weight:600;background:#eef6ff;color:#2980b9;border-radius:4px;padding:1px 6px">'+athCount+' athletes</div>':'')
+        +'</div>'
       +'</div>';
     }).join('');
 
