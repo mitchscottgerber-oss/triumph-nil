@@ -1406,7 +1406,7 @@ function switchRole(role){
 
   if(role==='activation'){
     // Hide nav only — fbar handled by aF()
-    ['nav-dash','nav-gm','nav-companies','nav-reports','nav-settings'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+    ['nav-dash','nav-gm','nav-reports','nav-settings'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
     nav('athletes',document.getElementById('nav-athletes'));
   } else {
     // Restore all nav + controls
@@ -4367,11 +4367,12 @@ function renderCos(){
       +'<div style="display:flex;gap:6px">'
       +modeBtn('pipeline','Pipeline','layout-kanban')
       +modeBtn('roster','Company Roster','building-store')
-      +modeBtn('planner','Activation Planner','layout-board')
+      +(USER_ROLE!=='activation'?modeBtn('planner','Activation Planner','layout-board'):'')
       +'</div>'
       +rightBtn
     +'</div>';
 
+  if(USER_ROLE==='activation'&&coPageMode==='planner') coPageMode='pipeline';
   if(coPageMode==='pipeline'){
     document.getElementById('co-body').innerHTML=header+buildPipeline();
     return;
