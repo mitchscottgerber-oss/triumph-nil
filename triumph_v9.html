@@ -4833,7 +4833,20 @@ async function savePLOpportunity(id){
 
 async function deletePLOpportunity(id){
   if(!confirm('Delete this opportunity?')) return;
+  const p=PL.find(x=>x.id===id);
   try{await sb.from('pipeline').delete().eq('id',id);}catch(e){alert('Delete error: '+e.message);return;}
+  // Also remove from companies roster if it exists
+  if(p){
+    const co=CO.find(c=>c.name.toLowerCase()===p.name.toLowerCase());
+    if(co){
+      try{await sb.from('companies').delete().eq('id',co.id);}catch(e){console.warn('Company delete:',e);}
+      CO.splice(CO.indexOf(co),1);
+    }
+    // Remove from planner
+    delete plannerSlots[p.name];
+    plannerHidden.delete(p.name);
+    savePlannerState();
+  }
   document.getElementById('pl-modal').remove();
   await loadPipeline();
   renderCos();
