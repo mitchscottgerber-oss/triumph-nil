@@ -4492,6 +4492,18 @@ async function plDrop(e, stage){
   p.stage=stage;
   try{
     await sb.from('pipeline').update({stage:stage}).eq('id',id);
+    // Auto-add to company roster if not already there (on any stage move)
+    var existingCo=CO.find(function(c){return c.name.toLowerCase()===p.name.toLowerCase();});
+    if(!existingCo){
+      try{
+        var {data:newCoFromDrag}=await sb.from('companies').insert({
+          name:p.name,committed:0,priority:CO.length,rank_number:CO.length+1,
+          logo_initial:p.name[0].toUpperCase(),partner_type:p.partner_type||null,
+          athletes:JSON.stringify([])
+        }).select().single();
+        if(newCoFromDrag) CO.push({id:newCoFromDrag.id,name:p.name,committed:0,athletes:[],priority:CO.length-1,partner_type:p.partner_type||''});
+      }catch(coErr){console.warn('Auto-add to companies failed:',coErr);}
+    }
     // Auto-create activation in planner when moving to Evaluating (only once)
     if(stage==='Evaluating'&&!p.planner_created){
       var coName=p.name;
