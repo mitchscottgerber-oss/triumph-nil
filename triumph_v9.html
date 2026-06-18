@@ -4492,43 +4492,54 @@ async function plDrop(e, stage){
   p.stage=stage;
   try{
     await sb.from('pipeline').update({stage:stage}).eq('id',id);
-    // Auto-add to company roster if not already there (on any stage move)
-    var existingCo=CO.find(function(c){return c.name.toLowerCase()===p.name.toLowerCase();});
-    if(!existingCo){
-      try{
-        var {data:newCoFromDrag}=await sb.from('companies').insert({
-          name:p.name,committed:0,priority:CO.length,rank_number:CO.length+1,
-          logo_initial:p.name[0].toUpperCase(),partner_type:p.partner_type||null,
-          athletes:JSON.stringify([])
-        }).select().single();
-        if(newCoFromDrag) CO.push({id:newCoFromDrag.id,name:p.name,committed:0,athletes:[],priority:CO.length-1,partner_type:p.partner_type||''});
-      }catch(coErr){console.warn('Auto-add to companies failed:',coErr);}
-    }
-    // Auto-create activation in planner when moving to Evaluating (only once)
-    if(stage==='Evaluating'&&!p.planner_created){
-      var coName=p.name;
-      if(!plannerSlots[coName]) plannerSlots[coName]={};
-      var alreadyExists=Object.values(plannerSlots[coName]).some(function(a){return a.from_pipeline===id;});
-      if(!alreadyExists){
-        var actId='act-'+Date.now();
-        var numSlots=p.athletes||1;
-        var actTypes=(p.act_types||[]).map(function(t){return t==='Appearance'?'appearance':t==='Social Content'?'social':'other';});
-        plannerSlots[coName][actId]={
-          label:p.name+(p.inbound_date?' ('+p.inbound_date+')':''),
-          types:actTypes.length?actTypes:['appearance'],
-          fee:p.athlete_fee||0,date:p.inbound_date||'',notes:'Auto-created from pipeline',
-          status_label:'Draft',slots:Array(numSlots).fill(null),
-          from_pipeline:id,sport:p.sport||'Football'
-        };
-        savePlannerState();
-        // Mark pipeline record as planner_created
-        p.planner_created=true;
-        await sb.from('pipeline').update({planner_created:true}).eq('id',id);
-        // Set planner sport tab to match
-        window._plannerSportTab=p.sport||'Football';
-      }
-    }
   }catch(err){console.warn('Pipeline stage update:',err);}
+
+  // Auto-add to company roster if not already there
+  var existingCo=CO.find(function(c){return c.name.toLowerCase()===p.name.toLowerCase();});
+  if(!existingCo){
+    try{
+      var coInsert=await sb.from('companies').insert({
+        name:p.name,committed:0,priority:CO.length,rank_number:CO.length+1,
+        logo_initial:p.name[0].toUpperCase(),partner_type:p.partner_type||null,
+        athletes:'[]'
+      }).select().single();
+      if(coInsert.data){
+        CO.push({id:coInsert.data.id,name:p.name,committed:0,athletes:[],priority:CO.length-1,partner_type:p.partner_type||''});
+      } else {
+        console.warn('Company insert issue:',coInsert.error);
+      }
+    }catch(coErr){console.warn('Auto-add to companies failed:',coErr);}
+  } else {
+    // Update partner_type if it changed
+    if(existingCo.partner_type!==p.partner_type){
+      existingCo.partner_type=p.partner_type||'';
+      try{await sb.from('companies').update({partner_type:p.partner_type||null}).eq('id',existingCo.id);}catch(e){}
+    }
+  }
+
+  // Auto-create activation in planner when moving to Evaluating (only once)
+  if(stage==='Evaluating'&&!p.planner_created){
+    var coName=p.name;
+    if(!plannerSlots[coName]) plannerSlots[coName]={};
+    var alreadyExists=Object.values(plannerSlots[coName]).some(function(a){return a.from_pipeline===id;});
+    if(!alreadyExists){
+      var actId='act-'+Date.now();
+      var numSlots=p.athletes||1;
+      var actTypes=(p.act_types||[]).map(function(t){return t==='Appearance'?'appearance':t==='Social Content'?'social':'other';});
+      plannerSlots[coName][actId]={
+        label:p.name+(p.event_date?' — '+p.event_date:''),
+        types:actTypes.length?actTypes:['appearance'],
+        fee:p.athlete_fee||0,date:p.event_date||p.inbound_date||'',
+        notes:'Auto-created from pipeline',
+        status_label:'Draft',slots:Array(numSlots).fill(null),
+        from_pipeline:id,sport:p.sport||'Football'
+      };
+      savePlannerState();
+      p.planner_created=true;
+      try{await sb.from('pipeline').update({planner_created:true}).eq('id',id);}catch(e){}
+      window._plannerSportTab=p.sport||'Football';
+    }
+  }
   renderCos();
 }
 
@@ -5009,7 +5020,10 @@ function buildActivationPlanner(){
             +'<div style="font-size:9px;color:#8e8e93;margin-top:1px">'+f(co.committed)+' committed'+(totalPlanned>0?' · '+f(totalPlanned)+' planned':'')+(totalSlotCount>0?' · '+filledTotal+'/'+totalSlotCount+' filled':'')+'</div>'
           +'</div>'
         +'</div>'
-        +'<button onclick="event.stopPropagation();openAddActivation(\''+co.name+'\')" style="background:#1d1d1f;color:#fff;-webkit-text-fill-color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:3px;flex-shrink:0"><i class="ti ti-plus" style="font-size:10px"></i> Add</button>'
+        +'<div style="display:flex;gap:5px;flex-shrink:0">'
+        +'<button onclick="event.stopPropagation();openAddActivation(\''+co.name+'\')" style="background:#1d1d1f;color:#fff;-webkit-text-fill-color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:3px"><i class="ti ti-plus" style="font-size:10px"></i> Add</button>'
+        +'<button onclick="event.stopPropagation();removePlannerCompany(\''+co.name+'\')" style="background:none;border:1px solid #e5e5ea;border-radius:6px;padding:3px 7px;font-size:10px;cursor:pointer;color:#8e8e93;display:flex;align-items:center" title="Remove from planner"><i class="ti ti-x" style="font-size:10px"></i></button>'
+        +'</div>'
       +'</div>'
       +(isCollapsed?'':'<div style="padding:8px 12px">'+budgetWarning(co,totalPlanned)+(acts.length===0?'<div style="text-align:center;padding:12px;color:#aeaeb2;font-size:10px">No activations yet</div>':actsHtml)+'</div>')
     +'</div>';
@@ -5303,6 +5317,14 @@ function initPlannerDrag(){
     });
     el.addEventListener('dragend',()=>{el.style.opacity='1';});
   });
+}
+
+function removePlannerCompany(coName){
+  if(!confirm('Remove '+coName+' from the Activation Planner? This only removes the planner board — the company stays in the roster.')) return;
+  delete plannerSlots[coName];
+  delete plannerCollapsed['planner-co-'+coName];
+  savePlannerState();
+  renderCos();
 }
 
 function togglePlannerCo(key){
