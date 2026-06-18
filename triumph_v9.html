@@ -4380,7 +4380,18 @@ function renderCos(){
   if(coPageMode==='planner'){
     try{
       document.getElementById('co-body').innerHTML=header+buildActivationPlanner();
-      setTimeout(()=>initPlannerDrag(),50);
+      setTimeout(()=>{
+        initPlannerDrag();
+        document.querySelectorAll('.pl-del-co-btn').forEach(function(btn){
+          btn.addEventListener('click',function(e){
+            e.stopPropagation();
+            e.preventDefault();
+            var coName=btn.dataset.coname;
+            if(!coName) return;
+            removePlannerCompany(coName);
+          });
+        });
+      },50);
     }catch(e){
       console.error('Planner error:',e);
       document.getElementById('co-body').innerHTML=header+'<div style="padding:40px;text-align:center;color:#e34040">Error loading planner: '+e.message+'</div>';
@@ -5022,7 +5033,7 @@ function buildActivationPlanner(){
         +'</div>'
         +'<div style="display:flex;gap:5px;flex-shrink:0">'
         +'<button onclick="event.stopPropagation();openAddActivation(\''+co.name+'\')" style="background:#1d1d1f;color:#fff;-webkit-text-fill-color:#fff;border:none;border-radius:6px;padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:3px"><i class="ti ti-plus" style="font-size:10px"></i> Add</button>'
-        +'<button data-co-del="'+co.name+'" onclick="event.stopPropagation();removePlannerCompany(event.currentTarget.dataset.coDel)" style="background:none;border:1px solid #e5e5ea;border-radius:6px;padding:3px 7px;font-size:10px;cursor:pointer;color:#8e8e93;display:flex;align-items:center" title="Remove from planner"><i class="ti ti-x" style="font-size:10px;pointer-events:none"></i></button>'
+        +'<button class="pl-del-co-btn" data-coname="'+co.name+'" style="background:none;border:1px solid #e5e5ea;border-radius:6px;padding:3px 7px;font-size:10px;cursor:pointer;color:#8e8e93;display:flex;align-items:center" title="Remove from planner"><i class="ti ti-x" style="font-size:10px;pointer-events:none"></i></button>'
         +'</div>'
       +'</div>'
       +(isCollapsed?'':'<div style="padding:8px 12px">'+budgetWarning(co,totalPlanned)+(acts.length===0?'<div style="text-align:center;padding:12px;color:#aeaeb2;font-size:10px">No activations yet</div>':actsHtml)+'</div>')
