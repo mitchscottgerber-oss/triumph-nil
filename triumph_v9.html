@@ -5320,11 +5320,25 @@ function initPlannerDrag(){
 }
 
 function removePlannerCompany(coName){
-  if(!confirm('Remove '+coName+' from the Activation Planner? This only removes the planner board — the company stays in the roster.')) return;
-  delete plannerSlots[coName];
-  delete plannerCollapsed['planner-co-'+coName];
-  savePlannerState();
-  renderCos();
+  if(!coName){console.warn('removePlannerCompany: no coName');return;}
+  // Use inline confirm instead of browser confirm()
+  const existing=document.getElementById('planner-del-confirm');
+  if(existing) existing.remove();
+  const toast=document.createElement('div');
+  toast.id='planner-del-confirm';
+  toast.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1d1d1f;color:#fff;border-radius:12px;padding:12px 18px;display:flex;align-items:center;gap:12px;z-index:3000;box-shadow:0 8px 28px rgba(0,0,0,.3);font-size:12px;font-family:-apple-system,sans-serif';
+  toast.innerHTML='<span>Remove <b>'+coName+'</b> from planner?</span>'
+    +'<button onclick="document.getElementById(\'planner-del-confirm\').remove()" style="background:rgba(255,255,255,.15);border:none;border-radius:6px;padding:4px 10px;color:#fff;cursor:pointer;font-size:11px;font-family:inherit">Cancel</button>'
+    +'<button id="planner-del-ok" style="background:#c0392b;border:none;border-radius:6px;padding:4px 10px;color:#fff;cursor:pointer;font-size:11px;font-weight:600;font-family:inherit">Remove</button>';
+  document.body.appendChild(toast);
+  document.getElementById('planner-del-ok').onclick=function(){
+    toast.remove();
+    delete plannerSlots[coName];
+    delete plannerCollapsed['planner-co-'+coName];
+    savePlannerState();
+    renderCos();
+  };
+  setTimeout(()=>{if(document.getElementById('planner-del-confirm')) toast.remove();},6000);
 }
 
 function togglePlannerCo(key){
