@@ -1746,7 +1746,7 @@ function calcStrip(list){
   // NIL tab — show NIL cards, hide RS cards
   nilCards.forEach(el=>el.style.display='');
   rsCards.forEach(el=>el.style.display='none');
-  const totalOwed=list.reduce((s,a)=>s+a.contract,0);
+  const totalOwed=list.reduce((s,a)=>s+a.sch.reduce((t,x)=>t+x.a,0),0);
   const totalPaid=list.reduce((s,a)=>s+a.paid,0);
   const totalRev=list.reduce((s,a)=>s+getRevYTD(a),0);
   const owedEl=document.getElementById('ss-owed');
@@ -1843,7 +1843,7 @@ function rAnnual(list,filterMos){
   const totalNIL=moNIL.reduce((s,v)=>s+v,0);
   const totalRS=moRS.reduce((s,v)=>s+v,0);
   const totalBanked=list.reduce((s,a)=>s+(a.banked-a.paid),0);
-  const totalOwed=list.reduce((s,a)=>s+(a.contract-a.paid),0);
+  const totalOwed=list.reduce((s,a)=>s+Math.max(0,a.sch.reduce((t,x)=>t+x.a,0)-a.paid),0);
   const totalRSRem=list.reduce((s,a)=>s+Math.max(0,(a.rsContract||0)-(a.rsPaid||0)),0);
 
   let html='<thead><tr>'
@@ -1878,7 +1878,7 @@ function rAnnual(list,filterMos){
     const nilTot=a.sch.reduce((s,x)=>s+x.a,0);
     const rvTot=getRevYTD(a);
     const banked=a.banked-a.paid;
-    const nilRem=a.contract-a.paid;
+    const nilRem=nilTot-a.paid;
     const rsRem=Math.max(0,(a.rsContract||0)-(a.rsPaid||0));
     const isBankLow=banked<(a.sch.find(x=>x.mo===CUR&&(x.yr||2026)===2026)?.a||0);
     const key=a.f+'_'+a.l;
@@ -1970,7 +1970,7 @@ function rAnnual(list,filterMos){
             (rvTot>0?'<span style="font-size:9px;background:#fff0f3;padding:1px 5px;border-radius:4px;color:#c0392b">RS</span>':'')+
           '</div>'+
         '</td>'+
-        '<td style="text-align:right;font-weight:700;font-size:12px;color:#185fa5!important;-webkit-text-fill-color:#185fa5!important;background:#eef6ff!important">'+f(a.contract)+'</td>'+
+        '<td style="text-align:right;font-weight:700;font-size:12px;color:#185fa5!important;-webkit-text-fill-color:#185fa5!important;background:#eef6ff!important">'+f(nilTot)+'</td>'+
         '<td style="text-align:right;font-weight:600;font-size:12px;color:#185fa5!important;-webkit-text-fill-color:#185fa5!important;background:#eef6ff!important">'+f(a.paid)+'</td>'+
         '<td style="text-align:right;font-weight:600;font-size:12px;color:#7B1A1A!important;-webkit-text-fill-color:#7B1A1A!important;background:#f9eaea!important">'+(rvTot>0?f(rvTot):'—')+'</td>'+
         '<td style="text-align:right;font-weight:700;font-size:12px;color:#185fa5!important;-webkit-text-fill-color:#185fa5!important;background:#eef6ff!important">'+f(nilRem)+'</td>'+
