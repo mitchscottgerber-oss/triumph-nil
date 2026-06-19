@@ -1921,11 +1921,11 @@ function rAnnual(list,filterMos){
           const cellBg=hasShortfall?'#f9eaea':hasRS?'#fff0f3':'#fff5f7';
           const cellColor=hasShortfall?'#7B1A1A':'#c0392b';
           const isRSOpen=rsMoExp[idx]===(mo+'_'+yr);
-          return '<td class="'+(iC?'curbg':'')+'" style="background:'+cellBg+'!important;cursor:pointer;'+(isRSOpen?'outline:2px solid #c0392b;outline-offset:-2px;border-radius:3px;':'')+'" onclick="event.stopPropagation();openRSMonthExpand('+idx+',\''+mo+'\','+yr+')">'+
+          return '<td class="'+(iC?'curbg':'')+'" style="background:'+cellBg+'!important;cursor:text;'+(isRSOpen?'outline:2px solid #c0392b;outline-offset:-2px;border-radius:3px;':'')+'">'+
             (hasActivity
-              ?'<div style="font-size:11.5px;font-weight:600;color:'+cellColor+'">'+f(d.total)+'</div>'
-               +(hasShortfall?'<div style="font-size:8px;color:#7B1A1A;margin-top:1px;font-weight:600">NIL+RS</div>':'<div style="font-size:8px;color:#c0392b;margin-top:1px">RS</div>')
-              :'<span style="color:#e5e5ea">—</span><div style="font-size:7px;color:#f5c6d0;margin-top:1px">add RS</div>')+
+              ?'<div style="font-size:11.5px;font-weight:600;color:'+cellColor+';cursor:pointer" onclick="event.stopPropagation();startRSGridEdit(this.closest(\'td\'),'+idx+',\''+mo+'\','+yr+')">'+f(d.total)+'</div>'
+               +'<div style="font-size:8px;color:'+cellColor+';cursor:pointer;margin-top:1px" onclick="event.stopPropagation();openRSMonthExpand('+idx+',\''+mo+'\','+yr+')">'+( isRSOpen?'▲ close':(hasShortfall?'▾ NIL+RS':'▾ detail'))+'</div>'
+              :'<span style="color:#e5e5ea;cursor:pointer" onclick="event.stopPropagation();startRSGridEdit(this.closest(\'td\'),'+idx+',\''+mo+'\','+yr+')">—</span><div style="font-size:7px;color:#f5c6d0;margin-top:1px;cursor:pointer" onclick="event.stopPropagation();startRSGridEdit(this.closest(\'td\'),'+idx+',\''+mo+'\','+yr+')">add RS</div>')+
           '</td>';
         }).join('')+
       '</tr>';
@@ -4487,6 +4487,39 @@ function startGridEdit(td, athleteIdx, mo, yr){
   inp.addEventListener('keydown',e=>{
     if(e.key==='Enter'){e.preventDefault();inp.blur();}
     if(e.key==='Escape'){s.a=cur;aF();}
+  });
+}
+
+function startRSGridEdit(td, athleteIdx, mo, yr){
+  if(td.querySelector('input')) return;
+  const a=filteredList[athleteIdx];if(!a) return;
+  const cur=getRev(a,mo,yr);
+  td.innerHTML='';
+  const inp=document.createElement('input');
+  inp.type='number';inp.value=cur;inp.min=0;
+  inp.style.cssText='width:80px;height:26px;font-size:12px;font-weight:600;font-family:inherit;border:2px solid #c0392b;border-radius:4px;padding:0 6px;text-align:right;outline:none;color:#c0392b;background:#fff';
+  td.appendChild(inp);
+  inp.focus();inp.select();
+  const commit=async()=>{
+    const newAmt=parseFloat(inp.value)||0;
+    if(newAmt===cur){aF();return;}
+    const k=a.f+'_'+a.l;
+    if(!revShare[k]) revShare[k]={};
+    revShare[k][mo+'_'+yr]=newAmt;
+    syncStatus('Saving...');
+    try{
+      await sb.from('rev_share').upsert(
+        {athlete_id:a.id,month:mo,year:yr,amount:newAmt},
+        {onConflict:'athlete_id,month,year'}
+      );
+      syncStatus('Saved ✓');
+    }catch(e){syncStatus('Save error: '+e.message,false);revShare[k][mo+'_'+yr]=cur;}
+    aF();
+  };
+  inp.addEventListener('blur',commit);
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();inp.blur();}
+    if(e.key==='Escape'){revShare[a.f+'_'+a.l]&&(revShare[a.f+'_'+a.l][mo+'_'+yr]=cur);aF();}
   });
 }
 
