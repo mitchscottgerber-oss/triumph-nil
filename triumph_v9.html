@@ -4417,7 +4417,7 @@ async function loadPipeline(){
     if(error) throw error;
     PL.length=0;
     (data||[]).forEach(r=>PL.push({
-      id:r.id,name:r.name,stage:r.stage||'Inbound',partner_type:r.partner_type||'',
+      id:r.id,name:r.name,activation_name:r.activation_name||'',stage:r.stage||'Inbound',partner_type:r.partner_type||'',
       act_types:Array.isArray(r.act_types)?r.act_types:(r.act_types?JSON.parse(r.act_types):[]),
       athletes:r.athletes||0,athlete_fee:r.athlete_fee||0,nil_potential:r.nil_potential||0,nil_cleared:r.nil_cleared||0,
       confirmed:r.confirmed||false,contact_name:r.contact_name||'',contact_title:r.contact_title||'',
@@ -4505,10 +4505,10 @@ function buildPipeline(){
       const types=(p.act_types||[]).join(' · ')||'—';
       const sid=p.id;
       return '<div class="pl-card'+(p.confirmed?' pl-confirmed':'')+'" draggable="true" data-plid="'+sid+'" onclick="openPipelineModal(\''+sid+'\')" onmousedown="event.stopPropagation?null:null" ondragstart="plDragStart(event,\''+sid+'\')" ondragend="plDragEnd(event)">'
-        +'<div style="font-size:13px;font-weight:700;color:#1d1d1f;margin-bottom:3px;line-height:1.2">'+p.name+'</div>'
-        +(types&&types!=='—'?'<div style="font-size:10px;color:#8e8e93;margin-bottom:4px">'+types+'</div>':'')
+        +'<div style="font-size:13px;font-weight:700;color:#1d1d1f;margin-bottom:2px;line-height:1.2">'+p.name+'</div>'
+        +(p.activation_name?'<div style="font-size:10px;font-weight:500;color:#3c3c43;margin-bottom:3px">'+p.activation_name+'</div>':'')
+        +(pm?'<div style="display:flex;align-items:center;gap:4px;margin-bottom:4px"><div style="width:5px;height:5px;border-radius:50%;background:'+pm.dot+'"></div><span style="font-size:9px;color:#8e8e93">'+pm.label+'</span></div>':'')
         +(p.event_date?'<div style="font-size:11px;font-weight:600;color:#b7791f;margin-bottom:5px">'+p.event_date+'</div>':'')
-        +(pm?'<div style="display:flex;align-items:center;gap:4px;margin-bottom:6px"><div style="width:5px;height:5px;border-radius:50%;background:'+pm.dot+'"></div><span style="font-size:9px;color:#8e8e93">'+pm.label+'</span></div>':'')
         +'<div class="pl-stats">'
           +'<div class="pl-stat"><div class="pl-sl">Athletes</div><div class="pl-sv">'+(p.athletes||'TBD')+'</div></div>'
           +'<div class="pl-stat"><div class="pl-sl">Potential</div><div class="pl-sv" style="color:#8e44ad">'+(p.nil_potential>0?f(p.nil_potential):'—')+'</div></div>'
@@ -4683,17 +4683,24 @@ function openPipelineModal(id){
     +'</div>'
     +'<div style="padding:10px 18px;border-bottom:1px solid #f2f2f7;display:flex;flex-wrap:wrap;gap:4px;flex-shrink:0">'+stageBtns+'</div>'
     +'<div style="flex:1;overflow-y:auto">'
-      // Row 1: Sponsor + Partner Channel
-      +'<div style="padding:14px 18px;border-bottom:1px solid #f2f2f7;display:grid;grid-template-columns:1fr 1fr;gap:12px">'
+      // Row 1: Sponsor / Company (full width)
+      +'<div style="padding:14px 18px;border-bottom:1px solid #f2f2f7">'
         +fld('pl-name','Sponsor / Company',p?p.name:'','text','e.g. Kroger')
+      +'</div>'
+      // Row 2: Activation (full width)
+      +'<div style="padding:14px 18px;border-bottom:1px solid #f2f2f7">'
+        +fld('pl-activation-name','Activation',p?p.activation_name:'','text','e.g. Appearance at Spring Game')
+      +'</div>'
+      // Row 3: Partner Channel + Event Date
+      +'<div style="padding:14px 18px;border-bottom:1px solid #f2f2f7;display:grid;grid-template-columns:1fr 1fr;gap:12px">'
         +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Partner Channel</div>'
           +'<select id="pl-partner" style="width:100%;height:34px;padding:0 10px;border:1.5px solid #e5e5ea;border-radius:7px;font-size:12px;font-family:inherit;outline:none;background:#fff">'+partnerSel+'</select></div>'
-      +'</div>'
-      // Row 2: Activation Type + Event Date
-      +'<div style="padding:14px 18px;border-bottom:1px solid #f2f2f7;display:grid;grid-template-columns:1fr 1fr;gap:12px">'
-        +'<div><div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Activation Type</div>'
-          +'<div style="display:flex;gap:16px;align-items:center">'+typeChecks+'</div></div>'
         +fld('pl-event-date','Event Date',p?p.event_date:'','date','')
+      +'</div>'
+      // Row 4: Activation Type
+      +'<div style="padding:14px 18px;border-bottom:1px solid #f2f2f7">'
+        +'<div style="font-size:9px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Activation Type</div>'
+        +'<div style="display:flex;gap:16px;align-items:center">'+typeChecks+'</div>'
       +'</div>'
       // Row 3: Inbound — Via / Date / Athletes / Sport
       +'<div style="padding:14px 18px;border-bottom:1px solid #f2f2f7">'
@@ -4868,9 +4875,10 @@ async function savePLOpportunity(id){
   var sow_total=parseInt(document.getElementById('pl-sow-total')?.value)||0;
   var nilgo_submitted=document.getElementById('pl-nilgo')?.value||null;
   var event_date=document.getElementById('pl-event-date')?.value||null;
+  var activation_name=(document.getElementById('pl-activation-name')?.value||'').trim();
   var notes=document.getElementById('pl-notes')?.value||'';
   var sport=document.getElementById('pl-sport')?.value||'Football';
-  var payload={name,stage,partner_type,act_types:act_types,athletes,athlete_fee,nil_potential,nil_cleared,sport,
+  var payload={name,activation_name,stage,partner_type,act_types:act_types,athletes,athlete_fee,nil_potential,nil_cleared,sport,
     inbound_via,inbound_date:inbound_date||null,inbound_by,contact_name,contact_title,contact_phone,contact_email,
     msa_sent:msa_sent||null,msa_signed:msa_signed||null,sow_sent,sow_total,nilgo_submitted:nilgo_submitted||null,event_date:event_date||null,notes};
   try{
