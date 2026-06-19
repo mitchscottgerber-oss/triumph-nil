@@ -2795,7 +2795,7 @@ function bWallets(a){
             +((d.types||[]).includes('content')?'<span title="Content Creation" style="font-size:13px;color:#8e44ad"><i class="ti ti-video"></i></span>':'')
             +((d.types||[]).includes('autograph')?'<span title="Autograph Signing" style="font-size:13px;color:#b7791f"><i class="ti ti-signature"></i></span>':'')
             +((d.types||[]).includes('billboard')?'<span title="Billboard" style="font-size:13px;color:#0369a1"><i class="ti ti-ad-2"></i></span>':'')
-            +((d.types||[]).includes('virtual')?'<span title="Virtual Appearance" style="font-size:13px;color:#7c3aed"><i class="ti ti-device-laptop"></i></span>':'')
+            +((d.types||[]).includes('virtual')?'<span title="Virtual Meet &amp; Greet" style="font-size:13px;color:#7c3aed"><i class="ti ti-device-laptop"></i></span>':'')
             +(d.pow?'<span style="font-size:10px;background:#e8f8f0;color:#1d9e75;padding:2px 7px;border-radius:5px;font-weight:600;display:flex;align-items:center;gap:3px"><i class="ti ti-paperclip" style="font-size:9px"></i> Proof</span>':'')
             +(d.completed?'<span style="font-size:10px;background:#e8f8f0;color:#1d9e75;padding:2px 7px;border-radius:5px;font-weight:600">✓ Done</span>':'')
             +'<span class="'+statusCfg.cls+'" style="cursor:pointer;display:flex;align-items:center;gap:3px" onclick="cycleDealStatus(\''+key+'\','+di+')" title="Click to change status">'
@@ -2842,7 +2842,7 @@ function openEditDeal(key,di){
     {v:'content',icon:'ti-video',color:'#8e44ad',label:'Content Creation'},
     {v:'autograph',icon:'ti-signature',color:'#b7791f',label:'Autograph Signing'},
     {v:'billboard',icon:'ti-ad-2',color:'#0369a1',label:'Billboard'},
-    {v:'virtual',icon:'ti-device-laptop',color:'#7c3aed',label:'Virtual Appearance'},
+    {v:'virtual',icon:'ti-device-laptop',color:'#7c3aed',label:'Virtual Meet &amp; Greet'},
   ];
 
   ov.innerHTML=`<div style="background:#fff;border-radius:18px;width:560px;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.25);overflow:hidden">
@@ -4130,7 +4130,7 @@ function openAddDeal(key){
               <input type="checkbox" name="nd-type" value="billboard" style="cursor:pointer"> <i class="ti ti-ad-2" style="font-size:14px;color:#0369a1"></i> Billboard
             </label>
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;border:1.5px solid #e5e5ea;border-radius:8px;background:#fff">
-              <input type="checkbox" name="nd-type" value="virtual" style="cursor:pointer"> <i class="ti ti-device-laptop" style="font-size:14px;color:#7c3aed"></i> Virtual Appearance
+              <input type="checkbox" name="nd-type" value="virtual" style="cursor:pointer"> <i class="ti ti-device-laptop" style="font-size:14px;color:#7c3aed"></i> Virtual Meet &amp; Greet
             </label>
           </div>
         </div>
