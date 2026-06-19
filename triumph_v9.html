@@ -5667,20 +5667,48 @@ function removeAct(coName,actId){
   renderCos();
 }
 
-function activateSlots(coName,actId){
+async function activateSlots(coName,actId){
   const act=plannerSlots[coName]?.[actId];if(!act) return;
   const filled=act.slots.filter(Boolean);
-  if(!filled.length) return;
-  let created=0;
-  filled.forEach(akey=>{
-    const a=A.find(x=>x.f+'_'+x.l===akey);if(!a) return;
+  if(!filled.length){alert('No athletes slotted yet.');return;}
+  const types=act.types&&act.types.length?act.types:['social'];
+  const athleteNames=filled.map(akey=>{
+    const a=A.find(x=>x.f+'_'+x.l===akey);return a?a.f+' '+a.l:akey;
+  }).join(', ');
+  const confirmed=confirm(
+    'Push "'+act.label+'" to NILGo Wallets?\n\n'
+    +'Company: '+coName+'\n'
+    +'Fee per athlete: '+f(act.fee||0)+'\n'
+    +(act.date?'Date: '+act.date+'\n':'')
+    +'Athletes: '+athleteNames+'\n\n'
+    +'This will create a deal on each athlete\'s Wallets tab. Already-existing deals for this activation will be skipped.'
+  );
+  if(!confirmed) return;
+  let created=0,skipped=0;
+  const dealName=coName+' — '+act.label;
+  for(const akey of filled){
+    const a=A.find(x=>x.f+'_'+x.l===akey);if(!a) continue;
     if(!a.deals) a.deals=[];
-    if(a.deals.find(d=>d.n===coName&&d.t===act.fee)) return;
-    a.deals.push({n:coName,sow:'',sub:'',t:act.fee,s1:0,s2:0,hist:[],status:'pending',types:[typeToKey(act.type)],pow:false,notes:act.label});
-    saveDealsToSupabase(a);
+    // Skip if deal with same name already exists
+    if(a.deals.find(d=>d.n===dealName)){skipped++;continue;}
+    a.deals.push({
+      n:dealName,
+      sow:act.date||'',
+      sub:act.notes||'',
+      t:act.fee||0,
+      s1:0,s2:0,hist:[],
+      status:'pending',
+      types:types,
+      pow:false
+    });
+    await saveDealsToSupabase(a);
     created++;
-  });
-  alert('Created '+created+' deal'+(created!==1?'s':'')+' on athlete Wallets tabs for "'+act.label+'"');
+  }
+  // Mark activation as Activated
+  plannerSlots[coName][actId].status_label='Activated';
+  savePlannerState();
+  syncStatus('Pushed '+created+' wallet deal'+(created!==1?'s':'')+(skipped>0?' ('+skipped+' skipped)':''));
+  renderCos();
 }
 
 function typeToKey(t){
