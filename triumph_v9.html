@@ -693,11 +693,14 @@ select.aa-inp{appearance:auto}
   </div>
   <div class="page" id="page-athletes">
     <div class="astrip" id="a-strip">
-      <div class="sit" style="background:#eef6ff"><div class="silbl" style="color:#2980b9">Total Owed</div><div class="siv b" id="ss-owed">-</div><div class="sisub">NIL contract total</div></div>
-      <div class="sit" style="background:#eef6ff"><div class="silbl" style="color:#2980b9">Paid Out</div><div class="siv b" id="ss-can">-</div><div class="sisub">Cleared through NILGo</div></div>
-      <div class="sit" style="background:#f9eaea"><div class="silbl" style="color:#7B1A1A">Rev Moved</div><div class="siv m" id="ss-rev">-</div><div class="sisub">Shortfall covered by RS</div></div>
-      <div class="sit" style="background:#eef6ff"><div class="silbl" style="color:#2980b9">Remaining</div><div class="siv b" id="ss-rem">-</div><div class="sisub">NIL still owed</div></div>
-      <div class="sit" style="background:#e8f8f2"><div class="silbl" style="color:#1d9e75">Total Banked</div><div class="siv g" id="ss-bank">-</div><div class="sisub">All NILGo cleared</div></div>
+      <div class="sit ss-nil" style="background:#eef6ff"><div class="silbl" style="color:#2980b9">Total Owed</div><div class="siv b" id="ss-owed">-</div><div class="sisub">NIL contract total</div></div>
+      <div class="sit ss-nil" style="background:#eef6ff"><div class="silbl" style="color:#2980b9">Paid Out</div><div class="siv b" id="ss-can">-</div><div class="sisub">Cleared through NILGo</div></div>
+      <div class="sit ss-nil" style="background:#f9eaea"><div class="silbl" style="color:#7B1A1A">Rev Moved</div><div class="siv m" id="ss-rev">-</div><div class="sisub">Shortfall covered by RS</div></div>
+      <div class="sit ss-nil" style="background:#eef6ff"><div class="silbl" style="color:#2980b9">Remaining</div><div class="siv b" id="ss-rem">-</div><div class="sisub">NIL still owed</div></div>
+      <div class="sit ss-nil" style="background:#e8f8f2"><div class="silbl" style="color:#1d9e75">Total Banked</div><div class="siv g" id="ss-bank">-</div><div class="sisub">All NILGo cleared</div></div>
+      <div class="sit ss-rs" style="display:none;background:#fff0f3"><div class="silbl" style="color:#c0392b">Total RS Contracted</div><div class="siv" style="color:#c0392b!important;-webkit-text-fill-color:#c0392b!important" id="ss-rs-contract">-</div><div class="sisub">Full RS contract value</div></div>
+      <div class="sit ss-rs" style="display:none;background:#fff0f3"><div class="silbl" style="color:#c0392b">Total RS Paid Out</div><div class="siv" style="color:#1d9e75!important;-webkit-text-fill-color:#1d9e75!important" id="ss-rs-paid">-</div><div class="sisub">RS cleared to date</div></div>
+      <div class="sit ss-rs" style="display:none;background:#fff0f3"><div class="silbl" style="color:#c0392b">Total RS Remaining</div><div class="siv" style="color:#c0392b!important;-webkit-text-fill-color:#c0392b!important" id="ss-rs-rem">-</div><div class="sisub">RS still owed</div></div>
     </div>
     <div class="fbar" id="fbar">
       <div class="sw"><i class="ti ti-search"></i><input type="text" id="si" placeholder="Search athlete..." oninput="aF()"></div>
@@ -1728,40 +1731,34 @@ function buildDash(){
 
 /* ===== ATHLETES ===== */
 function calcStrip(list){
-  const remEl=document.getElementById('ss-rem');
-  const owedEl=document.getElementById('ss-owed');
-  const canEl=document.getElementById('ss-can');
-  const revEl=document.getElementById('ss-rev');
-  const bankEl=document.getElementById('ss-bank');
-  // RS tab — show RS numbers and relabel
+  const nilCards=document.querySelectorAll('#a-strip .ss-nil');
+  const rsCards=document.querySelectorAll('#a-strip .ss-rs');
   if(rowView==='rs'){
+    // Hide NIL cards, show RS cards
+    nilCards.forEach(el=>el.style.display='none');
+    rsCards.forEach(el=>el.style.display='');
     const rsTotal=list.reduce((s,a)=>s+(a.rsContract||0),0);
     const rsPaid=list.reduce((s,a)=>s+(a.rsPaid||0),0);
-    const rsShortfall=list.reduce((s,a)=>s+a.sch.reduce((t,x)=>t+(x.shortfall||0),0),0);
     const rsRem=list.reduce((s,a)=>s+Math.max(0,(a.rsContract||0)-(a.rsPaid||0)),0);
-    const rsBanked=list.reduce((s,a)=>s+(a.banked-a.paid),0);
-    // Update labels for RS context
-    document.querySelectorAll('#a-strip .silbl')[0].textContent='RS Contract';
-    document.querySelectorAll('#a-strip .silbl')[1].textContent='RS Paid Out';
-    document.querySelectorAll('#a-strip .silbl')[2].textContent='NIL Shortfall Moved';
-    document.querySelectorAll('#a-strip .silbl')[3].textContent='RS Remaining';
-    document.querySelectorAll('#a-strip .silbl')[4].textContent='Total Banked';
-    if(owedEl) owedEl.textContent=f(rsTotal);
-    if(canEl) canEl.textContent=f(rsPaid);
-    if(revEl) revEl.textContent=f(rsShortfall);
+    const contractEl=document.getElementById('ss-rs-contract');
+    const paidEl=document.getElementById('ss-rs-paid');
+    const remEl=document.getElementById('ss-rs-rem');
+    if(contractEl) contractEl.textContent=f(rsTotal);
+    if(paidEl) paidEl.textContent=rsPaid>0?f(rsPaid):'—';
     if(remEl) remEl.textContent=f(rsRem);
-    if(bankEl) bankEl.textContent=f(rsBanked);
     return;
   }
-  // NIL tab — restore NIL labels
-  document.querySelectorAll('#a-strip .silbl')[0].textContent='Total Owed';
-  document.querySelectorAll('#a-strip .silbl')[1].textContent='Paid Out';
-  document.querySelectorAll('#a-strip .silbl')[2].textContent='Rev Moved';
-  document.querySelectorAll('#a-strip .silbl')[3].textContent='Remaining';
-  document.querySelectorAll('#a-strip .silbl')[4].textContent='Total Banked';
+  // NIL tab — show NIL cards, hide RS cards
+  nilCards.forEach(el=>el.style.display='');
+  rsCards.forEach(el=>el.style.display='none');
   const totalOwed=list.reduce((s,a)=>s+a.contract,0);
   const totalPaid=list.reduce((s,a)=>s+a.paid,0);
   const totalRev=list.reduce((s,a)=>s+getRevYTD(a),0);
+  const owedEl=document.getElementById('ss-owed');
+  const canEl=document.getElementById('ss-can');
+  const revEl=document.getElementById('ss-rev');
+  const remEl=document.getElementById('ss-rem');
+  const bankEl=document.getElementById('ss-bank');
   if(owedEl) owedEl.textContent=f(totalOwed);
   if(canEl) canEl.textContent=f(totalPaid);
   if(revEl) revEl.textContent=f(totalRev);
