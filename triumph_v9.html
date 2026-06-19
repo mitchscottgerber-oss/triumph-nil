@@ -2212,13 +2212,30 @@ function oProf(key){
         +(USER_ROLE!=='activation'?'<button class="btn btn-sm" onclick="deleteAthlete(\''+key+'\')" style="background:#fff0f3;color:#e34040;-webkit-text-fill-color:#e34040;border:1.5px solid #f5c6d0;display:flex;align-items:center;gap:4px"><i class="ti ti-trash" style="font-size:12px"></i> Delete</button>':'')
       +'</div>'
       +'</div></div>'
-      +(USER_ROLE!=='activation'?'<div class="krow" style="grid-template-columns:repeat(5,1fr)">'
-        +'<div class="kpi"><div class="kl">NIL contract</div><div class="kv">'+f(a.contract)+'</div></div>'
-        +'<div class="kpi"><div class="kl">Total paid out</div><div class="kv g">'+f(a.paid)+'</div></div>'
-        +'<div class="kpi"><div class="kl">Bank remaining</div><div class="kv'+(rem<=0?' r':'')+'">'+(rem<=0?'No funds':f(rem))+'</div></div>'
-        +'<div class="kpi"><div class="kl">'+mo+' NIL</div><div class="kv'+(nf&&mp>0?' r':'')+'">'+(mp>0?f(mp):'-')+'</div></div>'
-        +'<div class="kpi"><div class="kl">Rev Share YTD</div><div class="kv" style="color:'+(rvYTD>0?'#8e44ad':'#1d1d1f')+';-webkit-text-fill-color:'+(rvYTD>0?'#8e44ad':'#1d1d1f')+'">'+(rvYTD>0?f(rvYTD):'-')+'</div></div>'
-      +'</div>':'')+'</div>'
+      +(USER_ROLE!=='activation'?(()=>{
+        const nilTotProf=a.sch.reduce((s,x)=>s+x.a,0);
+        const nilRemProf=Math.max(0,nilTotProf-a.paid);
+        const wbProf=getWalletBanked(a);
+        const bankedProf=(wbProf!==null?wbProf:a.banked)-a.paid;
+        const revMovedProf=a.sch.reduce((s,x)=>s+(x.shortfall||0),0);
+        const rsContractProf=a.rsContract||0;
+        const rsPaidProf=a.rsPaid||0;
+        const rsRemProf=Math.max(0,rsContractProf-rsPaidProf);
+        return '<div class="krow" style="grid-template-columns:repeat(5,1fr);border-bottom:1px solid #f2f2f7">'
+          +'<div class="kpi"><div class="kl" style="color:#2980b9">Total NIL Owed</div><div class="kv" style="color:#2980b9;-webkit-text-fill-color:#2980b9">'+f(nilTotProf)+'</div></div>'
+          +'<div class="kpi"><div class="kl" style="color:#2980b9">NIL Paid Out</div><div class="kv" style="color:#2980b9;-webkit-text-fill-color:#2980b9">'+f(a.paid)+'</div></div>'
+          +'<div class="kpi"><div class="kl" style="color:#7B1A1A">Rev Moved</div><div class="kv" style="color:#7B1A1A;-webkit-text-fill-color:#7B1A1A">'+(revMovedProf>0?f(revMovedProf):'—')+'</div></div>'
+          +'<div class="kpi"><div class="kl" style="color:#2980b9">NIL Remaining</div><div class="kv" style="color:#2980b9;-webkit-text-fill-color:#2980b9">'+f(nilRemProf)+'</div></div>'
+          +'<div class="kpi"><div class="kl" style="color:#1d9e75">Banked</div><div class="kv" style="color:'+(bankedProf<=0?'#e34040':'#1d9e75')+';-webkit-text-fill-color:'+(bankedProf<=0?'#e34040':'#1d9e75')+'">'+(bankedProf<=0?'No funds':f(bankedProf))+'</div></div>'
+        +'</div>'
+        +(rsContractProf>0
+          ?'<div class="krow" style="grid-template-columns:repeat(3,1fr)">'
+            +'<div class="kpi"><div class="kl" style="color:#c0392b">RS Contract</div><div class="kv" style="color:#c0392b;-webkit-text-fill-color:#c0392b">'+f(rsContractProf)+'</div></div>'
+            +'<div class="kpi"><div class="kl" style="color:#c0392b">RS Paid Out</div><div class="kv" style="color:#1d9e75;-webkit-text-fill-color:#1d9e75">'+(rsPaidProf>0?f(rsPaidProf):'—')+'</div></div>'
+            +'<div class="kpi"><div class="kl" style="color:#c0392b">RS Remaining</div><div class="kv" style="color:#c0392b;-webkit-text-fill-color:#c0392b">'+f(rsRemProf)+'</div></div>'
+          +'</div>'
+          :'');
+      })():'')+'</div>'
     +'<div class="tabs">'
       +(USER_ROLE!=='activation'?'<button class="tab on" onclick="sT(\'sched\',\''+key+'\',this)">Payment schedule</button>':'')
       +'<button class="tab'+(USER_ROLE==='activation'?' on':'')+'" onclick="sT(\'wallets\',\''+key+'\',this)">NILGo wallets</button>'
