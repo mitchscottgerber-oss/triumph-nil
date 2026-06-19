@@ -1829,8 +1829,9 @@ function rAnnual(list,filterMos){
 
   let html='<thead><tr>'
     +'<th style="text-align:left;min-width:140px;position:sticky;left:0;z-index:3;background:#f9f9f9">Athlete</th>'
-    +'<th style="text-align:right;min-width:90px;background:#eef6ff;color:#2980b9">NIL Total</th>'
-    +'<th style="text-align:right;min-width:90px;background:#fff0f3;color:#c0392b">RS Total</th>'
+
+    +'<th style="text-align:right;min-width:90px;background:#e8f8f2;color:#1d9e75">Banked</th>'
+    +'<th style="text-align:right;min-width:110px;background:#f0ebff;color:#8e44ad;cursor:pointer" title="Click any cell to expand detail">Money Owed ▾</th>'
     +cols.map(({mo,yr},i)=>{
       const isCur=mo===CUR&&yr===2026;
       const label=mo+' \''+(String(yr).slice(2));
@@ -1839,8 +1840,8 @@ function rAnnual(list,filterMos){
         +(moNIL[i]>0?'<div style="font-size:8px;color:#1d9e75;font-weight:500;margin-top:1px">'+f(moNIL[i])+'</div>':'')
       +'</th>';
     }).join('')
-    +'<th style="text-align:right;min-width:90px;background:#e8f8f2;color:#1d9e75">Banked</th>'
-    +'<th style="text-align:right;min-width:110px;background:#f0ebff;color:#8e44ad;cursor:pointer" title="Click any cell to expand detail">Money Owed ▾</th>'
+    +'<th style="text-align:right;min-width:90px;background:#eef6ff;color:#2980b9">NIL Total</th>'
+    +'<th style="text-align:right;min-width:90px;background:#fff0f3;color:#c0392b">RS Total</th>'
     +'<th style="min-width:36px;background:#f9f9f9;cursor:pointer;text-align:center" onclick="toggleFutureYears()" title="'+(showFutureYears?'Collapse 2027–2028':'Expand to see 2027–2028')+'">'
       +'<span style="font-size:11px;color:#8e8e93;font-weight:600">'+(showFutureYears?'◀':'▶')+'</span>'
     +'</th>'
@@ -1897,9 +1898,9 @@ function rAnnual(list,filterMos){
             (rvTot>0?'<span style="font-size:9px;background:#fff0f3;padding:1px 5px;border-radius:4px;color:#c0392b">RS</span>':'')+
           '</div>'+
         '</td>'+
-        '<td style="text-align:right;background:#e8f8f2"><span style="font-size:12px;font-weight:600;color:'+(isBankLow?'#e34040':'#1d9e75')+'">'+f(banked)+'</span></td>'+
+        '<td style="text-align:right;font-weight:700;font-size:12px;color:#2980b9;background:#eef6ff">'+f(nilTot)+'</td>'+
         '<td style="background:#fff0f3"></td>'+
-        '<td style="background:#f9f9f9"></td>'+
+        '<td style="text-align:right;background:#e8f8f2"><span style="font-size:12px;font-weight:600;color:'+(isBankLow?'#e34040':'#1d9e75')+'">'+f(banked)+'</span></td>'+
         '<td style="text-align:right;background:#f0ebff;cursor:pointer" onclick="event.stopPropagation();raToggle(\''+nilExpId+'\',\''+rsExpId+'\',\'nil\','+idx+')">'+
           '<div style="font-weight:600;color:#8e44ad;font-size:12px">'+f(nilRem)+'</div>'+
           '<div style="font-size:9px;color:#8e44ad;margin-top:1px" id="nh-'+idx+'">▼ detail</div>'+
@@ -1911,7 +1912,7 @@ function rAnnual(list,filterMos){
           if(!s||s.a===0) return '<td class="'+(iC?'curbg':'')+'" style="'+bg+'"><span style="color:#e5e5ea">-</span></td>';
           return '<td class="'+(iC?'curbg':'')+'" style="'+bg+'"><div style="font-size:11.5px;font-weight:500'+(s.p?';color:#8e8e93':'')+'">'+f(s.a)+'</div>'+(s.p?'<div class="mc-paid-badge">✓</div>':'')+'</td>';
         }).join('')+
-        '<td style="text-align:right;font-weight:700;font-size:12px;color:#2980b9;background:#eef6ff">'+f(nilTot)+'</td>'+
+        '<td style="background:#f9f9f9"></td>'+
       '</tr>';
       // NIL expand row
       html+='<tr id="'+nilExpId+'" style="display:none"><td colspan="'+(totalCols+1)+'" style="padding:10px 16px 12px;background:#f0f6ff;border-top:0.5px solid #b3d4f5;border-bottom:0.5px solid #b3d4f5"><div style="display:flex;gap:36px;font-size:12px"><div><div style="font-size:9px;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">NIL Contract</div><div style="font-weight:600;color:#1d1d1f;font-size:13px">'+f(a.contract)+'</div></div><div><div style="font-size:9px;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Paid Out</div><div style="font-weight:600;color:#1d9e75;font-size:13px">'+f(a.paid)+'</div></div><div><div style="font-size:9px;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Money Owed</div><div style="font-weight:700;color:#2980b9;font-size:13px">'+f(nilRem)+'</div></div></div></td></tr>';
@@ -1921,14 +1922,14 @@ function rAnnual(list,filterMos){
           '<td style="position:sticky;left:0;z-index:1;background:#fff5f7;border-right:1px solid #f5c6d0;padding:4px 10px 6px 22px">'+
             '<div style="font-size:9px;color:#c0392b;font-weight:700;text-transform:uppercase;letter-spacing:.05em">↳ Rev Share</div>'+
           '</td>'+
-          '<td style="text-align:right;background:#fff5f7"></td>'+
           '<td style="text-align:right;font-weight:700;font-size:12px;color:'+(rvTot>0?'#c0392b':'#d1d1d6')+';background:#fff0f3">'+(rvTot>0?f(rvTot):'—')+'</td>'+
-          '<td style="background:#fff5f7"></td>'+
           '<td style="text-align:right;background:#fff0f3;cursor:pointer" onclick="event.stopPropagation();raToggle(\''+rsExpId+'\',\''+nilExpId+'\',\'rs\','+idx+')">'+
             ((a.rsContract||0)>0
               ?'<div style="font-weight:600;color:#c0392b;font-size:12px">'+f(rsRem)+'</div><div style="font-size:9px;color:#aeaeb2;margin-top:1px" id="rh-'+idx+'">▼ detail</div>'
               :'<span style="color:#d1d1d6;font-size:11px">—</span>')+
           '</td>'+
+          '<td style="background:#fff5f7"></td>'+
+          '<td style="background:#fff5f7"></td>'+
           cols.map(({mo,yr})=>{
             const rv=getRev(a,mo,yr);
             const iC=mo===CUR&&yr===2026;
@@ -1952,21 +1953,21 @@ function rAnnual(list,filterMos){
   // Totals rows
   if(rowView!=='rs') html+='<tr style="background:#f2f2f7;border-top:2px solid #1d1d1f">'
     +'<td style="font-weight:700;font-size:12px;padding:10px;position:sticky;left:0;background:#f2f2f7;border-right:1px solid #e5e5ea">NIL Totals</td>'
+    +'<td style="text-align:right;font-weight:700;font-size:13px;color:#2980b9;background:#eef6ff">'+f(totalNIL)+'</td>'
+    +'<td style="background:#fff0f3"></td>'
     +'<td style="text-align:right;font-weight:700;color:#1d9e75">'+f(totalBanked)+'</td>'
     +'<td style="text-align:right;font-weight:700;color:#8e44ad;background:#f0ebff">'+f(totalOwed)+'</td>'
     +cols.map(({mo,yr},i)=>'<td style="text-align:center;font-weight:700;font-size:12px;color:'+(moNIL[i]>0?'#1d1d1f':'#d1d1d6')+'">'+(moNIL[i]>0?f(moNIL[i]):'—')+'</td>').join('')
-    +'<td style="text-align:right;font-weight:700;font-size:13px;color:#2980b9;background:#eef6ff">'+f(totalNIL)+'</td>'
-    +'<td style="background:#fff0f3"></td>'
     +'<td onclick="toggleFutureYears()" style="background:#f9f9f9;cursor:pointer;text-align:center"><span style="font-size:11px;color:#8e8e93;font-weight:600">'+(showFutureYears?'◀':'▶')+'</span></td>'
   +'</tr>';
 
   if(rowView!=='nil') html+='<tr style="background:#fff5f7;border-bottom:2px solid #1d1d1f">'
     +'<td style="font-weight:700;font-size:12px;padding:10px;position:sticky;left:0;background:#fff5f7;border-right:1px solid #f5c6d0;color:#c0392b">RS Totals</td>'
-    +'<td style="background:#fff5f7"></td>'
-    +'<td style="text-align:right;font-weight:700;color:#c0392b;background:#fff0f3">'+f(totalRSRem)+'</td>'
-    +cols.map(({mo,yr},i)=>'<td style="text-align:center;font-weight:700;font-size:12px;color:'+(moRS[i]>0?'#c0392b':'#d1d1d6')+';background:#fff0f3">'+(moRS[i]>0?f(moRS[i]):'—')+'</td>').join('')
-    +'<td style="background:#fff5f7"></td>'
     +'<td style="text-align:right;font-weight:700;font-size:13px;color:#c0392b;background:#fff0f3">'+f(totalRS)+'</td>'
+    +'<td style="text-align:right;font-weight:700;color:#c0392b;background:#fff0f3">'+f(totalRSRem)+'</td>'
+    +'<td style="background:#fff5f7"></td>'
+    +'<td style="background:#fff5f7"></td>'
+    +cols.map(({mo,yr},i)=>'<td style="text-align:center;font-weight:700;font-size:12px;color:'+(moRS[i]>0?'#c0392b':'#d1d1d6')+';background:#fff0f3">'+(moRS[i]>0?f(moRS[i]):'—')+'</td>').join('')
   +'<td style="background:#fff5f7"></td>'
   +'</tr>';
 
@@ -4499,14 +4500,14 @@ function buildPipeline(){
       const types=(p.act_types||[]).join(' · ')||'—';
       const sid=p.id;
       return '<div class="pl-card'+(p.confirmed?' pl-confirmed':'')+'" draggable="true" data-plid="'+sid+'" onclick="openPipelineModal(\''+sid+'\')" onmousedown="event.stopPropagation?null:null" ondragstart="plDragStart(event,\''+sid+'\')" ondragend="plDragEnd(event)">'
-        +'<div class="pl-card-name">'+p.name+'</div>'
-        +(pm?'<div class="pl-card-partner"><div class="pl-dot" style="background:'+pm.dot+'"></div>'+pm.label+'</div>':'<div class="pl-card-partner" style="color:#d1d1d6">No partner</div>')
-        +'<div class="pl-card-type">'+types+'</div>'        +((p.event_date&&(p.act_types||[]).some(function(t){return t==='Appearance';}))?'<div style="font-size:9px;color:#b7791f;font-weight:500;margin-bottom:4px">'+p.event_date+'</div>':'')
+        +'<div style="font-size:13px;font-weight:700;color:#1d1d1f;margin-bottom:3px;line-height:1.2">'+p.name+'</div>'
+        +(types&&types!=='—'?'<div style="font-size:10px;color:#8e8e93;margin-bottom:4px">'+types+'</div>':'')
+        +(p.event_date?'<div style="font-size:11px;font-weight:600;color:#b7791f;margin-bottom:5px">'+p.event_date+'</div>':'')
+        +(pm?'<div style="display:flex;align-items:center;gap:4px;margin-bottom:6px"><div style="width:5px;height:5px;border-radius:50%;background:'+pm.dot+'"></div><span style="font-size:9px;color:#8e8e93">'+pm.label+'</span></div>':'')
         +'<div class="pl-stats">'
           +'<div class="pl-stat"><div class="pl-sl">Athletes</div><div class="pl-sv">'+(p.athletes||'TBD')+'</div></div>'
           +'<div class="pl-stat"><div class="pl-sl">Potential</div><div class="pl-sv" style="color:#8e44ad">'+(p.nil_potential>0?f(p.nil_potential):'—')+'</div></div>'
         +'</div>'
-        +(showCleared&&p.nil_cleared>0?'<div class="pl-stat pl-cleared"><div class="pl-sl" style="color:#1d9e75">Cleared</div><div class="pl-sv" style="color:#1d9e75">'+f(p.nil_cleared)+'</div></div>':'')
         +(showConfirm?'<div class="pl-confirm-row'+(p.confirmed?' pl-confirm-on':'')+'" onclick="event.stopPropagation();togglePLConfirm(\''+sid+'\')">'
           +'<div class="pl-chk'+(p.confirmed?' pl-chk-on':'')+'">'+( p.confirmed?'<i class="ti ti-check" style="font-size:9px;color:#fff"></i>':'')+'</div>'
           +'<span>'+(p.confirmed?'Ready to activate':'Mark ready')+'</span>'
