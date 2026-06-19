@@ -1459,7 +1459,7 @@ function saveRevPool(sport) {
 
 const MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const CUR=(()=>{const d=new Date();return['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];})();
-const f=n=>(!n||n===0)?'-':'$'+Math.round(Math.abs(n)).toLocaleString();
+const f=n=>(!n||n===0)?'-':'$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const ini=(a,b)=>((a||'')[0]+(b||'')[0]).toUpperCase();
 let cp='all',cv='annual',curCo=null,openMo=null,coView='annual',openSchedKey=null,openSchedMo=null;
 const locked={};
