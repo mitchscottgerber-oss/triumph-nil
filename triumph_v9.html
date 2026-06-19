@@ -704,10 +704,6 @@ select.aa-inp{appearance:auto}
     </div>
     <div class="fbar" id="fbar">
       <div class="sw"><i class="ti ti-search"></i><input type="text" id="si" placeholder="Search athlete..." oninput="aF()"></div>
-      <div class="fdiv" id="fbar-div1"></div>
-      <button class="pill on" id="fbar-all" onclick="sP('all',this)">All</button>
-      <button class="pill s" id="fbar-short" onclick="sP('short',this)">Short</button>
-      <div class="fdiv" id="fbar-div2"></div>
       <div style="display:flex;background:#f2f2f7;border-radius:8px;padding:2px;gap:2px" id="fbar-rowview">
         <button id="rv-nil" onclick="setRowView('nil')" style="padding:4px 10px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;background:#2980b9;color:#fff;-webkit-text-fill-color:#fff">NIL</button>
         <button id="rv-rs" onclick="setRowView('rs')" style="padding:4px 10px;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;background:transparent;color:#c0392b;-webkit-text-fill-color:#c0392b">Rev Share</button>
@@ -748,7 +744,6 @@ select.aa-inp{appearance:auto}
           </div>
         </div>
       </div>
-      <div class="vtog" id="fbar-vtog"><button class="vb" id="vg" onclick="sV('cards')"><i class="ti ti-layout-grid"></i></button><button class="vb on" id="vl" onclick="sV('annual')"><i class="ti ti-table"></i></button></div>
       <button class="btn btn-outline" id="fbar-export" style="padding:4px 12px;font-size:11px;height:28px;display:flex;align-items:center;gap:4px;white-space:nowrap" onclick="exportExcel()"><i class="ti ti-file-spreadsheet" style="font-size:13px"></i> Export</button>
       <button class="btn btn-dark" id="add-athlete-btn" style="padding:4px 14px;font-size:11px;height:28px;display:flex;align-items:center;gap:4px;white-space:nowrap" onclick="openAddAthlete()"><i class="ti ti-user-plus" style="font-size:13px"></i> Add Athlete</button>
     </div>
@@ -1415,7 +1410,7 @@ function switchRole(role){
   } else {
     // Restore all nav + controls
     ['nav-dash','nav-gm','nav-companies','nav-reports','nav-settings'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='';});
-    ['add-athlete-btn','fbar-all','fbar-short','fbar-div1','fbar-div2','sel-mo','fbar-vtog','fbar-export'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='';});
+    ['add-athlete-btn','sel-mo','fbar-export'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='';});
     // Also restore nav
     ['nav-dash','nav-gm','nav-companies','nav-reports','nav-settings'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='';});
     // Refresh athlete grid to show numbers
@@ -1778,7 +1773,7 @@ function aF(){
   document.getElementById('cnt').innerHTML='<b>'+list.length+'</b> athlete'+(list.length!==1?'s':'');
 
   // Show/hide fbar elements based on role
-  const activationHide=['add-athlete-btn','fbar-all','fbar-short','fbar-div1','fbar-div2','sel-mo','fbar-vtog','fbar-export'];
+  const activationHide=['add-athlete-btn','sel-mo','fbar-export'];
   activationHide.forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.style.display=USER_ROLE==='activation'?'none':'';
