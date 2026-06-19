@@ -1472,7 +1472,7 @@ let revPools={
 };
 let revShare={};
 function getRev(a,mo,yr){yr=yr||2026;const k=a.f+'_'+a.l;const rk=mo+'_'+yr;return(revShare[k]&&revShare[k][rk])||0;}
-function setRev(a,mo,amt){const k=a.f+'_'+a.l;if(!revShare[k])revShare[k]={};revShare[k][mo]=amt;const key=k;setTimeout(()=>oProf(key),0);}
+function setRev(a,mo,amt,yr){yr=yr||2026;const k=a.f+'_'+a.l;if(!revShare[k])revShare[k]={};revShare[k][mo+'_'+yr]=amt;const key=k;setTimeout(()=>oProf(key),0);}
 function getWalletBanked(a, mo, yr){
   // If a specific month is requested and we have a manual banked_balance for it, use that
   if(mo){
@@ -2350,7 +2350,7 @@ async function confirmMarkPaid(key,mo){
   const rsKey=a.f+'_'+a.l;
   if(shortfall>0){
     if(!revShare[rsKey]) revShare[rsKey]={};
-    revShare[rsKey][mo]=(revShare[rsKey][mo]||0); // keep original RS, shortfall tracked on schedule
+    revShare[rsKey][mo+'_2026']=(revShare[rsKey][mo+'_2026']||0); // keep original RS, shortfall tracked on schedule
   }
   try{
     await sb.from('payment_schedule').upsert(
@@ -2610,7 +2610,7 @@ async function saveRevCard(key,mo){
   const val=parseFloat(inp&&inp.value)||0;
   const a=A.find(x=>x.f+'_'+x.l===key);if(!a) return;
   if(!revShare[key]) revShare[key]={};
-  revShare[key][mo]=val;
+  revShare[key][mo+'_2026']=val;
   // Save to Supabase
   try{
     await sb.from('rev_share').upsert(
