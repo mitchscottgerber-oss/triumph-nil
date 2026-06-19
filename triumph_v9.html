@@ -1127,7 +1127,7 @@ async function loadFromSupabase(){
       const sch=athSch.map(s=>({
         mo:s.month,yr:s.year||2026,a:s.amount||0,p:s.is_paid||false,
         s:s.sources||[],_sid:s.id,cleared:s.nil_cleared||0,
-        shortfall:s.shortfall||0,rs_paid:s.rs_paid||false
+        shortfall:s.shortfall||0,rs_paid:s.rs_paid||false,banked_balance:s.banked_balance||null
       }));
       // Ensure all 2026 months exist
       MO.forEach(mo=>{if(!sch.find(x=>x.mo===mo&&x.yr===2026)) sch.push({mo,yr:2026,a:0,p:false,s:[],cleared:0,shortfall:0,rs_paid:false});});
@@ -1473,7 +1473,13 @@ let revPools={
 let revShare={};
 function getRev(a,mo,yr){yr=yr||2026;const k=a.f+'_'+a.l;const rk=mo+'_'+yr;return(revShare[k]&&revShare[k][rk])||0;}
 function setRev(a,mo,amt){const k=a.f+'_'+a.l;if(!revShare[k])revShare[k]={};revShare[k][mo]=amt;const key=k;setTimeout(()=>oProf(key),0);}
-function getWalletBanked(a){
+function getWalletBanked(a, mo, yr){
+  // If a specific month is requested and we have a manual banked_balance for it, use that
+  if(mo){
+    yr=yr||2026;
+    const s=a.sch&&a.sch.find(x=>x.mo===mo&&(x.yr||2026)===yr);
+    if(s&&s.banked_balance!=null) return s.banked_balance;
+  }
   // Sum all draws (hist) across cleared deals
   const deals=a.deals||[];
   const cleared=deals.filter(d=>d.status==='cleared');
@@ -7137,6 +7143,11 @@ function openAddAthlete(){
         <span style="padding:0 7px;font-size:11px;color:#e34040;font-weight:700;border-right:1px solid #f5c6d0;height:100%;display:flex;align-items:center">$</span>
         <input class="aa-mo-inp" id="aa-sf-${key}" type="text" inputmode="decimal" placeholder="" style="border:none!important;background:transparent!important;flex:1;height:100%;padding:0 6px;font-size:11px;color:#e34040!important;-webkit-text-fill-color:#e34040!important" onfocus="this.select()" onblur="const n=parseFloat(this.value.replace(/[^0-9.]/g,''))||0;this.value=n>0?n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}):''">
       </div>
+      <div style="font-size:9px;color:#1d9e75;font-weight:600;margin-top:6px;margin-bottom:3px">Banked (running balance)</div>
+      <div style="display:flex;align-items:center;border:1.5px solid #9fd8be;border-radius:6px;background:#e8f8f2;overflow:hidden;height:28px">
+        <span style="padding:0 7px;font-size:11px;color:#1d9e75;font-weight:700;border-right:1px solid #9fd8be;height:100%;display:flex;align-items:center">$</span>
+        <input class="aa-mo-inp" id="aa-bk-${key}" type="text" inputmode="decimal" placeholder="" style="border:none!important;background:transparent!important;flex:1;height:100%;padding:0 6px;font-size:11px;color:#1d9e75!important;-webkit-text-fill-color:#1d9e75!important" onfocus="this.select()" onblur="const n=parseFloat(this.value.replace(/[^0-9.]/g,''))||0;this.value=n>0?n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}):''">
+      </div>
     </div>`;
   }).join('');
   document.getElementById('aa-error').style.display='none';
@@ -7227,15 +7238,17 @@ async function saveNewAthlete(){
 
     const schedRows=allMonths.map(({mo,yr})=>{
       const key=mo+'_'+yr;
+      const bkVal=parseFloat((document.getElementById('aa-bk-'+key)?.value||'').replace(/[^0-9.]/g,''))||null;
       return{
         athlete_id:newA.id,month:mo,year:yr,
         amount:parseFloat((document.getElementById('aa-mo-'+key)?.value||'').replace(/[^0-9.]/g,''))||0,
         is_paid:document.getElementById('aa-paid-'+key)?.checked||false,
         nil_cleared:parseFloat((document.getElementById('aa-mo-'+key)?.value||'').replace(/[^0-9.]/g,''))||0,
         shortfall:parseFloat((document.getElementById('aa-sf-'+key)?.value||'').replace(/[^0-9.]/g,''))||0,
+        banked_balance:bkVal,
         rs_paid:false,sources:[]
       };
-    }).filter(r=>r.amount>0||r.shortfall>0||r.is_paid);
+    }).filter(r=>r.amount>0||r.shortfall>0||r.is_paid||r.banked_balance>0);
     if(schedRows.length){const {error:se}=await sb.from('payment_schedule').insert(schedRows);if(se) throw se;}
 
     // Insert rev share rows
