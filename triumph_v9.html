@@ -1473,6 +1473,14 @@ let revPools={
 let revShare={};
 function getRev(a,mo,yr){yr=yr||2026;const k=a.f+'_'+a.l;const rk=mo+'_'+yr;return(revShare[k]&&revShare[k][rk])||0;}
 function setRev(a,mo,amt){const k=a.f+'_'+a.l;if(!revShare[k])revShare[k]={};revShare[k][mo]=amt;const key=k;setTimeout(()=>oProf(key),0);}
+function getWalletBanked(a){
+  // Sum all draws (hist) across cleared deals
+  const deals=a.deals||[];
+  const cleared=deals.filter(d=>d.status==='cleared');
+  if(cleared.length===0) return null; // no cleared deals → fall back to manual banked
+  return cleared.reduce((s,d)=>s+((d.hist||[]).reduce((t,h)=>t+(h.amt||0),0)),0);
+}
+
 function getRevYTD(a){
   const k=a.f+'_'+a.l;
   if(!revShare[k]) return 0;
@@ -1486,7 +1494,7 @@ const A=[];
 let CO=[];
 
 const gma=(a,mo)=>{const s=a.sch.find(x=>x.mo===mo);return s?s.a:0;};
-const isNF=(a,mo)=>{const mp=gma(a,mo),rem=a.banked-a.paid;return mp>0&&rem<mp;};
+const isNF=(a,mo)=>{const mp=gma(a,mo),wb=getWalletBanked(a),rem=(wb!==null?wb:a.banked)-a.paid;return mp>0&&rem<mp;};
 // ===== ADD COMPANY =====
 function openAddCompany(){
   const existing=document.getElementById('add-co-overlay');
@@ -1758,7 +1766,7 @@ function calcStrip(list){
   if(canEl) canEl.textContent=f(totalPaid);
   if(revEl) revEl.textContent=f(totalRev);
   if(remEl) remEl.textContent=f(Math.max(0,totalOwed-totalPaid));
-  if(bankEl) bankEl.textContent=f(list.reduce((s,a)=>s+(a.banked-a.paid),0));
+  if(bankEl) bankEl.textContent=f(list.reduce((s,a)=>{const wb=getWalletBanked(a);return s+(wb!==null?wb:a.banked)-a.paid;},0));
 }
 function sP(p,el){cp=p;document.querySelectorAll('.pill').forEach(b=>b.classList.remove('on'));el.classList.add('on');aF();}
 function aF(){
@@ -1842,7 +1850,7 @@ function rAnnual(list,filterMos){
   const moRS=cols.map(({mo,yr})=>list.reduce((s,a)=>s+getRev(a,mo,yr),0));
   const totalNIL=moNIL.reduce((s,v)=>s+v,0);
   const totalRS=moRS.reduce((s,v)=>s+v,0);
-  const totalBanked=list.reduce((s,a)=>s+(a.banked-a.paid),0);
+  const totalBanked=list.reduce((s,a)=>{const wb=getWalletBanked(a);return s+(wb!==null?wb:a.banked)-a.paid;},0);
   const totalOwed=list.reduce((s,a)=>s+Math.max(0,a.sch.reduce((t,x)=>t+x.a,0)-a.paid),0);
   const totalRSRem=list.reduce((s,a)=>s+Math.max(0,(a.rsContract||0)-(a.rsPaid||0)),0);
 
@@ -1877,7 +1885,8 @@ function rAnnual(list,filterMos){
   list.forEach((a,idx)=>{
     const nilTot=a.sch.reduce((s,x)=>s+x.a,0);
     const rvTot=getRevYTD(a);
-    const banked=a.banked-a.paid;
+    const _wb=getWalletBanked(a);
+    const banked=(_wb!==null?_wb:a.banked)-a.paid;
     const nilRem=nilTot-a.paid;
     const rsRem=Math.max(0,(a.rsContract||0)-(a.rsPaid||0));
     const isBankLow=banked<(a.sch.find(x=>x.mo===CUR&&(x.yr||2026)===2026)?.a||0);
@@ -2001,7 +2010,8 @@ function rAnnual(list,filterMos){
         const allMos=[...MO.map(m=>({mo:m,yr:2026})),...MO.map(m=>({mo:m,yr:2027})),{mo:'Jan',yr:2028}];
         const moIdx=allMos.findIndex(x=>x.mo===expMo&&x.yr===parseInt(expYr));
         const priorPaid=allMos.slice(0,moIdx).reduce((s,{mo,yr})=>{const sc=a.sch.find(x=>x.mo===mo&&(x.yr||2026)===yr);return s+(sc?sc.a:0);},0);
-        const bankedBefore=a.banked-priorPaid;
+        const _wbExp=getWalletBanked(a);
+        const bankedBefore=(_wbExp!==null?_wbExp:a.banked)-priorPaid;
         const bankedAfter=bankedBefore+expAmt;
         const srcLabel=expMo+' '+expYr+' — source of funds';
         html+='<tr id="'+nilExpId+'" style=""><td colspan="'+(totalCols+1)+'" style="padding:0;border-bottom:0.5px solid #b3d4f5">'
@@ -5190,7 +5200,8 @@ function buildActivationPlanner(){
 
   // ── Priority scoring for suggestions ──
   function scorePriority(a){
-    const banked=a.banked-a.paid;
+    const _wb=getWalletBanked(a);
+    const banked=(_wb!==null?_wb:a.banked)-a.paid;
     const nilRem=a.contract-a.paid;
     const curSch=a.sch.find(x=>x.mo===CUR&&(x.yr||2026)===2026);
     const curNIL=curSch&&curSch.a>0?curSch.a:0;
@@ -5222,7 +5233,8 @@ function buildActivationPlanner(){
   function suggestedCardHtml(item){
     const a=item.a;const sc=item.score;
     const akey=a.f+'_'+a.l;
-    const banked=a.banked-a.paid;
+    const _wb=getWalletBanked(a);
+    const banked=(_wb!==null?_wb:a.banked)-a.paid;
     const nilRem=a.contract-a.paid;
     const curSch=a.sch.find(x=>x.mo===CUR&&(x.yr||2026)===2026);
     const curNIL=curSch&&curSch.a>0?curSch.a:0;
@@ -5370,7 +5382,8 @@ function buildActivationPlanner(){
     const a=A.find(x=>x.f+'_'+x.l===akey);if(!a) return'';
     const nilRem=a.contract-a.paid;
     const nilRemAfter=nilRem-data.totalFee;
-    const banked=a.banked-a.paid;
+    const _wb=getWalletBanked(a);
+    const banked=(_wb!==null?_wb:a.banked)-a.paid;
     const bankedAfter=banked+data.totalFee;
     const curSch=a.sch.find(x=>x.mo===CUR&&(x.yr||2026)===2026);
     const curNIL=curSch&&curSch.a>0?curSch.a:0;
