@@ -4074,6 +4074,51 @@ function applyRole(role){
 }
 
 // ===== ADD DEAL MODAL =====
+// Deal templates — stored in localStorage
+function getDealTemplates(){try{return JSON.parse(localStorage.getItem('dealTemplates')||'[]');}catch{return[];}}
+function saveDealTemplates(t){localStorage.setItem('dealTemplates',JSON.stringify(t));}
+
+function loadDealTemplate(){
+  const sel=document.getElementById('nd-template');if(!sel) return;
+  const idx=parseInt(sel.value);
+  if(isNaN(idx)) return;
+  const t=getDealTemplates()[idx];if(!t) return;
+  const nameEl=document.getElementById('nd-name');if(nameEl) nameEl.value=t.name||'';
+  const totEl=document.getElementById('nd-total');if(totEl) totEl.value=t.total||'';
+  document.querySelectorAll('input[name="nd-type"]').forEach(cb=>{cb.checked=(t.types||[]).includes(cb.value);});
+  const stat=document.querySelector('input[name="nd-status"][value="'+(t.status||'pending')+'"]');
+  if(stat) stat.checked=true;
+}
+
+function saveDealAsTemplate(){
+  const name=(document.getElementById('nd-name')?.value||'').trim();
+  const total=(document.getElementById('nd-total')?.value||'').replace(/[^0-9.]/g,'');
+  const types=[...document.querySelectorAll('input[name="nd-type"]:checked')].map(el=>el.value);
+  const status=document.querySelector('input[name="nd-status"]:checked')?.value||'pending';
+  if(!name){alert('Enter a deal name first to save as template.');return;}
+  const tplName=prompt('Template name:',name);
+  if(!tplName) return;
+  const templates=getDealTemplates();
+  templates.push({name:tplName,total,types,status});
+  saveDealTemplates(templates);
+  rebuildTemplateDropdown();
+  syncStatus('Template saved ✓');
+}
+
+function deleteTemplate(idx){
+  const templates=getDealTemplates();
+  templates.splice(idx,1);
+  saveDealTemplates(templates);
+  rebuildTemplateDropdown();
+}
+
+function rebuildTemplateDropdown(){
+  const sel=document.getElementById('nd-template');if(!sel) return;
+  const templates=getDealTemplates();
+  sel.innerHTML='<option value="">— load a template —</option>'
+    +templates.map((t,i)=>'<option value="'+i+'">'+t.name+(t.total?' · $'+parseFloat(t.total).toLocaleString():'')+(t.types?.length?' · '+t.types.join('+'):'')+'</option>').join('');
+}
+
 function openAddDeal(key){
   const a=A.find(x=>x.f+'_'+x.l===key);if(!a) return;
   const existing=document.getElementById('add-deal-overlay');
@@ -4091,6 +4136,13 @@ function openAddDeal(key){
         <button onclick="document.getElementById('add-deal-overlay').remove()" style="background:rgba(255,255,255,.12);border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center">✕</button>
       </div>
       <div style="padding:20px 22px;overflow-y:auto;flex:1">
+        <div style="margin-bottom:14px;background:#eef6ff;border:1.5px solid #b3d4f5;border-radius:8px;padding:10px 12px">
+          <div style="font-size:10px;font-weight:600;color:#185fa5;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Load template</div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <select id="nd-template" onchange="loadDealTemplate()" style="flex:1;height:30px;border:1.5px solid #b3d4f5;border-radius:6px;font-size:12px;font-family:inherit;background:#fff;color:#185fa5;padding:0 8px;outline:none"><option value="">— select a template —</option></select>
+            <button onclick="saveDealAsTemplate()" style="height:30px;padding:0 10px;background:#185fa5;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap"><i class="ti ti-bookmark" style="font-size:10px"></i> Save current</button>
+          </div>
+        </div>
         <div style="margin-bottom:12px">
           <div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Deal / Company Name *</div>
           <input id="nd-name" style="width:100%;height:34px;padding:0 11px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none" placeholder="">
@@ -4158,6 +4210,7 @@ function openAddDeal(key){
       </div>
     </div>`;
   document.body.appendChild(ov);
+  rebuildTemplateDropdown();
   setTimeout(()=>document.getElementById('nd-name').focus(),100);
 }
 
