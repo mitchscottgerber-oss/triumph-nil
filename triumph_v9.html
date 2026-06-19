@@ -1997,11 +1997,16 @@ function rAnnual(list,filterMos){
           const moKey=mo+'_'+yr;
           const activeExp=nilMoExp[idx];
           const isOpen=activeExp&&activeExp===moKey;
-          if(!s||s.a===0) return '<td class="'+(iC?'curbg':'')+'" style="'+bg+';cursor:pointer" onclick="event.stopPropagation();startGridEdit(this,'+idx+',\''+mo+'\','+yr+')"><span style="color:#e5e5ea">—</span></td>';
-          return '<td class="'+(iC?'curbg':'')+'" style="'+bg+';cursor:text;'+(isOpen?'outline:2px solid #2980b9;outline-offset:-2px;border-radius:3px;':'')+'">'
-            +'<div style="font-size:11.5px;font-weight:'+(isOpen?'700':'500')+(s.p?';color:#8e8e93':'')+';cursor:pointer" onclick="event.stopPropagation();startGridEdit(this.closest(\'td\'),'+idx+',\''+mo+'\','+yr+')">'+f(s.a)+'</div>'
+          const hasNILShortfall=(s&&s.shortfall&&s.shortfall>0)||false;
+          const cellBgNIL=hasNILShortfall?'background:#fffbe6!important':'background:#eef6ff!important';
+          const cellBorderNIL=isOpen?(hasNILShortfall?'outline:2px solid #f59e0b;outline-offset:-2px;border-radius:3px;':'outline:2px solid #2980b9;outline-offset:-2px;border-radius:3px;'):'';
+          const detailColor=hasNILShortfall?'#854f0b':'#2980b9';
+          const detailLabel=isOpen?'▲ close':(hasNILShortfall?'▾ RS moved':'▾ detail');
+          if(!s||s.a===0) return '<td class="'+(iC?'curbg':'')+'" style="'+cellBgNIL+';cursor:pointer" onclick="event.stopPropagation();startGridEdit(this,'+idx+',\''+mo+'\','+yr+')"><span style="color:#e5e5ea">—</span></td>';
+          return '<td class="'+(iC?'curbg':'')+'" style="'+cellBgNIL+';cursor:text;'+cellBorderNIL+'">'  
+            +'<div style="font-size:11.5px;font-weight:'+(isOpen?'700':'500')+(s.p?';color:#8e8e93':'')+(hasNILShortfall?';color:#854f0b':'')+'!important;cursor:pointer" onclick="event.stopPropagation();startGridEdit(this.closest(\'td\'),'+idx+',\''+mo+'\','+yr+')">'+f(s.a)+'</div>'
             +(s.p?'<div class="mc-paid-badge">✓</div>':'')
-            +'<div style="font-size:8px;color:#2980b9;cursor:pointer;margin-top:1px" onclick="event.stopPropagation();openMonthExpand('+idx+',\''+mo+'\','+yr+')">'+( isOpen?'▲ close':'▾ detail')+'</div>'
+            +'<div style="font-size:8px;color:'+detailColor+';cursor:pointer;margin-top:1px;font-weight:'+(hasNILShortfall?'600':'400')+'" onclick="event.stopPropagation();openMonthExpand('+idx+',\''+mo+'\','+yr+')">'+detailLabel+'</div>'
           +'</td>';
         }).join('')+
         '<td style="background:#f9f9f9"></td>'+
@@ -2019,23 +2024,37 @@ function rAnnual(list,filterMos){
         const _wbExp=getWalletBanked(a);
         const bankedBefore=(_wbExp!==null?_wbExp:a.banked)-priorPaid;
         const bankedAfter=bankedBefore+expAmt;
+        const expShortfall=expSch?expSch.shortfall||0:0;
+        const hasShortfall=expShortfall>0;
+        const expandBg=hasShortfall?'#fffde8':'#f0f6ff';
+        const expandBorder=hasShortfall?'#f0c860':'#b3d4f5';
         const srcLabel=expMo+' '+expYr+' — source of funds';
-        html+='<tr id="'+nilExpId+'" style=""><td colspan="'+(totalCols+1)+'" style="padding:0;border-bottom:0.5px solid #b3d4f5">'
-          +'<div style="display:flex;gap:0;background:#f0f6ff;border-top:0.5px solid #b3d4f5">'
-            +'<div style="flex:1;min-width:0;padding:10px 18px 12px 18px;border-right:0.5px solid #b3d4f5">'
-              +'<div style="font-size:9px;font-weight:600;color:#2980b9;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">'+srcLabel+'</div>'
+        const sfInputId='nil-sf-'+idx+'-'+expMo+'-'+expYr;
+        html+='<tr id="'+nilExpId+'" style=""><td colspan="'+(totalCols+1)+'" style="padding:0;border-bottom:0.5px solid '+expandBorder+'">'
+          +'<div style="display:flex;gap:0;background:'+expandBg+';border-top:0.5px solid '+expandBorder+'">'
+            +'<div style="flex:1;min-width:0;padding:10px 18px 12px 18px;border-right:0.5px solid '+expandBorder+'">'
+              +'<div style="font-size:9px;font-weight:600;color:'+(hasShortfall?'#854f0b':'#2980b9')+';text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">'+srcLabel+'</div>'
               +(expAmt>0
                 ?'<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:0.5px solid rgba(41,128,185,.15);font-size:11px"><span style="color:#3c3c43">NIL payment</span><span style="color:#1d9e75;font-weight:600">'+f(expAmt)+'</span></div>'
+                +(hasShortfall?'<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:0.5px solid rgba(133,79,11,.2);font-size:11px"><span style="color:#7B1A1A">Covered by RS</span><span style="color:#7B1A1A;font-weight:600">'+f(expShortfall)+'</span></div>':'')
                 +'<div style="display:flex;justify-content:space-between;padding:5px 0 0;font-size:11px;font-weight:600"><span>Total paid in '+expMo+'</span><span style="color:#1d9e75">'+f(expAmt)+'</span></div>'
                 :'<div style="font-size:11px;color:#8e8e93">No payment this month</div>')
             +'</div>'
-            +'<div style="flex:1;min-width:0;padding:10px 18px 12px;border-right:0.5px solid #b3d4f5">'
-              +'<div style="font-size:9px;font-weight:600;color:#2980b9;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Running balance</div>'
+            +'<div style="flex:1;min-width:0;padding:10px 18px 12px;border-right:0.5px solid '+expandBorder+'">'
+              +'<div style="font-size:9px;font-weight:600;color:'+(hasShortfall?'#854f0b':'#2980b9')+';text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Running balance</div>'
               +'<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:0.5px solid rgba(41,128,185,.15);font-size:11px"><span style="color:#3c3c43">Banked entering '+expMo+'</span><span style="color:#b7791f;font-weight:600">'+f(Math.max(0,bankedBefore))+'</span></div>'
               +'<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:0.5px solid rgba(41,128,185,.15);font-size:11px"><span style="color:#3c3c43">'+expMo+' payment</span><span style="color:#1d9e75;font-weight:600">+'+f(expAmt)+'</span></div>'
               +'<div style="display:flex;justify-content:space-between;padding:5px 0 0;font-size:11px;font-weight:600"><span>Banked after '+expMo+'</span><span style="color:#1d9e75">'+f(Math.max(0,bankedAfter))+'</span></div>'
             +'</div>'
-            +'<div style="width:48px;flex-shrink:0"></div>'
+            +'<div style="flex:1;min-width:0;padding:10px 18px 12px">'
+              +'<div style="font-size:9px;font-weight:600;color:#7B1A1A;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">RS shortfall covered</div>'
+              +'<div style="font-size:11px;color:#8e8e93;margin-bottom:7px">How much of '+expMo+' NIL came from RS?</div>'
+              +'<div style="display:flex;align-items:center;gap:6px">'
+                +'<input id="'+sfInputId+'" type="number" min="0" value="'+expShortfall+'" placeholder="0" style="flex:1;height:28px;font-size:12px;font-weight:600;border:1.5px solid #f59e0b;border-radius:5px;padding:0 7px;text-align:right;font-family:inherit;outline:none;color:#7B1A1A;background:#fffbe6">'
+                +'<button onclick="(function(){var v=parseFloat(document.getElementById(\''+sfInputId+'\').value)||0;saveRSShortfall('+idx+',\''+expMo+'\','+parseInt(expYr)+',v);})()" style="height:28px;padding:0 11px;background:#7B1A1A;color:#fff;border:none;border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Save</button>'
+              +'</div>'
+              +'<div style="font-size:9px;color:#854f0b;margin-top:6px">Syncs to RS tab · cell turns gold</div>'
+            +'</div>'
           +'</div>'
         +'</td></tr>';
       } else {
