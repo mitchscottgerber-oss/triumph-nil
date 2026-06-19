@@ -1880,7 +1880,9 @@ function rAnnual(list,filterMos){
       const label=mo+' \''+(String(yr).slice(2));
       return'<th class="'+(isCur?'cur':'')+'" style="min-width:78px;background:'+(isCur?'#fffbe6':'#fff')+'!important;color:'+(isCur?'#b7791f':'#8e8e93')+'!important;">'
         +'<div>'+label+'</div>'
-        +(moNIL[i]>0?'<div style="font-size:8px;color:#1d9e75;font-weight:500;margin-top:1px">'+f(moNIL[i])+'</div>':'')
+        +(rowView==='rs'
+          ?(moRS[i]>0?'<div style="font-size:8px;color:#c0392b;font-weight:500;margin-top:1px">'+f(moRS[i])+'</div>':'')
+          :(moNIL[i]>0?'<div style="font-size:8px;color:#1d9e75;font-weight:500;margin-top:1px">'+f(moNIL[i])+'</div>':''))
       +'</th>';
     }).join('')
     +'<th style="min-width:36px;background:#f9f9f9;cursor:pointer;text-align:center" onclick="toggleFutureYears()" title="'+(showFutureYears?'Collapse 2027–2028':'Expand to see 2027–2028')+'">'
