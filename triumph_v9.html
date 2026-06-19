@@ -1830,6 +1830,8 @@ function rAnnual(list,filterMos){
   let html='<thead><tr>'
     +'<th style="text-align:left;min-width:140px;position:sticky;left:0;z-index:3;background:#f9f9f9">Athlete</th>'
 
+    +'<th style="text-align:right;min-width:90px;background:#eef6ff;color:#2980b9">NIL Total</th>'
+    +'<th style="text-align:right;min-width:90px;background:#fff0f3;color:#c0392b">RS Total</th>'
     +'<th style="text-align:right;min-width:90px;background:#e8f8f2;color:#1d9e75">Banked</th>'
     +'<th style="text-align:right;min-width:110px;background:#f0ebff;color:#8e44ad;cursor:pointer" title="Click any cell to expand detail">Money Owed ▾</th>'
     +cols.map(({mo,yr},i)=>{
@@ -1840,8 +1842,6 @@ function rAnnual(list,filterMos){
         +(moNIL[i]>0?'<div style="font-size:8px;color:#1d9e75;font-weight:500;margin-top:1px">'+f(moNIL[i])+'</div>':'')
       +'</th>';
     }).join('')
-    +'<th style="text-align:right;min-width:90px;background:#eef6ff;color:#2980b9">NIL Total</th>'
-    +'<th style="text-align:right;min-width:90px;background:#fff0f3;color:#c0392b">RS Total</th>'
     +'<th style="min-width:36px;background:#f9f9f9;cursor:pointer;text-align:center" onclick="toggleFutureYears()" title="'+(showFutureYears?'Collapse 2027–2028':'Expand to see 2027–2028')+'">'
       +'<span style="font-size:11px;color:#8e8e93;font-weight:600">'+(showFutureYears?'◀':'▶')+'</span>'
     +'</th>'
@@ -4491,7 +4491,12 @@ function buildPipeline(){
 
   const cols=PL_STAGES.map(function(stage){
     const stageFiltered=filtered.filter(function(p){return p.stage===stage;});
-    const cards=stageFiltered;
+    const cards=stageFiltered.slice().sort(function(a,b){
+      if(a.event_date&&b.event_date) return a.event_date<b.event_date?-1:a.event_date>b.event_date?1:0;
+      if(a.event_date) return -1;
+      if(b.event_date) return 1;
+      return 0;
+    });
     const sc=PL_STAGE_COLORS[stage];
     const showConfirm=['Active'].includes(stage);
     const showCleared=['Active'].includes(stage);
@@ -5431,14 +5436,12 @@ function togglePlannerCo(key){
 }
 
 async function savePlannerState(){
-  const payload={slots:JSON.stringify(plannerSlots),hidden:JSON.stringify([...plannerHidden])};
   try{
-    // Shared state — upsert single row keyed 'shared'
     await sb.from('planner_state').upsert({id:'shared',slots:JSON.stringify(plannerSlots),hidden:JSON.stringify([...plannerHidden])},{onConflict:'id'});
   }catch(e){
-    // Fallback to localStorage if table doesn't exist yet
     try{localStorage.setItem('triumphPlannerSlots',JSON.stringify(plannerSlots));localStorage.setItem('triumphPlannerHidden',JSON.stringify([...plannerHidden]));}catch(le){}
   }
+  try{localStorage.setItem('triumphPlannerCollapsed',JSON.stringify(plannerCollapsed));}catch(e){}
 }
 async function loadPlannerState(){
   try{
@@ -5446,12 +5449,12 @@ async function loadPlannerState(){
     if(data&&!error){
       if(data.slots) plannerSlots=JSON.parse(data.slots);
       if(data.hidden) plannerHidden=new Set(JSON.parse(data.hidden));
-      return;
     }
-  }catch(e){}
-  // Fallback to localStorage
-  try{const s=localStorage.getItem('triumphPlannerSlots');if(s) plannerSlots=JSON.parse(s);}catch(e){}
-  try{const h=localStorage.getItem('triumphPlannerHidden');if(h) plannerHidden=new Set(JSON.parse(h));}catch(e){}
+  }catch(e){
+    try{const s=localStorage.getItem('triumphPlannerSlots');if(s) plannerSlots=JSON.parse(s);}catch(e){}
+    try{const h=localStorage.getItem('triumphPlannerHidden');if(h) plannerHidden=new Set(JSON.parse(h));}catch(e){}
+  }
+  try{const c=localStorage.getItem('triumphPlannerCollapsed');if(c) plannerCollapsed=JSON.parse(c);}catch(e){}
 }
 
 function exportPlannerBoard(){
