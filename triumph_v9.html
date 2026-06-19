@@ -2794,6 +2794,7 @@ function bWallets(a){
             +((d.types||[]).includes('appearance')?'<span title="Appearance" style="font-size:13px;color:#2980b9"><i class="ti ti-users"></i></span>':'')
             +((d.types||[]).includes('content')?'<span title="Content Creation" style="font-size:13px;color:#8e44ad"><i class="ti ti-video"></i></span>':'')
             +((d.types||[]).includes('autograph')?'<span title="Autograph Signing" style="font-size:13px;color:#b7791f"><i class="ti ti-signature"></i></span>':'')
+            +((d.types||[]).includes('billboard')?'<span title="Billboard" style="font-size:13px;color:#0369a1"><i class="ti ti-ad-2"></i></span>':'')
             +(d.pow?'<span style="font-size:10px;background:#e8f8f0;color:#1d9e75;padding:2px 7px;border-radius:5px;font-weight:600;display:flex;align-items:center;gap:3px"><i class="ti ti-paperclip" style="font-size:9px"></i> Proof</span>':'')
             +(d.completed?'<span style="font-size:10px;background:#e8f8f0;color:#1d9e75;padding:2px 7px;border-radius:5px;font-weight:600">✓ Done</span>':'')
             +'<span class="'+statusCfg.cls+'" style="cursor:pointer;display:flex;align-items:center;gap:3px" onclick="cycleDealStatus(\''+key+'\','+di+')" title="Click to change status">'
@@ -2839,6 +2840,7 @@ function openEditDeal(key,di){
     {v:'appearance',icon:'ti-users',color:'#2980b9',label:'Appearance'},
     {v:'content',icon:'ti-video',color:'#8e44ad',label:'Content Creation'},
     {v:'autograph',icon:'ti-signature',color:'#b7791f',label:'Autograph Signing'},
+    {v:'billboard',icon:'ti-ad-2',color:'#0369a1',label:'Billboard'},
   ];
 
   ov.innerHTML=`<div style="background:#fff;border-radius:18px;width:560px;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.25);overflow:hidden">
@@ -4122,6 +4124,9 @@ function openAddDeal(key){
             <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:9px 12px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:12px;font-weight:500">
               <input type="checkbox" name="nd-type" value="autograph" style="cursor:pointer"> <i class="ti ti-signature" style="font-size:14px;color:#b7791f"></i> Autograph Signing
             </label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;border:1.5px solid #e5e5ea;border-radius:8px;background:#fff">
+              <input type="checkbox" name="nd-type" value="billboard" style="cursor:pointer"> <i class="ti ti-ad-2" style="font-size:14px;color:#0369a1"></i> Billboard
+            </label>
           </div>
         </div>
         <div style="margin-bottom:12px"><div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Status</div>
@@ -4363,7 +4368,8 @@ function bReceipt(a,mo){
           social:'<i class="ti ti-brand-instagram" style="color:#e1306c;font-size:10px"></i>',
           appearance:'<i class="ti ti-users" style="color:#2980b9;font-size:10px"></i>',
           content:'<i class="ti ti-video" style="color:#8e44ad;font-size:10px"></i>',
-          autograph:'<i class="ti ti-signature" style="color:#b7791f;font-size:10px"></i>'
+          autograph:'<i class="ti ti-signature" style="color:#b7791f;font-size:10px"></i>',
+          billboard:'<i class="ti ti-ad-2" style="color:#0369a1;font-size:10px"></i>'
         }[t]||'')).join(' ');
         const nilgoStatus=deal?.status==='approved'
           ?'<span style="font-size:10px;color:#1d9e75;font-weight:600"><i class="ti ti-check" style="font-size:9px"></i> NILGo Approved</span>'
