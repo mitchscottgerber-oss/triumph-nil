@@ -4136,11 +4136,11 @@ function openAddDeal(key){
         <button onclick="document.getElementById('add-deal-overlay').remove()" style="background:rgba(255,255,255,.12);border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center">✕</button>
       </div>
       <div style="padding:20px 22px;overflow-y:auto;flex:1">
-        <div style="margin-bottom:14px;background:#eef6ff;border:1.5px solid #b3d4f5;border-radius:8px;padding:10px 12px">
+        <div style="margin-bottom:14px;background:#eef6ff;border:1.5px solid #b3d4f5;border-radius:8px;padding:10px 12px;box-sizing:border-box;overflow:hidden">
           <div style="font-size:10px;font-weight:600;color:#185fa5;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Load template</div>
-          <div style="display:flex;gap:6px;align-items:center">
-            <select id="nd-template" onchange="loadDealTemplate()" style="flex:1;height:30px;border:1.5px solid #b3d4f5;border-radius:6px;font-size:12px;font-family:inherit;background:#fff;color:#185fa5;padding:0 8px;outline:none"><option value="">— select a template —</option></select>
-            <button onclick="saveDealAsTemplate()" style="height:30px;padding:0 10px;background:#185fa5;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap"><i class="ti ti-bookmark" style="font-size:10px"></i> Save current</button>
+          <div style="display:flex;gap:6px;align-items:center;min-width:0">
+            <select id="nd-template" onchange="loadDealTemplate()" style="flex:1;min-width:0;height:30px;border:1.5px solid #b3d4f5;border-radius:6px;font-size:12px;font-family:inherit;background:#fff;color:#185fa5;padding:0 8px;outline:none;max-width:calc(100% - 120px)"><option value="">— select a template —</option></select>
+            <button onclick="saveDealAsTemplate()" style="flex-shrink:0;height:30px;padding:0 10px;background:#185fa5;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap"><i class="ti ti-bookmark" style="font-size:10px"></i> Save current</button>
           </div>
         </div>
         <div style="margin-bottom:12px">
