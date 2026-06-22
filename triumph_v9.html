@@ -2524,14 +2524,16 @@ async function saveEditAthlete(key){
 
     const schedRows=editMonths2.map(({mo:m,yr})=>{
       const s=a.sch.find(x=>x.mo===m&&(x.yr||2026)===yr);
-      const bkEdit=parseFloat(document.getElementById('em-bk-'+m+'_'+yr)?.value)||null;
-      return{athlete_id:a.id,month:m,year:yr,
+      const bkRaw=document.getElementById('em-bk-'+m+'_'+yr)?.value;
+      const bkEdit=bkRaw?parseFloat(bkRaw)||null:null;
+      const row={athlete_id:a.id,month:m,year:yr,
         amount:s?.a||0,is_paid:s?.p||false,sources:s?.s||[],
-        nil_cleared:s?.cleared||0,shortfall:s?.shortfall||0,rs_paid:s?.rs_paid||false,
-        banked_balance:bkEdit};
+        nil_cleared:s?.cleared||0,shortfall:s?.shortfall||0,rs_paid:s?.rs_paid||false};
+      if(bkEdit!==null) row.banked_balance=bkEdit;
+      return row;
     });
     const {error:se}=await sb.from('payment_schedule').upsert(schedRows,{onConflict:'athlete_id,month,year'});
-    if(se) throw se;
+    if(se){console.error('schedule upsert:',se);throw new Error(se.message||'Schedule save failed');}
 
     const rsRows=editMonths2.map(({mo:m,yr})=>({
       athlete_id:a.id,month:m,year:yr,
@@ -2547,7 +2549,9 @@ async function saveEditAthlete(key){
     rAnnual(list);
     syncStatus('Saved ✓');
   }catch(e){
-    syncStatus('Save failed: '+e.message,false);
+    console.error('saveEditAthlete:',e);
+    syncStatus('Save failed: '+(e.message||JSON.stringify(e)),false);
+    alert('Save failed: '+(e.message||JSON.stringify(e)));
   }
 }
 
