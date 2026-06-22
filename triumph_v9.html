@@ -3032,6 +3032,22 @@ function openEditDeal(key,di){
         <div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Activation Notes</div>
         <textarea id="ed-notes" style="width:100%;height:52px;padding:7px 10px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:12px;background:#f9f9f9;color:#1d1d1f;font-family:inherit;outline:none;resize:none;line-height:1.4;box-sizing:border-box" placeholder="Notes about this activation...">${d.notes||''}</textarea>
       </div>
+      ${(d.hist&&d.hist.length)?`
+      <div>
+        <div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Payment history <span style="font-size:9px;font-weight:400;color:#aeaeb2">(edit or delete entries)</span></div>
+        <div id="ed-hist-list">
+          ${d.hist.map((h,hi)=>`
+          <div id="ed-hist-row-${hi}" style="display:flex;align-items:center;gap:8px;padding:6px 10px;border:1.5px solid #e5e5ea;border-radius:8px;margin-bottom:5px;background:#f9f9f9">
+            <div style="font-size:12px;font-weight:500;color:#1d1d1f;min-width:70px">${h.mo} ${h.yr||2026}</div>
+            <div style="display:flex;align-items:center;border:1.5px solid #b3d4f5;border-radius:6px;background:#eef6ff;overflow:hidden;height:28px;flex:1">
+              <span style="padding:0 8px;font-size:12px;color:#185fa5;border-right:1px solid #b3d4f5;height:100%;display:flex;align-items:center">$</span>
+              <input type="number" class="ed-hist-amt" data-hi="${hi}" value="${h.amt||0}" min="0" style="border:none;background:transparent;flex:1;height:100%;padding:0 8px;font-size:12px;font-family:inherit;outline:none;color:#185fa5">
+            </div>
+            <button onclick="document.getElementById('ed-hist-row-${hi}').remove()" style="height:28px;width:28px;background:#fff0f3;border:none;border-radius:6px;cursor:pointer;color:#e34040;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-trash" style="font-size:13px"></i></button>
+          </div>`).join('')}
+        </div>
+      </div>`:''
+      }
     </div>
     <div style="padding:14px 20px;border-top:1px solid #f2f2f7;display:flex;justify-content:space-between;align-items:center;background:#fafafa;flex-shrink:0">
       <button onclick="document.getElementById('edit-deal-overlay').remove()" style="height:36px;padding:0 18px;border-radius:8px;border:1.5px solid #e5e5ea;background:#fff;color:#1d1d1f;-webkit-text-fill-color:#1d1d1f;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Cancel</button>
@@ -3062,6 +3078,20 @@ function saveEditDeal(key,di){
   d.completed=document.getElementById('ed-completed')?.checked||false;
   d.status=document.querySelector('input[name="ed-status"]:checked')?.value||d.status||'pending';
   d.types=[...document.querySelectorAll('input[name="ed-type"]:checked')].map(el=>el.value);
+  // Save edited hist entries — rebuild from remaining rows
+  const histRows=[...document.querySelectorAll('.ed-hist-amt')];
+  if(histRows.length){
+    const newHist=[];
+    histRows.forEach(inp=>{
+      const hi=parseInt(inp.dataset.hi);
+      const orig=d.hist[hi];
+      if(orig&&document.getElementById('ed-hist-row-'+hi)){
+        const amt=parseFloat(inp.value)||0;
+        if(amt>0) newHist.push({mo:orig.mo,yr:orig.yr||2026,amt});
+      }
+    });
+    d.hist=newHist;
+  }
   saveDealsToSupabase(a);
   document.getElementById('edit-deal-overlay').remove();
   document.getElementById('tb').innerHTML=bWallets(a);
