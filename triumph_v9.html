@@ -7505,7 +7505,15 @@ document.addEventListener('click', function(e){
 
 function switchToMobile(){
   sessionStorage.setItem('forceMobile','1');
-  initMobile();
+  const app=document.getElementById('app');
+  const mob=document.getElementById('mobile-app');
+  if(app) app.style.setProperty('display','none','important');
+  if(mob){
+    mob.style.setProperty('display','flex','important');
+    mob.style.flexDirection='column';
+  }
+  renderMobAthletes();
+  mobileNav('athletes');
 }
 
 // ===== MOBILE =====
