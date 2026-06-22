@@ -677,6 +677,7 @@ select.aa-inp{appearance:auto}
         <button onclick="switchRole('activation')" id="sb-role-activation" style="flex:1;padding:4px 0;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;background:transparent;color:#8e8e93;-webkit-text-fill-color:#8e8e93">Activation</button>
       </div>
     </div>
+    <button onclick="switchToMobile()" style="margin:4px 10px 8px;padding:7px 12px;background:#f2f2f7;border:none;border-radius:8px;font-size:12px;font-weight:500;color:#8e8e93;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;width:calc(100% - 20px)"><i class="ti ti-device-mobile" style="font-size:14px"></i> Switch to Mobile</button>
     <div class="sb-user" id="sb-user-area"><div class="u-av" id="u-av">...</div><div style="flex:1"><div class="u-name" id="u-name">Loading...</div><div class="u-role" id="u-role">Triumph NIL</div></div><button onclick="doSignOut()" title="Sign out" style="background:none;border:none;cursor:pointer;color:#8e8e93;font-size:13px;padding:2px 4px;border-radius:4px;line-height:1"><i class="ti ti-logout"></i></button></div>
   </div>
 </div>
@@ -7489,7 +7490,6 @@ document.addEventListener('click', function(e){
 
 // Boot
 (async()=>{
-  // Force mobile immediately if param set — before anything else
   if(new URLSearchParams(window.location.search).get('mobile')==='1'){
     sessionStorage.setItem('forceMobile','1');
   }
@@ -7502,6 +7502,11 @@ document.addEventListener('click', function(e){
     nav('dash',document.getElementById('nav-dash'));
   }
 })();
+
+function switchToMobile(){
+  sessionStorage.setItem('forceMobile','1');
+  initMobile();
+}
 
 // ===== MOBILE =====
 function isMobile(){
