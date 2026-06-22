@@ -2303,9 +2303,39 @@ async function deleteAthlete(key){
 }
 
 // ===== MARK PAID MODAL (with shortfall tracking) =====
+function mpmSyncAmt(chk, scheduled){
+  // When checkbox toggled, set input to deal total or 0
+  const idx=chk.dataset.idx;
+  const inp=document.querySelector('.mpm-amt-inp[data-idx="'+idx+'"]');
+  if(!inp) return;
+  if(chk.checked){
+    // Auto-fill what's needed to cover remaining shortfall
+    const currentTotal=[...document.querySelectorAll('.mpm-deal-chk:checked')].reduce((s,c)=>{
+      const i=document.querySelector('.mpm-amt-inp[data-idx="'+c.dataset.idx+'"]');
+      return s+(i&&c!==chk?parseFloat(i.value)||0:0);
+    },0);
+    const remaining=Math.max(0,scheduled-currentTotal);
+    const max=parseFloat(inp.max)||0;
+    inp.value=Math.min(remaining,max).toFixed(2);
+  } else {
+    inp.value=0;
+  }
+  // Sync data-amt for total calculation
+  chk.dataset.amt=inp.value;
+  mpmUpdateTotals(scheduled);
+}
+
+function mpmSyncFromInput(inp, scheduled){
+  const chk=document.querySelector('.mpm-deal-chk[data-idx="'+inp.dataset.idx+'"]');
+  if(!chk) return;
+  const val=parseFloat(inp.value)||0;
+  chk.checked=val>0;
+  chk.dataset.amt=val;
+  mpmUpdateTotals(scheduled);
+}
+
 function mpmUpdateTotals(scheduled){
-  const checked=[...document.querySelectorAll('.mpm-deal-chk:checked')];
-  const total=checked.reduce((s,cb)=>s+parseFloat(cb.dataset.amt||0),0);
+  const total=[...document.querySelectorAll('.mpm-amt-inp')].reduce((s,inp)=>s+(parseFloat(inp.value)||0),0);
   const shortfall=Math.max(0,scheduled-total);
   const over=Math.max(0,total-scheduled);
   const totEl=document.getElementById('mpm-sel-total');
@@ -2348,14 +2378,17 @@ function openMarkPaidModal(key, mo){
         :noSub
         ?'<span style="font-size:9px;background:#f2f2f7;color:#6c6c70;padding:1px 6px;border-radius:4px;font-weight:500">No Submission Req.</span>'
         :'<span style="font-size:9px;background:#faeeda;color:#633806;padding:1px 6px;border-radius:4px;font-weight:500">Pending NILGo</span>';
-      return`<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid #e5e5ea;border-radius:8px;margin-bottom:6px;cursor:pointer" onclick="setTimeout(()=>mpmUpdateTotals(${s.a}),0)">
-        <input type="checkbox" class="mpm-deal-chk" data-amt="${d.t||0}" data-idx="${i}" style="width:16px;height:16px;cursor:pointer;accent-color:#185fa5">
+      return`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid #e5e5ea;border-radius:8px;margin-bottom:6px">
+        <input type="checkbox" class="mpm-deal-chk" data-amt="0" data-idx="${i}" style="width:16px;height:16px;cursor:pointer;accent-color:#185fa5" onchange="mpmSyncAmt(this,${s.a})">
         <div style="flex:1">
           <div style="font-size:13px;font-weight:500;color:#1d1d1f">${d.n}</div>
-          <div style="margin-top:2px;display:flex;align-items:center;gap:5px">${pill}</div>
+          <div style="margin-top:2px;display:flex;align-items:center;gap:5px">${pill}<span style="font-size:10px;color:#aeaeb2">Deal total: ${f(d.t||0)}</span></div>
         </div>
-        <div style="font-size:13px;font-weight:600;color:#1d1d1f">${f(d.t||0)}</div>
-      </label>`;
+        <div style="display:flex;align-items:center;border:1.5px solid #e5e5ea;border-radius:7px;overflow:hidden;height:30px;width:110px">
+          <span style="padding:0 7px;font-size:12px;color:#8e8e93;border-right:1px solid #e5e5ea;height:100%;display:flex;align-items:center">$</span>
+          <input type="number" class="mpm-amt-inp" data-idx="${i}" min="0" max="${d.t||0}" value="0" style="border:none;flex:1;height:100%;padding:0 6px;font-size:12px;font-family:inherit;outline:none;width:60px" oninput="mpmSyncFromInput(this,${s.a})">
+        </div>
+      </div>`;
     }).join('')
     :'<div style="padding:12px;text-align:center;color:#8e8e93;font-size:13px">No wallet deals yet — <a href="#" onclick="event.preventDefault();document.getElementById(\'mark-paid-overlay\').remove();sT(\'wallets\',\''+key+'\',null)" style="color:#185fa5">add deals in NILGo Wallets</a></div>';
   const ov=document.createElement('div');
@@ -2397,25 +2430,28 @@ async function confirmMarkPaid(key,mo,scheduled){
   const a=A.find(x=>x.f+'_'+x.l===key);if(!a) return;
   const s=a.sch.find(x=>x.mo===mo);if(!s) return;
   // Collect selected sources — save as flat [name, amt, name, amt] format
-  const checked=[...document.querySelectorAll('.mpm-deal-chk:checked')];
   const srcFlat=[];
-  checked.forEach(cb=>{
-    const d=a.deals[parseInt(cb.dataset.idx)];
-    if(d){srcFlat.push(d.n,f(d.t||0));}
+  let selTotal=0;
+  document.querySelectorAll('.mpm-amt-inp').forEach(inp=>{
+    const amt=parseFloat(inp.value)||0;
+    if(amt>0){
+      const d=a.deals[parseInt(inp.dataset.idx)];
+      if(d){srcFlat.push(d.n,f(amt));selTotal+=amt;}
+    }
   });
-  const selTotal=checked.reduce((t,cb)=>t+parseFloat(cb.dataset.amt||0),0);
+  const checked=[...document.querySelectorAll('.mpm-deal-chk:checked')];
   const shortfall=Math.max(0,(scheduled||s.a)-selTotal);
   s.p=true;
   s.cleared=selTotal||s.a;
   s.s=srcFlat;
   if(shortfall>0) s.shortfall=shortfall;
   a.paid=(a.paid||0)+s.a;
-  // Update wallet deal hist entries
-  checked.forEach(cb=>{
-    const d=a.deals[parseInt(cb.dataset.idx)];
-    if(d){
-      if(!d.hist) d.hist=[];
-      d.hist.push({mo,amt:d.t||0});
+  // Update wallet deal hist entries with actual amounts
+  document.querySelectorAll('.mpm-amt-inp').forEach(inp=>{
+    const amt=parseFloat(inp.value)||0;
+    if(amt>0){
+      const d=a.deals[parseInt(inp.dataset.idx)];
+      if(d){if(!d.hist) d.hist=[];d.hist.push({mo,amt});}
     }
   });
   if(checked.length>0) await saveDealsToSupabase(a);
