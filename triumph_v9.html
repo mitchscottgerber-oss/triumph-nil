@@ -7908,7 +7908,10 @@ function renderMobDash(){
   <!-- Athletes Screen -->
   <div id="mob-athletes" class="mob-screen" style="flex-direction:column;flex:1;overflow:hidden">
     <div style="background:#fff;padding:16px 16px 8px;border-bottom:0.5px solid #e5e5ea">
-      <div style="font-size:22px;font-weight:700;margin-bottom:10px">Athletes</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:22px;font-weight:700">Athletes</div>
+        <button onclick="toggleMobMenu()" style="background:none;border:none;cursor:pointer;padding:4px;color:#1d1d1f"><i class="ti ti-menu-2" style="font-size:26px"></i></button>
+      </div>
       <div style="display:flex;align-items:center;background:#f2f2f7;border-radius:10px;padding:8px 12px;gap:8px">
         <i class="ti ti-search" style="color:#8e8e93;font-size:15px"></i>
         <input type="text" placeholder="Search athlete..." oninput="renderMobAthletes(this.value)" style="border:none;background:transparent;flex:1;font-size:15px;outline:none;font-family:inherit">
@@ -7941,9 +7944,12 @@ function renderMobDash(){
 
   <!-- Companies Screen -->
   <div id="mob-companies" class="mob-screen" style="flex-direction:column;flex:1;overflow:hidden">
-    <div style="background:#fff;padding:16px;border-bottom:0.5px solid #e5e5ea;flex-shrink:0">
-      <div style="font-size:22px;font-weight:700;color:#1d1d1f">Companies</div>
-      <div style="font-size:12px;color:#8e8e93;margin-top:2px">Active pipeline — view only</div>
+    <div style="background:#fff;padding:16px;border-bottom:0.5px solid #e5e5ea;flex-shrink:0;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:22px;font-weight:700;color:#1d1d1f">Companies</div>
+        <div style="font-size:12px;color:#8e8e93;margin-top:2px">Active pipeline — view only</div>
+      </div>
+      <button onclick="toggleMobMenu()" style="background:none;border:none;cursor:pointer;padding:6px;color:#1d1d1f"><i class="ti ti-menu-2" style="font-size:24px"></i></button>
     </div>
     <div id="mob-companies-body" style="flex:1;overflow-y:auto;padding:12px"></div>
   </div>
@@ -7956,12 +7962,7 @@ function renderMobDash(){
     <div id="mob-dash-body" style="flex:1;overflow-y:auto"></div>
   </div>
 
-  <!-- Bottom Tab Bar -->
-  <div style="background:#fff;border-top:0.5px solid #e5e5ea;display:flex;padding:12px 0 max(20px,env(safe-area-inset-bottom));flex-shrink:0">
-    <button class="mob-tab on" id="mob-tab-athletes" onclick="mobileNav('athletes')"><i class="ti ti-users"></i><span>Athletes</span></button>
-    <button class="mob-tab" id="mob-tab-dashboard" onclick="mobileNav('dashboard')"><i class="ti ti-chart-bar"></i><span>Dashboard</span></button>
-    <button class="mob-tab" id="mob-tab-menu" onclick="toggleMobMenu()"><i class="ti ti-menu-2"></i><span>More</span></button>
-  </div>
+
   <!-- Side Menu Drawer -->
   <div id="mob-menu-overlay" onclick="toggleMobMenu()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:10001"></div>
   <div id="mob-menu-drawer" style="display:none;position:fixed;top:0;right:0;bottom:0;width:75%;max-width:280px;background:#fff;z-index:10002;flex-direction:column;box-shadow:-4px 0 20px rgba(0,0,0,.15)">
