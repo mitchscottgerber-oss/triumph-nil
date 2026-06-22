@@ -2,7 +2,7 @@
 <html lang="en" style="color-scheme:light">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <title>Triumph — NIL Payment Tracker</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -7867,8 +7867,8 @@ function renderMobDash(){
         <button class="mob-ptab" id="mob-ptab-stats" onclick="renderMobProfileTab('stats')" style="display:none">Stats <span style="font-size:8px;background:#f0ebff;color:#6d28d9;padding:1px 5px;border-radius:3px;margin-left:2px">Admin</span></button>
       </div>
     </div>
-    <div id="mob-prof-body" style="flex:1;overflow-y:auto;padding-bottom:60px"></div>
-    <div id="mob-send-bar" style="display:none;position:absolute;bottom:0;left:0;right:0;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:#fff;border-top:0.5px solid #e5e5ea">
+    <div id="mob-prof-body" style="flex:1;overflow-y:auto;padding-bottom:120px"></div>
+    <div id="mob-send-bar" style="display:none;position:absolute;bottom:0;left:0;right:0;padding:10px 14px calc(20px + env(safe-area-inset-bottom));background:#fff;border-top:0.5px solid #e5e5ea;box-sizing:border-box">
       <div style="display:flex;gap:8px">
         <button id="mob-send-jpeg" style="flex:1;height:44px;background:#1d1d1f;color:#fff;border:none;border-radius:12px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-family:inherit"><i class="ti ti-photo-down" style="font-size:16px"></i> Save Receipt</button>
         <button id="mob-send-pinned" style="flex:1;height:44px;background:#2980b9;color:#fff;border:none;border-radius:12px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-family:inherit"><i class="ti ti-message" style="font-size:16px"></i> Send Text</button>
