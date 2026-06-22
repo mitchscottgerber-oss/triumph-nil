@@ -2396,19 +2396,29 @@ function openMarkPaidModal(key, mo){
 async function confirmMarkPaid(key,mo,scheduled){
   const a=A.find(x=>x.f+'_'+x.l===key);if(!a) return;
   const s=a.sch.find(x=>x.mo===mo);if(!s) return;
-  // Collect selected sources
+  // Collect selected sources — save as flat [name, amt, name, amt] format
   const checked=[...document.querySelectorAll('.mpm-deal-chk:checked')];
-  const sources=checked.map(cb=>{
+  const srcFlat=[];
+  checked.forEach(cb=>{
     const d=a.deals[parseInt(cb.dataset.idx)];
-    return{name:d?d.n:'',amt:f(d?d.t:0)};
+    if(d){srcFlat.push(d.n,f(d.t||0));}
   });
   const selTotal=checked.reduce((t,cb)=>t+parseFloat(cb.dataset.amt||0),0);
   const shortfall=Math.max(0,(scheduled||s.a)-selTotal);
   s.p=true;
   s.cleared=selTotal||s.a;
-  s.s=sources;
+  s.s=srcFlat;
   if(shortfall>0) s.shortfall=shortfall;
   a.paid=(a.paid||0)+s.a;
+  // Update wallet deal hist entries
+  checked.forEach(cb=>{
+    const d=a.deals[parseInt(cb.dataset.idx)];
+    if(d){
+      if(!d.hist) d.hist=[];
+      d.hist.push({mo,amt:d.t||0});
+    }
+  });
+  if(checked.length>0) await saveDealsToSupabase(a);
   // Auto-log shortfall to RS if needed
   if(shortfall>0){
     const rsKey=a.f+'_'+a.l;
@@ -2419,7 +2429,7 @@ async function confirmMarkPaid(key,mo,scheduled){
   try{
     await sb.from('payment_schedule').upsert(
       {athlete_id:a.id,month:mo,year:s.yr||2026,amount:s.a,is_paid:true,
-       sources:sources,nil_cleared:s.cleared,shortfall:s.shortfall||0},
+       sources:srcFlat,nil_cleared:s.cleared,shortfall:s.shortfall||0},
       {onConflict:'athlete_id,month,year'}
     );
     await sb.from('athletes').update({paid_out:a.paid}).eq('id',a.id);
