@@ -7500,7 +7500,13 @@ document.addEventListener('click', function(e){
 })();
 
 // ===== MOBILE =====
-function isMobile(){ return new URLSearchParams(window.location.search).get('mobile')==='1'||window.innerWidth<=768||/iPhone|iPad|iPod|Android/i.test(navigator.userAgent); }
+function isMobile(){
+  if(new URLSearchParams(window.location.search).get('mobile')==='1') return true;
+  if(window.innerWidth<=1024) return true;
+  if(/iPhone|iPad|iPod|Android|Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) return true;
+  if(navigator.maxTouchPoints>1) return true;
+  return false;
+}
 
 let mobileAthlete=null;
 
