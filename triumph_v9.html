@@ -2313,7 +2313,7 @@ function mpmUpdateTotals(scheduled){
   const confirmBtn=document.getElementById('mpm-confirm-btn');
   if(totEl){
     if(shortfall>0){
-      totEl.innerHTML=(total>0?f(total):'$0.00')+' <span style="color:#d1d1d6;margin:0 4px">·</span><span style="font-size:11px;color:#c0392b">'+f(shortfall)+' short</span>';
+      totEl.innerHTML=(total>0?f(total)+' <span style="color:#d1d1d6;margin:0 4px">·</span>':'')+'<span style="font-size:11px;color:#c0392b">'+f(shortfall)+' short</span>';
       totEl.style.color='#c0392b';
     } else if(over>0){
       totEl.innerHTML=f(total)+' <span style="color:#d1d1d6;margin:0 4px">·</span><span style="font-size:11px;color:#b7791f">'+f(over)+' over</span>';
