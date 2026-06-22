@@ -7500,7 +7500,7 @@ document.addEventListener('click', function(e){
 })();
 
 // ===== MOBILE =====
-function isMobile(){ return window.innerWidth<=768||/iPhone|iPad|iPod|Android/i.test(navigator.userAgent); }
+function isMobile(){ return new URLSearchParams(window.location.search).get('mobile')==='1'||window.innerWidth<=768||/iPhone|iPad|iPod|Android/i.test(navigator.userAgent); }
 
 let mobileAthlete=null;
 
