@@ -1487,17 +1487,20 @@ let revShare={};
 function getRev(a,mo,yr){yr=yr||2026;const k=a.f+'_'+a.l;const rk=mo+'_'+yr;return(revShare[k]&&revShare[k][rk])||0;}
 function setRev(a,mo,amt,yr){yr=yr||2026;const k=a.f+'_'+a.l;if(!revShare[k])revShare[k]={};revShare[k][mo+'_'+yr]=amt;const key=k;setTimeout(()=>oProf(key),0);}
 function getWalletBanked(a, mo, yr){
-  // If a specific month is requested and we have a manual banked_balance for it, use that
+  // Per-month manual banked_balance takes priority
   if(mo){
     yr=yr||2026;
     const s=a.sch&&a.sch.find(x=>x.mo===mo&&(x.yr||2026)===yr);
     if(s&&s.banked_balance!=null) return s.banked_balance;
   }
-  // Sum all draws (hist) across cleared deals
+  // Banked = sum of remaining balance across all active wallet deals
   const deals=a.deals||[];
-  const cleared=deals.filter(d=>d.status==='cleared');
-  if(cleared.length===0) return null; // no cleared deals → fall back to manual banked
-  return cleared.reduce((s,d)=>s+((d.hist||[]).reduce((t,h)=>t+(h.amt||0),0)),0);
+  const active=deals.filter(d=>d.status!=='denied');
+  if(active.length===0) return null; // no deals → fall back to manual banked field
+  return active.reduce((s,d)=>{
+    const spent=(d.hist||[]).reduce((t,h)=>t+(h.amt||0),0);
+    return s+Math.max(0,(d.t||0)-spent);
+  },0);
 }
 
 function getRevYTD(a){
