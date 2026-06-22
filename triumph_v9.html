@@ -7538,6 +7538,39 @@ function initMobile(){
   mobileNav('athletes');
 }
 
+function toggleMobMenu(){
+  const overlay=document.getElementById('mob-menu-overlay');
+  const drawer=document.getElementById('mob-menu-drawer');
+  const open=drawer.style.display==='flex';
+  drawer.style.display=open?'none':'flex';
+  overlay.style.display=open?'none':'block';
+}
+
+function renderMobCompanies(){
+  const el=document.getElementById('mob-companies-body');
+  if(!el) return;
+  const active=['Evaluating','MSA Out','Active'];
+  const activePL=PL.filter(p=>active.includes(p.stage)).sort((a,b)=>{
+    const order=['Active','MSA Out','Evaluating'];
+    return order.indexOf(a.stage)-order.indexOf(b.stage);
+  });
+  if(!activePL.length){el.innerHTML='<div style="padding:40px;text-align:center;color:#8e8e93;font-size:14px">No active companies</div>';return;}
+  const stageColor={'Active':'#1d9e75','MSA Out':'#2980b9','Evaluating':'#f59e0b'};
+  el.innerHTML=activePL.map(p=>`
+    <div style="background:#fff;border-radius:12px;border:0.5px solid #e5e5ea;padding:14px 16px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="font-size:15px;font-weight:700;color:#1d1d1f">${p.name}</div>
+        <span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px;background:${stageColor[p.stage]+'22'};color:${stageColor[p.stage]}">${p.stage}</span>
+      </div>
+      ${p.activation_name?`<div style="font-size:12px;color:#8e8e93;margin-top:3px">${p.activation_name}</div>`:''}
+      <div style="display:flex;gap:12px;margin-top:10px">
+        ${p.event_date?`<div style="font-size:11px;color:#b7791f;font-weight:600">${p.event_date}</div>`:''}
+        ${p.athlete_fee>0?`<div style="font-size:11px;color:#1d1d1f;font-weight:600">${f(p.athlete_fee)}/athlete</div>`:''}
+        ${p.athletes>0?`<div style="font-size:11px;color:#8e8e93">${p.athletes} athletes</div>`:''}
+      </div>
+    </div>`).join('');
+}
+
 function mobileNav(tab){
   document.querySelectorAll('.mob-tab').forEach(t=>t.classList.remove('on'));
   const el=document.getElementById('mob-tab-'+tab);
@@ -7546,6 +7579,7 @@ function mobileNav(tab){
   document.getElementById('mob-'+tab).style.display='flex';
   if(tab==='athletes') renderMobAthletes();
   if(tab==='dashboard') renderMobDash();
+  if(tab==='companies') renderMobCompanies();
 }
 
 function renderMobAthletes(q=''){
@@ -7905,6 +7939,15 @@ function renderMobDash(){
     </div>
   </div>
 
+  <!-- Companies Screen -->
+  <div id="mob-companies" class="mob-screen" style="flex-direction:column;flex:1;overflow:hidden">
+    <div style="background:#fff;padding:16px;border-bottom:0.5px solid #e5e5ea;flex-shrink:0">
+      <div style="font-size:22px;font-weight:700;color:#1d1d1f">Companies</div>
+      <div style="font-size:12px;color:#8e8e93;margin-top:2px">Active pipeline — view only</div>
+    </div>
+    <div id="mob-companies-body" style="flex:1;overflow-y:auto;padding:12px"></div>
+  </div>
+
   <!-- Dashboard Screen -->
   <div id="mob-dashboard" class="mob-screen" style="flex-direction:column;flex:1;overflow:hidden">
     <div style="background:#fff;padding:16px 16px 12px;border-bottom:0.5px solid #e5e5ea">
@@ -7914,9 +7957,22 @@ function renderMobDash(){
   </div>
 
   <!-- Bottom Tab Bar -->
-  <div style="background:#fff;border-top:0.5px solid #e5e5ea;display:flex;padding:8px 0 calc(8px + env(safe-area-inset-bottom));flex-shrink:0">
+  <div style="background:#fff;border-top:0.5px solid #e5e5ea;display:flex;padding:12px 0 max(20px,env(safe-area-inset-bottom));flex-shrink:0">
     <button class="mob-tab on" id="mob-tab-athletes" onclick="mobileNav('athletes')"><i class="ti ti-users"></i><span>Athletes</span></button>
     <button class="mob-tab" id="mob-tab-dashboard" onclick="mobileNav('dashboard')"><i class="ti ti-chart-bar"></i><span>Dashboard</span></button>
+    <button class="mob-tab" id="mob-tab-menu" onclick="toggleMobMenu()"><i class="ti ti-menu-2"></i><span>More</span></button>
+  </div>
+  <!-- Side Menu Drawer -->
+  <div id="mob-menu-overlay" onclick="toggleMobMenu()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:10001"></div>
+  <div id="mob-menu-drawer" style="display:none;position:fixed;top:0;right:0;bottom:0;width:75%;max-width:280px;background:#fff;z-index:10002;flex-direction:column;box-shadow:-4px 0 20px rgba(0,0,0,.15)">
+    <div style="padding:20px 20px 12px;border-bottom:0.5px solid #e5e5ea;display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:18px;font-weight:700;color:#1d1d1f">Menu</div>
+      <button onclick="toggleMobMenu()" style="background:none;border:none;font-size:22px;color:#8e8e93;cursor:pointer;padding:4px"><i class="ti ti-x"></i></button>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:12px">
+      <button onclick="mobileNav('athletes');toggleMobMenu()" style="width:100%;display:flex;align-items:center;gap:12px;padding:14px;border:none;background:#f9f9f9;border-radius:12px;margin-bottom:8px;cursor:pointer;font-family:inherit;font-size:15px;font-weight:600;color:#1d1d1f"><i class="ti ti-users" style="font-size:20px;color:#2980b9"></i> Athletes</button>
+      <button onclick="mobileNav('companies');toggleMobMenu()" style="width:100%;display:flex;align-items:center;gap:12px;padding:14px;border:none;background:#f9f9f9;border-radius:12px;margin-bottom:8px;cursor:pointer;font-family:inherit;font-size:15px;font-weight:600;color:#1d1d1f"><i class="ti ti-building-store" style="font-size:20px;color:#1d9e75"></i> Companies</button>
+    </div>
   </div>
 </div>
 
