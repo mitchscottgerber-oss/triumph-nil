@@ -4112,6 +4112,34 @@ function deleteTemplate(idx){
   rebuildTemplateDropdown();
 }
 
+function manageTemplates(){
+  const existing=document.getElementById('tpl-manage-overlay');
+  if(existing){existing.remove();return;}
+  const templates=getDealTemplates();
+  const ov=document.createElement('div');
+  ov.id='tpl-manage-overlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1300;display:flex;align-items:center;justify-content:center';
+  ov.innerHTML=`<div style="background:#fff;border-radius:14px;width:360px;max-height:70vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="background:#1d1d1f;padding:14px 18px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:14px;font-weight:600;color:#fff">Manage templates</span>
+      <button onclick="document.getElementById('tpl-manage-overlay').remove()" style="background:rgba(255,255,255,.12);border:none;border-radius:6px;width:26px;height:26px;cursor:pointer;color:#fff;font-size:14px">✕</button>
+    </div>
+    <div style="padding:14px;overflow-y:auto;flex:1">
+      ${templates.length===0
+        ?'<div style="text-align:center;padding:24px;color:#8e8e93;font-size:13px">No templates saved yet</div>'
+        :templates.map((t,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 10px;border:0.5px solid #e5e5ea;border-radius:8px;margin-bottom:6px">
+          <div>
+            <div style="font-size:13px;font-weight:500;color:#1d1d1f">${t.name}</div>
+            <div style="font-size:10px;color:#8e8e93;margin-top:2px">${t.total?'$'+parseFloat(t.total).toLocaleString():'No total'}${t.types?.length?' · '+t.types.join(', '):''}</div>
+          </div>
+          <button onclick="deleteTemplate(${i});document.getElementById('tpl-manage-overlay').remove();manageTemplates()" style="height:26px;padding:0 10px;background:#fff0f3;color:#e34040;border:1px solid #f5c6d0;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit">Delete</button>
+        </div>`).join('')
+      }
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+
 function rebuildTemplateDropdown(){
   const sel=document.getElementById('nd-template');if(!sel) return;
   const templates=getDealTemplates();
@@ -4140,7 +4168,8 @@ function openAddDeal(key){
           <div style="font-size:10px;font-weight:600;color:#185fa5;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Load template</div>
           <div style="display:flex;gap:6px;align-items:center;min-width:0">
             <select id="nd-template" onchange="loadDealTemplate()" style="flex:1;min-width:0;height:30px;border:1.5px solid #b3d4f5;border-radius:6px;font-size:12px;font-family:inherit;background:#fff;color:#185fa5;padding:0 8px;outline:none;max-width:calc(100% - 120px)"><option value="">— select a template —</option></select>
-            <button onclick="saveDealAsTemplate()" style="flex-shrink:0;height:30px;padding:0 10px;background:#185fa5;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap"><i class="ti ti-bookmark" style="font-size:10px"></i> Save current</button>
+            <button onclick="saveDealAsTemplate()" style="flex-shrink:0;height:30px;padding:0 10px;background:#185fa5;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap"><i class="ti ti-bookmark" style="font-size:10px"></i> Save</button>
+            <button onclick="manageTemplates()" style="flex-shrink:0;height:30px;padding:0 8px;background:transparent;color:#185fa5;border:1.5px solid #b3d4f5;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Manage</button>
           </div>
         </div>
         <div style="margin-bottom:12px">
@@ -4791,6 +4820,38 @@ async function loadPipeline(){
       log:Array.isArray(r.log)?r.log:(r.log?JSON.parse(r.log):[])
     }));
   }catch(e){console.warn('Pipeline load:',e);}
+  // Sync: ensure any pipeline entry in active stages exists in CO
+  await syncPipelineToCO();
+}
+
+async function syncPipelineToCO(){
+  const activeStages=['Evaluating','MSA Out','Active'];
+  const activePL=PL.filter(p=>activeStages.includes(p.stage));
+  for(const p of activePL){
+    const existingCo=CO.find(c=>c.name.toLowerCase()===p.name.toLowerCase());
+    if(!existingCo){
+      try{
+        const coInsert=await sb.from('companies').insert({
+          name:p.name,committed:0,priority:CO.length,rank_number:CO.length+1,
+          logo_initial:p.name[0].toUpperCase(),partner_type:p.partner_type||null,athletes:'[]'
+        }).select().single();
+        if(coInsert.data) CO.push({id:coInsert.data.id,name:p.name,committed:0,athletes:[],priority:CO.length-1,partner_type:p.partner_type||''});
+      }catch(e){console.warn('syncPipelineToCO insert:',e);}
+    }
+    // Also ensure planner slot exists for Evaluating/MSA Out/Active
+    if(!p.planner_created){
+      const coName=p.name;
+      if(!plannerSlots[coName]) plannerSlots[coName]={};
+      const alreadyExists=Object.values(plannerSlots[coName]).some(a=>a.from_pipeline===p.id);
+      if(!alreadyExists){
+        const actId='act-'+p.id;
+        plannerSlots[coName][actId]={label:p.activation_name||p.name,types:p.act_types||[],fee:p.athlete_fee||0,date:p.event_date||'',notes:p.notes||'',status_label:'Draft',slots:Array(Math.max(1,p.athletes||1)).fill(null),from_pipeline:p.id};
+        p.planner_created=true;
+        try{await sb.from('pipeline').update({planner_created:true}).eq('id',p.id);}catch(e){}
+      }
+    }
+  }
+  if(activePL.length>0) savePlannerState();
 }
 
 function buildPipelineList(filtered){
