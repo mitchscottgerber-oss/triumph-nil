@@ -7701,11 +7701,30 @@ function mobSendCurrentReceipt(){
   mobSendReceipt(encodeURIComponent(msg));
 }
 
+async function markReceiptSent(){
+  if(!mobileAthlete) return;
+  const a=mobileAthlete;
+  const mob_mo=(a._mobMo&&a._mobMo.mo)||CUR;
+  const mob_yr=(a._mobMo&&a._mobMo.yr)||2026;
+  const s=a.sch.find(x=>x.mo===mob_mo&&(x.yr||2026)===mob_yr);
+  if(!s) return;
+  s.receipt_sent=true;
+  s.receipt_sent_at=new Date().toISOString();
+  try{
+    await sb.from('payment_schedule').upsert(
+      {athlete_id:a.id,month:mob_mo,year:mob_yr,amount:s.a||0,is_paid:s.p||false,
+       shortfall:s.shortfall||0,receipt_sent:true,receipt_sent_at:s.receipt_sent_at},
+      {onConflict:'athlete_id,month,year'}
+    );
+    syncStatus('Receipt sent ✓');
+  }catch(e){console.warn('markReceiptSent:',e);}
+}
+
 async function saveReceiptJPEG(){
   const card=document.querySelector('.mob-rcpt-card');
   if(!card){alert('No receipt visible.');return;}
   const jpegBtn=document.getElementById('mob-send-jpeg');
-  if(jpegBtn){jpegBtn.textContent='Generating...';jpegBtn.disabled=true;}
+  if(jpegBtn){jpegBtn.disabled=true;jpegBtn.style.opacity='0.7';}
   try{
     const canvas=await html2canvas(card,{scale:3,backgroundColor:'#ffffff',useCORS:true,logging:false});
     const dataUrl=canvas.toDataURL('image/jpeg',0.95);
@@ -7718,7 +7737,8 @@ async function saveReceiptJPEG(){
       const file=new File([blob],filename,{type:'image/jpeg'});
       if(navigator.canShare({files:[file]})){
         await navigator.share({files:[file],title:filename});
-        if(jpegBtn){jpegBtn.innerHTML='<i class="ti ti-photo-down" style="font-size:16px"></i> Save Receipt';jpegBtn.disabled=false;}
+        await markReceiptSent();
+        if(jpegBtn){jpegBtn.disabled=false;jpegBtn.style.opacity='1';}
         return;
       }
     }
@@ -7730,7 +7750,7 @@ async function saveReceiptJPEG(){
   }catch(e){
     alert('Could not generate image: '+e.message);
   }
-  if(jpegBtn){jpegBtn.innerHTML='<i class="ti ti-photo-down" style="font-size:16px"></i> Save Receipt';jpegBtn.disabled=false;}
+  if(jpegBtn){jpegBtn.disabled=false;jpegBtn.style.opacity='1';}
 }
 
 function buildMobStats(a){
@@ -7913,7 +7933,7 @@ function renderMobDash(){
 .mob-rcpt-mo-scroll{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .mob-rcpt-mo-scroll::-webkit-scrollbar{display:none}
 .mob-mo-btn{flex-shrink:0;padding:6px 12px;border-radius:20px;border:1.5px solid #e5e5ea;background:#fff;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;color:#8e8e93;white-space:nowrap}
-.mob-mo-btn.on{background:#1d1d1f;color:#fff;border-color:#1d1d1f}
+.mob-mo-btn.on{background:#1d1d1f;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#1d1d1f}
 .mob-rcpt-card{background:#fff;border:0.5px solid #e5e5ea;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06)}
 .mob-rcpt-hd{padding:16px;border-bottom:0.5px solid #f2f2f7;display:flex;justify-content:space-between;align-items:flex-start}
 .mob-rcpt-label{font-size:10px;font-weight:600;letter-spacing:.09em;color:#aeaeb2;text-transform:uppercase;margin-bottom:5px}
