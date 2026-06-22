@@ -652,6 +652,17 @@ select.aa-inp{appearance:auto}
 </style>
 </head>
 <body>
+<script>
+(function(){
+  var isMob=sessionStorage.getItem("forceMobile")==="1"
+    ||new URLSearchParams(location.search).get("mobile")==="1"
+    ||screen.width<=430
+    ||window.innerWidth<=768
+    ||/iPhone|iPod|Android/i.test(navigator.userAgent)
+    ||/Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  if(isMob) document.write('<style>#desktop-app{display:none!important}</style>');
+})();
+</script>
 <div class="app" id="desktop-app">
 <div class="sb">
   <div class="sb-logo">
