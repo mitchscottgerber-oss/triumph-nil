@@ -7613,22 +7613,14 @@ function renderMobProfileTab(tab){
   };
 }
 
-function buildMobReceipt(a){
-  const mo=CUR;
-  const s=a.sch.find(x=>x.mo===mo&&(x.yr||2026)===2026)||{mo,a:0,p:false,s:[]};
+function buildMobReceiptCard(a,mo,yr){
+  yr=yr||2026;
+  const s=a.sch.find(x=>x.mo===mo&&(x.yr||2026)===yr)||{mo,a:0,p:false,s:[]};
   const srcs=parseSrcs(s.s).filter(x=>x.amt);
-  const rv=getRev(a,mo,2026);
+  const rv=getRev(a,mo,yr);
   const total=(s.a||0)+rv;
-  const ref='TRI-'+a.f[0]+a.l[0]+'-'+mo.toUpperCase()+'-26';
+  const ref='TRI-'+a.f[0]+a.l[0]+'-'+mo.toUpperCase()+'-'+String(yr).slice(2);
   const dateStr=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
-
-  // Month picker
-  const months=a.sch.filter(x=>x.a>0).sort((x,y)=>(x.yr||2026)-(y.yr||2026)||MO.indexOf(x.mo)-MO.indexOf(y.mo));
-  const moPicker=months.map(x=>{
-    const ml=x.mo+((x.yr||2026)===2027?"'27":"'26");
-    return`<button class="mob-mo-btn${x.mo===mo?' on':''}" onclick="mobSetReceiptMo('${x.mo}',${x.yr||2026})">${ml}</button>`;
-  }).join('');
-
   let lines='';
   if(srcs.length>0){
     srcs.forEach(src=>{
@@ -7647,39 +7639,45 @@ function buildMobReceipt(a){
       </div>`;
     });
   } else if(s.a>0){
-    lines=`<div class="mob-rcpt-line"><div class="mob-rcpt-line-left"><div class="mob-rcpt-deal">NIL Payment</div><div class="mob-rcpt-sub" style="color:#8e8e93">${mo} 2026</div></div><div class="mob-rcpt-amt">${f(s.a)}</div></div>`;
+    lines=`<div class="mob-rcpt-line"><div class="mob-rcpt-line-left"><div class="mob-rcpt-deal">NIL Payment</div><div class="mob-rcpt-sub" style="color:#8e8e93">${mo} ${yr}</div></div><div class="mob-rcpt-amt">${f(s.a)}</div></div>`;
   }
   if(rv>0) lines+=`<div class="mob-rcpt-line"><div class="mob-rcpt-line-left"><div class="mob-rcpt-deal">Rev Share</div><div class="mob-rcpt-sub" style="color:#8e8e93">Distribution</div></div><div class="mob-rcpt-amt" style="color:#c0392b">${f(rv)}</div></div>`;
-
   if(!lines) lines='<div style="padding:24px;text-align:center;color:#8e8e93;font-size:13px">No payment this month</div>';
-
-  const msg=`Triumph NIL Receipt\n${a.f} ${a.l} · ${mo} 2026\nRef: ${ref}\n\n${srcs.map(s=>s.name+': '+s.amt).join('\n')||'NIL Payment: '+f(s.a)}\n\nTotal: ${f(total)}\n\nDate: ${dateStr}`;
-
-  return`<div class="mob-rcpt-wrap">
-    <div class="mob-rcpt-mo-scroll">${moPicker}</div>
-    <div class="mob-rcpt-card">
-      <div class="mob-rcpt-hd">
-        <div>
-          <div class="mob-rcpt-label">Triumph · Receipt</div>
-          <div class="mob-rcpt-name">${a.f} ${a.l}</div>
-          <div class="mob-rcpt-sub2">${a.pos} · Virginia Tech</div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-size:13px;font-weight:600">${mo} 2026</div>
-          <div style="font-size:10px;color:#aeaeb2;font-family:monospace;margin-top:2px">${ref}</div>
-        </div>
+  return`
+    <div class="mob-rcpt-hd">
+      <div>
+        <div class="mob-rcpt-label">Triumph · Receipt</div>
+        <div class="mob-rcpt-name">${a.f} ${a.l}</div>
+        <div class="mob-rcpt-sub2">${a.pos} · Virginia Tech</div>
       </div>
-      ${total>0?`<div style="background:#eef6ff;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid #b3d4f5"><span style="font-size:10px;font-weight:600;color:#185fa5;text-transform:uppercase;letter-spacing:.05em">Total NIL Payment</span><span style="font-size:16px;font-weight:700;color:#185fa5">${f(total)}</span></div>`:''}
-      <div style="font-size:9px;font-weight:500;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;padding:8px 14px 4px">Source of funds</div>
-      <div class="mob-rcpt-lines">${lines}</div>
-      <div class="mob-rcpt-ft">
-        <div style="font-size:11px;color:#aeaeb2">${dateStr}</div>
-        <div>
-          <div style="font-size:10px;color:#8e8e93;text-align:right;margin-bottom:2px">Total</div>
-          <div style="font-size:22px;font-weight:700">${f(total)}</div>
-        </div>
+      <div style="text-align:right">
+        <div style="font-size:13px;font-weight:600">${mo} ${yr}</div>
+        <div style="font-size:10px;color:#aeaeb2;font-family:monospace;margin-top:2px">${ref}</div>
       </div>
     </div>
+    ${total>0?`<div style="background:#eef6ff;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid #b3d4f5"><span style="font-size:10px;font-weight:600;color:#185fa5;text-transform:uppercase;letter-spacing:.05em">Total NIL Payment</span><span style="font-size:16px;font-weight:700;color:#185fa5">${f(total)}</span></div>`:''}
+    <div style="font-size:9px;font-weight:500;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;padding:8px 14px 4px">Source of funds</div>
+    <div class="mob-rcpt-lines">${lines}</div>
+    <div class="mob-rcpt-ft">
+      <div style="font-size:11px;color:#aeaeb2">${dateStr}</div>
+      <div>
+        <div style="font-size:10px;color:#8e8e93;text-align:right;margin-bottom:2px">Total</div>
+        <div style="font-size:22px;font-weight:700">${f(total)}</div>
+      </div>
+    </div>`;
+}
+
+function buildMobReceipt(a){
+  const mo=(a._mobMo&&a._mobMo.mo)||CUR;
+  const yr=(a._mobMo&&a._mobMo.yr)||2026;
+  const months=a.sch.filter(x=>x.a>0).sort((x,y)=>(x.yr||2026)-(y.yr||2026)||MO.indexOf(x.mo)-MO.indexOf(y.mo));
+  const moPicker=months.map(x=>{
+    const ml=x.mo+((x.yr||2026)===2027?"'27":"'26");
+    return`<button class="mob-mo-btn${x.mo===mo&&(x.yr||2026)===yr?' on':''}" onclick="mobSetReceiptMo('${x.mo}',${x.yr||2026})">${ml}</button>`;
+  }).join('');
+  return`<div class="mob-rcpt-wrap">
+    <div class="mob-rcpt-mo-scroll">${moPicker}</div>
+    <div class="mob-rcpt-card" id="mob-rcpt-card-inner">${buildMobReceiptCard(a,mo,yr)}</div>
   </div>`;
 }
 
@@ -7829,8 +7827,18 @@ function mobSendReceipt(encoded){
 
 function mobSetReceiptMo(mo,yr){
   mobileAthlete._mobMo={mo,yr};
-  const body=document.getElementById('mob-prof-body');
-  if(body) body.innerHTML=buildMobReceipt(mobileAthlete);
+  // Update active chip without touching the scroll container
+  document.querySelectorAll('.mob-mo-btn').forEach(btn=>{
+    btn.classList.toggle('on', btn.textContent.trim().startsWith(mo));
+  });
+  // Update only the receipt card content
+  const card=document.getElementById('mob-rcpt-card-inner');
+  if(card) card.innerHTML=buildMobReceiptCard(mobileAthlete,mo,yr);
+  // Re-wire send buttons
+  const jpegBtn=document.getElementById('mob-send-jpeg');
+  const textBtn=document.getElementById('mob-send-pinned');
+  if(jpegBtn) jpegBtn.onclick=()=>saveReceiptJPEG();
+  if(textBtn) textBtn.onclick=()=>mobSendCurrentReceipt();
 }
 
 function renderMobDash(){
