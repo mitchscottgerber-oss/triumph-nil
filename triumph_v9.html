@@ -7548,9 +7548,10 @@ function mobOpenAthlete(key){
   if(!mobileAthlete) return;
   document.querySelectorAll('.mob-screen').forEach(s=>s.style.display='none');
   document.getElementById('mob-profile').style.display='flex';
-  // Header
   document.getElementById('mob-prof-name').textContent=mobileAthlete.f+' '+mobileAthlete.l;
   document.getElementById('mob-prof-meta').textContent=mobileAthlete.pos+' · Virginia Tech';
+  const statsTab=document.getElementById('mob-ptab-stats');
+  if(statsTab) statsTab.style.display=USER_ROLE==='admin'?'':'none';
   renderMobProfileTab('receipt');
 }
 
@@ -7561,6 +7562,16 @@ function renderMobProfileTab(tab){
   const body=document.getElementById('mob-prof-body');
   if(tab==='receipt') body.innerHTML=buildMobReceipt(mobileAthlete);
   if(tab==='wallets') body.innerHTML=buildMobWallets(mobileAthlete);
+  if(tab==='stats') body.innerHTML=buildMobStats(mobileAthlete);
+  // Show pinned send bar on receipt, FAB on other tabs
+  const sendBar=document.getElementById('mob-send-bar');
+  const fab=document.getElementById('mob-send-fab');
+  if(sendBar) sendBar.style.display=tab==='receipt'?'block':'none';
+  if(fab){fab.style.display=tab!=='receipt'?'flex':'none';}
+  // Wire send actions
+  const pinnedBtn=document.getElementById('mob-send-pinned');
+  if(pinnedBtn) pinnedBtn.onclick=()=>mobSendCurrentReceipt();
+  if(fab) fab.onclick=()=>mobSendCurrentReceipt();
 }
 
 function buildMobReceipt(a){
@@ -7619,6 +7630,8 @@ function buildMobReceipt(a){
           <div style="font-size:10px;color:#aeaeb2;font-family:monospace;margin-top:2px">${ref}</div>
         </div>
       </div>
+      ${total>0?`<div style="background:#eef6ff;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid #b3d4f5"><span style="font-size:10px;font-weight:600;color:#185fa5;text-transform:uppercase;letter-spacing:.05em">Total NIL Payment</span><span style="font-size:16px;font-weight:700;color:#185fa5">${f(total)}</span></div>`:''}
+      <div style="font-size:9px;font-weight:500;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;padding:8px 14px 4px">Source of funds</div>
       <div class="mob-rcpt-lines">${lines}</div>
       <div class="mob-rcpt-ft">
         <div style="font-size:11px;color:#aeaeb2">${dateStr}</div>
@@ -7628,7 +7641,59 @@ function buildMobReceipt(a){
         </div>
       </div>
     </div>
-    <button class="mob-send-btn" onclick="mobSendReceipt('${encodeURIComponent(msg)}')"><i class="ti ti-message"></i> Send as Text</button>
+  </div>`;
+}
+
+function mobSendCurrentReceipt(){
+  if(!mobileAthlete) return;
+  const a=mobileAthlete;
+  const mob_mo=(a._mobMo&&a._mobMo.mo)||CUR;
+  const mob_yr=(a._mobMo&&a._mobMo.yr)||2026;
+  const s=a.sch.find(x=>x.mo===mob_mo&&(x.yr||2026)===mob_yr)||{mo:mob_mo,a:0,p:false,s:[]};
+  const srcs=parseSrcs(s.s).filter(x=>x.amt);
+  const rv=getRev(a,mob_mo,mob_yr);
+  const total=(s.a||0)+rv;
+  const ref='TRI-'+a.f[0]+a.l[0]+'-'+mob_mo.toUpperCase()+'-'+String(mob_yr).slice(2);
+  const dateStr=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  const msg='Triumph NIL Receipt\n'+a.f+' '+a.l+' · '+mob_mo+' '+mob_yr+'\nRef: '+ref+'\n\n'
+    +(srcs.length?srcs.map(s=>s.name+': '+s.amt).join('\n'):'NIL Payment: '+f(s.a))
+    +(rv>0?'\nRev Share: '+f(rv):'')
+    +'\n\nTotal: '+f(total)+'\n\nDate: '+dateStr;
+  mobSendReceipt(encodeURIComponent(msg));
+}
+
+function buildMobStats(a){
+  const nilTot=a.sch.reduce((s,x)=>s+x.a,0);
+  const nilRem=Math.max(0,nilTot-a.paid);
+  const wb=getWalletBanked(a);
+  const banked=(wb!==null?wb:a.banked)-a.paid;
+  const revMoved=a.sch.reduce((s,x)=>s+(x.shortfall||0),0);
+  const rsContract=a.rsContract||0;
+  const rsPaid=a.rsPaid||0;
+  const rsRem=Math.max(0,rsContract-rsPaid);
+  function stat(lbl,val,color){
+    return`<div style="background:#fff;border-radius:9px;padding:10px 12px;border:0.5px solid #e5e5ea">
+      <div style="font-size:9px;font-weight:500;color:#8e8e93;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">${lbl}</div>
+      <div style="font-size:16px;font-weight:600;color:${color||'#1d1d1f'}">${f(val)}</div>
+    </div>`;
+  }
+  return`<div style="padding:12px;display:flex;flex-direction:column;gap:8px">
+    <div style="font-size:10px;font-weight:600;color:#2980b9;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">NIL</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
+      ${stat('Total Owed',nilTot,'#185fa5')}
+      ${stat('Paid Out',a.paid,'#185fa5')}
+      ${stat('Rev Moved',revMoved,'#7B1A1A')}
+      ${stat('Remaining',nilRem,'#185fa5')}
+    </div>
+    ${stat('Banked',banked,'#1d9e75')}
+    ${rsContract>0?`
+    <div style="font-size:10px;font-weight:600;color:#c0392b;text-transform:uppercase;letter-spacing:.06em;margin-top:4px;margin-bottom:2px">Rev Share</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px">
+      ${stat('RS Contract',rsContract,'#c0392b')}
+      ${stat('RS Paid',rsPaid,'#1d9e75')}
+      ${stat('RS Remaining',rsRem,'#c0392b')}
+    </div>`:''}
+    <div style="font-size:10px;color:#c7c7cc;text-align:center;margin-top:4px">Read only · edit on desktop</div>
   </div>`;
 }
 
@@ -7721,16 +7786,23 @@ function renderMobDash(){
 
   <!-- Profile Screen -->
   <div id="mob-profile" class="mob-screen" style="flex-direction:column;flex:1;overflow:hidden">
-    <div style="background:#fff;padding:16px;border-bottom:0.5px solid #e5e5ea">
-      <button onclick="document.getElementById('mob-profile').style.display='none';document.getElementById('mob-athletes').style.display='flex';" style="background:none;border:none;color:#2980b9;font-size:15px;cursor:pointer;font-family:inherit;padding:0;margin-bottom:8px;display:flex;align-items:center;gap:4px"><i class="ti ti-arrow-left"></i> All Athletes</button>
-      <div style="font-size:20px;font-weight:700" id="mob-prof-name"></div>
-      <div style="font-size:13px;color:#8e8e93;margin-top:2px" id="mob-prof-meta"></div>
-      <div style="display:flex;gap:0;margin-top:12px;border-bottom:2px solid #f2f2f7">
+    <div style="background:#fff;padding:14px 16px 0;border-bottom:0.5px solid #e5e5ea;flex-shrink:0">
+      <button onclick="document.getElementById('mob-profile').style.display='none';document.getElementById('mob-athletes').style.display='flex';" style="background:none;border:none;color:#2980b9;font-size:14px;cursor:pointer;font-family:inherit;padding:0;margin-bottom:6px;display:flex;align-items:center;gap:4px"><i class="ti ti-arrow-left"></i> All Athletes</button>
+      <div style="font-size:18px;font-weight:700" id="mob-prof-name"></div>
+      <div style="font-size:12px;color:#8e8e93;margin-top:1px" id="mob-prof-meta"></div>
+      <div style="display:flex;gap:0;margin-top:10px;border-bottom:2px solid #f2f2f7" id="mob-prof-tabs">
         <button class="mob-ptab on" id="mob-ptab-receipt" onclick="renderMobProfileTab('receipt')">Receipt</button>
         <button class="mob-ptab" id="mob-ptab-wallets" onclick="renderMobProfileTab('wallets')">Deals</button>
+        <button class="mob-ptab" id="mob-ptab-stats" onclick="renderMobProfileTab('stats')" style="display:none">Stats <span style="font-size:8px;background:#f0ebff;color:#6d28d9;padding:1px 5px;border-radius:3px;margin-left:2px">Admin</span></button>
       </div>
     </div>
-    <div id="mob-prof-body" style="flex:1;overflow-y:auto"></div>
+    <div id="mob-prof-body" style="flex:1;overflow-y:auto;padding-bottom:60px"></div>
+    <div id="mob-send-bar" style="display:none;position:absolute;bottom:0;left:0;right:0;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:#fff;border-top:0.5px solid #e5e5ea">
+      <button id="mob-send-pinned" style="width:100%;height:44px;background:#1d1d1f;color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;font-family:inherit"><i class="ti ti-message" style="font-size:16px"></i> Send as Text</button>
+    </div>
+    <div id="mob-send-fab" style="display:none;position:absolute;bottom:16px;right:14px;width:46px;height:46px;background:#1d1d1f;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 12px rgba(0,0,0,.2)">
+      <i class="ti ti-message" style="font-size:18px;color:#fff"></i>
+    </div>
   </div>
 
   <!-- Dashboard Screen -->
