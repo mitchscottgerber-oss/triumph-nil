@@ -2924,6 +2924,7 @@ function bWallets(a){
               +'<i class="ti '+statusCfg.icon+'" style="font-size:9px"></i> '+statusCfg.label
             +'</span>'
             +'<button onclick="event.stopPropagation();openEditDeal(\''+key+'\','+di+')" style="background:#f2f2f7;border:none;border-radius:6px;padding:3px 9px;cursor:pointer;font-size:11px;font-weight:600;color:#1d1d1f;-webkit-text-fill-color:#1d1d1f;font-family:inherit;display:flex;align-items:center;gap:3px"><i class="ti ti-edit" style="font-size:11px"></i> Edit</button>'
+            +'<button onclick="event.stopPropagation();deleteDeal(\''+key+'\','+di+')" style="background:#fff0f3;border:none;border-radius:6px;padding:3px 9px;cursor:pointer;font-size:11px;font-weight:600;color:#e34040;-webkit-text-fill-color:#e34040;font-family:inherit;display:flex;align-items:center;gap:3px"><i class="ti ti-trash" style="font-size:11px"></i> Delete</button>'
           +'</div>'
         +'</div>'
         +(status==='denied'?'<div style="font-size:11px;color:#e34040;padding:4px 0 8px;font-weight:500"><i class="ti ti-alert-circle" style="font-size:11px"></i> This deal has been denied by NILGo</div>':'')
@@ -3034,6 +3035,15 @@ function openEditDeal(key,di){
     </div>
   </div>`;
   document.body.appendChild(ov);
+}
+
+function deleteDeal(key,di){
+  const a=A.find(x=>x.f+'_'+x.l===key);if(!a) return;
+  const d=a.deals[di];if(!d) return;
+  if(!confirm('Delete "'+d.n+'"? This cannot be undone.')) return;
+  a.deals.splice(di,1);
+  saveDealsToSupabase(a);
+  oProf(key);
 }
 
 function saveEditDeal(key,di){
