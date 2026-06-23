@@ -2209,7 +2209,6 @@ async function saveRevInline(key,mo){
       {onConflict:'athlete_id,month,year'}
     );
   }catch(e){syncStatus('RS sync error',false);}
-  const sortedA=[...A].sort((a,b)=>(a.rank||999)-(b.rank||999));
   rAnnual(list);
 }
 function sV(v){
@@ -6703,7 +6702,7 @@ async function sbDownloadPNG(){
 function openBulkUpdate(){
   const existing=document.getElementById('bulk-update-overlay');
   if(existing) existing.remove();
-  const list=getAthletesBySport(activeSport);
+  const list=[...A].sort((a,b)=>(a.rank||999)-(b.rank||999));
   const ov=document.createElement('div');
   ov.id='bulk-update-overlay';
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1200;display:flex;align-items:center;justify-content:center';
@@ -6743,8 +6742,8 @@ function openBulkUpdate(){
         <textarea id="bu-paste" placeholder="Paste from Excel here..." style="width:100%;height:220px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:12px;font-family:monospace;padding:10px;resize:none;outline:none;background:#f9f9f9"></textarea>
       </div>
       <div style="background:#eef6ff;border-radius:8px;padding:10px 12px;font-size:11px;color:#185fa5;margin-bottom:4px">
-        <strong>Athlete order — ${sortedA.length} athletes (by rank):</strong><br>
-        <div style="max-height:80px;overflow-y:auto;margin-top:4px;font-family:monospace;font-size:10px;line-height:1.7">${sortedA.map((a,i)=>(i+1)+'. '+a.f+' '+a.l).join('<br>')}</div>
+        <strong>Athlete order — ${list.length} athletes (by rank):</strong><br>
+        <div style="max-height:80px;overflow-y:auto;margin-top:4px;font-family:monospace;font-size:10px;line-height:1.7">${list.map((a,i)=>(i+1)+'. '+a.f+' '+a.l).join('<br>')}</div>
       </div>
       <div id="bu-status" style="margin-top:8px;font-size:12px;color:#8e8e93"></div>
     </div>
