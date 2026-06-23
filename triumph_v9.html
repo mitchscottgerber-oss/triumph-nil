@@ -758,6 +758,7 @@ select.aa-inp{appearance:auto}
         </div>
       </div>
       <button class="btn btn-outline" id="fbar-export" style="padding:4px 12px;font-size:11px;height:28px;display:flex;align-items:center;gap:4px;white-space:nowrap" onclick="exportExcel()"><i class="ti ti-file-spreadsheet" style="font-size:13px"></i> Export</button>
+      <button class="btn btn-outline" style="padding:4px 12px;font-size:11px;height:28px;display:flex;align-items:center;gap:4px;white-space:nowrap" onclick="openBulkUpdate()"><i class="ti ti-table-import" style="font-size:13px"></i> Bulk Update</button>
       <button class="btn btn-dark" id="add-athlete-btn" style="padding:4px 14px;font-size:11px;height:28px;display:flex;align-items:center;gap:4px;white-space:nowrap" onclick="openAddAthlete()"><i class="ti ti-user-plus" style="font-size:13px"></i> Add Athlete</button>
     </div>
     <div class="scroll" id="a-body">
@@ -6696,6 +6697,127 @@ async function sbDownloadPNG(){
     link.click();
   }catch(e){alert('Could not generate image: '+e.message);}
   if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-download"></i> Download PNG';}
+}
+
+
+function openBulkUpdate(){
+  const existing=document.getElementById('bulk-update-overlay');
+  if(existing) existing.remove();
+  const list=getAthletesBySport(activeSport);
+  const ov=document.createElement('div');
+  ov.id='bulk-update-overlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1200;display:flex;align-items:center;justify-content:center';
+  ov.innerHTML=`<div style="background:#fff;border-radius:18px;width:520px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.25);overflow:hidden">
+    <div style="background:#1d1d1f;padding:18px 22px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
+      <div>
+        <div style="font-size:15px;font-weight:700;color:#fff">Bulk Update</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px">Copy a column from Excel and paste below — one value per row</div>
+      </div>
+      <button onclick="document.getElementById('bulk-update-overlay').remove()" style="background:rgba(255,255,255,.12);border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;color:#fff;font-size:16px">✕</button>
+    </div>
+    <div style="padding:18px 22px;overflow-y:auto;flex:1">
+      <div style="margin-bottom:14px">
+        <div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Which column are you pasting?</div>
+        <select id="bu-field" style="width:100%;height:36px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:13px;font-family:inherit;padding:0 10px;background:#f9f9f9">
+          <option value="contract">Total NIL Owed (contract)</option>
+          <option value="paid_out">NIL Paid Out</option>
+          <option value="rev_moved">Rev Moved (June shortfall)</option>
+          <option value="banked">Banked</option>
+          <option value="Jan_2026">Jan 2026 NIL</option>
+          <option value="Feb_2026">Feb 2026 NIL</option>
+          <option value="Mar_2026">Mar 2026 NIL</option>
+          <option value="Apr_2026">Apr 2026 NIL</option>
+          <option value="May_2026">May 2026 NIL</option>
+          <option value="Jun_2026">Jun 2026 NIL</option>
+          <option value="Jul_2026">Jul 2026 NIL</option>
+          <option value="Aug_2026">Aug 2026 NIL</option>
+          <option value="Sep_2026">Sep 2026 NIL</option>
+          <option value="Oct_2026">Oct 2026 NIL</option>
+          <option value="Nov_2026">Nov 2026 NIL</option>
+          <option value="Dec_2026">Dec 2026 NIL</option>
+          <option value="Jan_2027">Jan 2027 NIL</option>
+        </select>
+      </div>
+      <div style="margin-bottom:6px">
+        <div style="font-size:10px;font-weight:600;color:#6c6c70;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Paste values here (one per line, in athlete order)</div>
+        <textarea id="bu-paste" placeholder="Paste from Excel here..." style="width:100%;height:220px;border:1.5px solid #e5e5ea;border-radius:8px;font-size:12px;font-family:monospace;padding:10px;resize:none;outline:none;background:#f9f9f9"></textarea>
+      </div>
+      <div style="background:#eef6ff;border-radius:8px;padding:10px 12px;font-size:11px;color:#185fa5;margin-bottom:4px">
+        <strong>Athlete order (${list.length} athletes):</strong><br>
+        ${list.slice(0,5).map(a=>a.f+' '+a.l).join(' · ')}${list.length>5?' · ...':''}
+      </div>
+      <div id="bu-status" style="margin-top:8px;font-size:12px;color:#8e8e93"></div>
+    </div>
+    <div style="padding:14px 22px;border-top:1px solid #f2f2f7;display:flex;gap:10px;background:#fafafa;flex-shrink:0">
+      <button onclick="document.getElementById('bulk-update-overlay').remove()" style="flex:1;height:36px;border-radius:8px;border:1.5px solid #e5e5ea;background:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Cancel</button>
+      <button onclick="runBulkUpdate()" style="flex:2;height:36px;border-radius:8px;border:none;background:#1d9e75;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Apply to All Athletes</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+}
+
+async function runBulkUpdate(){
+  const field=document.getElementById('bu-field').value;
+  const raw=document.getElementById('bu-paste').value.trim();
+  const statusEl=document.getElementById('bu-status');
+  if(!raw){statusEl.textContent='Please paste values first.';return;}
+
+  const vals=raw.split('\n').map(v=>v.trim().replace(/[$,]/g,''));
+  const list=getAthletesBySport(activeSport);
+
+  if(vals.length!==list.length){
+    statusEl.innerHTML='<span style="color:#e34040">⚠ '+vals.length+' values pasted but '+list.length+' athletes in current view. Make sure filters are set to match your Excel order.</span>';
+    return;
+  }
+
+  statusEl.textContent='Updating...';
+  let updated=0,errors=0;
+  const MO_2026=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  for(let i=0;i<list.length;i++){
+    const a=list[i];
+    const val=parseFloat(vals[i])||0;
+
+    try{
+      if(field==='contract'){
+        a.contract=val;
+        await sb.from('athletes').update({contract:val}).eq('id',a.id);
+      } else if(field==='paid_out'){
+        a.paid=val;
+        await sb.from('athletes').update({paid_out:val}).eq('id',a.id);
+      } else if(field==='banked'){
+        a.banked=val;
+        await sb.from('athletes').update({banked:val}).eq('id',a.id);
+      } else if(field==='rev_moved'){
+        // Save as shortfall on June payment schedule
+        const s=a.sch.find(x=>x.mo==='Jun'&&(x.yr||2026)===2026);
+        if(s) s.shortfall=val;
+        await sb.from('payment_schedule').upsert(
+          {athlete_id:a.id,month:'Jun',year:2026,amount:a.sch.find(x=>x.mo==='Jun'&&(x.yr||2026)===2026)?.a||0,is_paid:false,sources:[],nil_cleared:0,shortfall:val,rs_paid:false},
+          {onConflict:'athlete_id,month,year'}
+        );
+        if(val>0) await sb.from('rev_share').upsert({athlete_id:a.id,month:'Jun',year:2026,amount:val},{onConflict:'athlete_id,month,year'});
+      } else {
+        // Monthly NIL field e.g. Jun_2026
+        const parts=field.split('_');
+        const mo=parts[0],yr=parseInt(parts[1]);
+        const s=a.sch.find(x=>x.mo===mo&&(x.yr||2026)===yr);
+        if(s) s.a=val;
+        await sb.from('payment_schedule').upsert(
+          {athlete_id:a.id,month:mo,year:yr,amount:val,is_paid:s?.p||false,sources:s?.s||[],nil_cleared:s?.cleared||0,shortfall:s?.shortfall||0,rs_paid:s?.rs_paid||false},
+          {onConflict:'athlete_id,month,year'}
+        );
+      }
+      updated++;
+    }catch(e){errors++;}
+  }
+
+  statusEl.innerHTML=`<span style="color:#1d9e75">✓ Updated ${updated} athletes${errors>0?' ('+errors+' errors)':''}</span>`;
+  setTimeout(()=>{
+    document.getElementById('bulk-update-overlay').remove();
+    rAnnual(list);
+    syncStatus('Bulk update complete ✓');
+  },1200);
 }
 
 function buildReports(){
