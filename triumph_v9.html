@@ -1787,7 +1787,8 @@ function calcStrip(list){
   if(owedEl) owedEl.textContent=f(totalOwed);
   if(canEl) canEl.textContent=f(totalPaid);
   if(revEl) revEl.textContent=f(totalRev);
-  if(remEl) remEl.textContent=f(Math.max(0,totalOwed-totalPaid));
+  const totalShortfall=list.reduce((s,a)=>s+a.sch.reduce((t,x)=>t+(x.shortfall||0),0),0);
+  if(remEl) remEl.textContent=f(Math.max(0,totalOwed-totalPaid-totalShortfall));
   if(bankEl) bankEl.textContent=f(list.reduce((s,a)=>{const wb=getWalletBanked(a);return s+(wb!==null?wb:a.banked-a.paid);},0));
 }
 function sP(p,el){cp=p;document.querySelectorAll('.pill').forEach(b=>b.classList.remove('on'));el.classList.add('on');aF();}
@@ -1911,7 +1912,8 @@ function rAnnual(list,filterMos){
     const rvTot=getRevYTD(a);
     const _wb=getWalletBanked(a);
     const banked=_wb!==null?_wb:(a.banked-a.paid);
-    const nilRem=nilTot-a.paid;
+    const nilShortfall=a.sch.reduce((s,x)=>s+(x.shortfall||0),0);
+    const nilRem=Math.max(0,nilTot-a.paid-nilShortfall);
     const rsRem=Math.max(0,(a.rsContract||0)-(a.rsPaid||0));
     const isBankLow=banked<(a.sch.find(x=>x.mo===CUR&&(x.yr||2026)===2026)?.a||0);
     const key=a.f+'_'+a.l;
@@ -2260,7 +2262,8 @@ function oProf(key){
       +'</div></div>'
       +(USER_ROLE!=='activation'?(()=>{
         const nilTotProf=a.sch.reduce((s,x)=>s+x.a,0);
-        const nilRemProf=Math.max(0,nilTotProf-a.paid);
+        const nilShortfallProf=a.sch.reduce((s,x)=>s+(x.shortfall||0),0);
+        const nilRemProf=Math.max(0,nilTotProf-a.paid-nilShortfallProf);
         const wbProf=getWalletBanked(a);
         const bankedProf=wbProf!==null?wbProf:(a.banked-a.paid);
         const revMovedProf=a.sch.reduce((s,x)=>s+(x.shortfall||0),0);
@@ -7972,7 +7975,8 @@ async function saveReceiptJPEG(){
 
 function buildMobStats(a){
   const nilTot=a.sch.reduce((s,x)=>s+x.a,0);
-  const nilRem=Math.max(0,nilTot-a.paid);
+  const nilShortfallMob=a.sch.reduce((s,x)=>s+(x.shortfall||0),0);
+  const nilRem=Math.max(0,nilTot-a.paid-nilShortfallMob);
   const wb=getWalletBanked(a);
   const banked=wb!==null?wb:(a.banked-a.paid);
   const revMoved=a.sch.reduce((s,x)=>s+(x.shortfall||0),0);
