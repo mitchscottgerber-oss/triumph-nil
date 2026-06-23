@@ -7842,13 +7842,16 @@ function buildMobReceiptCard(a,mo,yr){
       const approved=deal?.status==='approved';
       const noSub=deal?.status==='no-submission';
       const hasPow=deal?.pow;
-      const statusLabel=approved?'<span style="color:#1d9e75;font-weight:600;font-size:11px">✓ NILGo Approved</span>':noSub?'':'';
+      const statusLabel=approved?'<span style="color:#1d9e75;font-weight:600;font-size:11px">✓ NILGo Approved</span>':'';
+      const typeMap={social:'<i class="ti ti-brand-instagram" style="color:#e1306c;font-size:11px"></i> Social Post',appearance:'<i class="ti ti-users" style="color:#2980b9;font-size:11px"></i> Appearance',content:'<i class="ti ti-video" style="color:#8e44ad;font-size:11px"></i> Content Creation',autograph:'<i class="ti ti-signature" style="color:#b7791f;font-size:11px"></i> Autograph Signing',billboard:'<i class="ti ti-ad-2" style="color:#0369a1;font-size:11px"></i> Billboard',virtual:'<i class="ti ti-device-laptop" style="color:#7c3aed;font-size:11px"></i> Virtual Meet & Greet'};
+      const typeLabels=(deal?.types||[]).map(t=>typeMap[t]||t).join('<span style="color:#d1d1d6;margin:0 3px">·</span>');
       lines+=`<div class="mob-rcpt-line">
         <div class="mob-rcpt-line-left">
           <div class="mob-rcpt-deal">${src.name}</div>
-          <div class="mob-rcpt-sub">
+          <div class="mob-rcpt-sub" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:2px">
             ${statusLabel}
-            ${hasPow?'<span class="mob-badge green" style="font-size:10px;padding:1px 6px;margin-left:4px"><i class="ti ti-paperclip" style="font-size:9px"></i> POW</span>':''}
+            ${typeLabels?`<span style="font-size:11px;color:#8e8e93;display:flex;align-items:center;gap:3px">${typeLabels}</span>`:''}
+            ${hasPow?'<span class="mob-badge green" style="font-size:10px;padding:1px 6px"><i class="ti ti-paperclip" style="font-size:9px"></i> POW</span>':''}
           </div>
         </div>
         <div class="mob-rcpt-amt">${src.amt}</div>
