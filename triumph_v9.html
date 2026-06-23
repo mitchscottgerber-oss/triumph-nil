@@ -7974,7 +7974,7 @@ function buildMobStats(a){
   const nilTot=a.sch.reduce((s,x)=>s+x.a,0);
   const nilRem=Math.max(0,nilTot-a.paid);
   const wb=getWalletBanked(a);
-  const banked=(wb!==null?wb:a.banked)-a.paid;
+  const banked=wb!==null?wb:(a.banked-a.paid);
   const revMoved=a.sch.reduce((s,x)=>s+(x.shortfall||0),0);
   const rsContract=a.rsContract||0;
   const rsPaid=a.rsPaid||0;
@@ -8017,7 +8017,7 @@ function buildMobWallets(a){
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
         <div>
           <div style="font-size:14px;font-weight:700">${d.n}</div>
-          <div style="font-size:11px;color:${approved?'#1d9e75':'#f59e0b'};font-weight:600;margin-top:2px">${approved?'✓ NILGo Approved':'⏱ Pending'}</div>
+          <div style="font-size:11px;color:${approved?'#1d9e75':d.status==='no-submission'?'#8e8e93':'#f59e0b'};font-weight:600;margin-top:2px">${approved?'✓ NILGo Approved':d.status==='no-submission'?'No Submission Req.':'⏱ Pending NILGo'}</div>
         </div>
         <div style="text-align:right">
           <div style="font-size:16px;font-weight:700">${f(d.t)}</div>
@@ -8029,9 +8029,9 @@ function buildMobWallets(a){
           <div style="font-size:10px;color:#8e8e93;text-transform:uppercase;letter-spacing:.05em">Spent</div>
           <div style="font-size:14px;font-weight:600;color:#1d9e75;margin-top:2px">${f(used)||'-'}</div>
         </div>
-        <div style="background:#f9f9f9;border-radius:8px;padding:8px">
-          <div style="font-size:10px;color:#8e8e93;text-transform:uppercase;letter-spacing:.05em">Remaining</div>
-          <div style="font-size:14px;font-weight:600;color:${rem<=0?'#e34040':'#2980b9'};margin-top:2px">${rem<=0?'$0':f(rem)}</div>
+        <div style="background:${rem<=0?'#fff0f3':'#f9f9f9'};border-radius:8px;padding:8px;border:${rem<=0?'1px solid #f5c6d0':'none'}">
+          <div style="font-size:10px;color:${rem<=0?'#c0392b':'#8e8e93'};text-transform:uppercase;letter-spacing:.05em">Remaining</div>
+          <div style="font-size:14px;font-weight:600;color:${rem<=0?'#e34040':'#2980b9'};margin-top:2px">${rem<=0?'No funds':f(rem)}</div>
         </div>
       </div>
       ${d.pow?'<div style="background:#e8f8f2;border-radius:7px;padding:6px 10px;font-size:11px;font-weight:600;color:#1d9e75"><i class="ti ti-paperclip"></i> Proof of Work on file</div>':''}
