@@ -1147,7 +1147,7 @@ async function loadFromSupabase(){
       MO.forEach(mo=>{if(!sch.find(x=>x.mo===mo&&x.yr===2027)) sch.push({mo,yr:2027,a:0,p:false,s:[],cleared:0,shortfall:0,rs_paid:false});});
       if(!sch.find(x=>x.mo==='Jan'&&x.yr===2028)) sch.push({mo:'Jan',yr:2028,a:0,p:false,s:[],cleared:0,shortfall:0,rs_paid:false});
       A.push({id:a.id,f:a.first_name,l:a.last_name,pos:a.position,sport:(()=>{const p=a.position||'';if(p==='BSB'||a.sport==='Baseball') return 'Baseball';if(p==='MBB'||a.sport==='Basketball-M') return 'Basketball-M';if(p==='WBB'||a.sport==='Basketball-W') return 'Basketball-W';return a.sport||'Football';})(),
-        rank:a.rank_priority,contract:a.contract||0,banked:a.banked||0,paid:a.paid_out||0,
+        rank:a.rank_priority,contract:a.contract||0,banked:a.banked||0,paid:sch.reduce((t,x)=>t+(x.p?x.a:0),0)||a.paid_out||0,
         rsContract:a.rs_contract||0,rsPaid:a.rs_paid||0,
         agent:a.agent||'',agency:a.agency||'',contact_email:a.email||'',phone:a.phone||'',notes:a.notes||'',
         deals:Array.isArray(a.deals)?a.deals:(a.deals?JSON.parse(a.deals):[]),sch});
@@ -2457,7 +2457,7 @@ async function confirmMarkPaid(key,mo,scheduled){
   s.cleared=selTotal||s.a;
   s.s=srcFlat;
   if(shortfall>0) s.shortfall=shortfall;
-  a.paid=(a.paid||0)+s.a;
+  a.paid=a.sch.reduce((t,x)=>t+(x.p?x.a:0),0); // recalc from schedule
   // Update wallet deal hist entries — upsert by mo, cap to deal remaining
   let histChanged=false;
   document.querySelectorAll('.mpm-amt-inp').forEach(inp=>{
@@ -2517,8 +2517,7 @@ async function markPaid(key,mo){
   const a=A.find(x=>x.f+'_'+x.l===key);if(!a) return;
   const s=a.sch.find(x=>x.mo===mo);if(!s) return;
   s.p=!s.p;
-  if(s.p) a.paid=(a.paid||0)+s.a;
-  else a.paid=Math.max(0,(a.paid||0)-s.a);
+  a.paid=a.sch.reduce((t,x)=>t+(x.p?x.a:0),0); // recalc from schedule
   try{
     await sb.from('payment_schedule').upsert(
       {athlete_id:a.id,month:mo,year:s.yr||2026,amount:s.a,is_paid:s.p,sources:s.s||[],
