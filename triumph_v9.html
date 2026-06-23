@@ -2243,6 +2243,9 @@ function oProf(key){
   document.getElementById('prof').classList.add('on');
   document.getElementById('top-title').textContent=a.f+' '+a.l;
   document.getElementById('top-sub').textContent=a.pos+' · Virginia Tech';
+  // Track which athlete we're viewing
+  if(lastProfKey===key) {/* will restore tab below */} else {lastProfTab='sched';}
+  lastProfKey=key;
   const rem=a.banked-a.paid,nf=isNF(a,CUR),mo=getMo()==='all'?CUR:getMo(),mp=gma(a,mo),rv=getRev(a,mo),rvYTD=getRevYTD(a);
   document.getElementById('pc').innerHTML=
     '<div class="hero">'
@@ -2280,12 +2283,12 @@ function oProf(key){
           :'');
       })():'')+'</div>'
     +'<div class="tabs">'
-      +(USER_ROLE!=='activation'?'<button class="tab on" onclick="sT(\'sched\',\''+key+'\',this)">Payment schedule</button>':'')
-      +'<button class="tab'+(USER_ROLE==='activation'?' on':'')+'" onclick="sT(\'wallets\',\''+key+'\',this)">NILGo wallets</button>'
-      +'<button class="tab" onclick="sT(\'receipt\',\''+key+'\',this)">Monthly receipt</button>'
-      +(USER_ROLE!=='activation'?'<button class="tab" onclick="sT(\'contact\',\''+key+'\',this)">Contact & Notes</button>':'')
+      +(USER_ROLE!=='activation'?'<button class="tab'+(lastProfKey===key&&lastProfTab==="sched"?' on':USER_ROLE!=='activation'&&lastProfKey!==key?' on':'')+'" onclick="sT(\'sched\',\''+key+'\',this)">Payment schedule</button>':'')
+      +'<button class="tab'+(lastProfKey===key&&lastProfTab==="wallets"?' on':USER_ROLE==='activation'?' on':'')+'" onclick="sT(\'wallets\',\''+key+'\',this)">NILGo wallets</button>'
+      +'<button class="tab'+(lastProfKey===key&&lastProfTab==="receipt"?' on':'')+'" onclick="sT(\'receipt\',\''+key+'\',this)">Monthly receipt</button>'
+      +(USER_ROLE!=='activation'?'<button class="tab'+(lastProfKey===key&&lastProfTab==="contact"?' on':'')+'" onclick="sT(\'contact\',\''+key+'\',this)">Contact & Notes</button>':'')
     +'</div>'
-    +'<div class="tabbody" id="tb">'+(USER_ROLE==='activation'?bWallets(a):bSched(a))+'</div>';
+    +'<div class="tabbody" id="tb">'+(lastProfKey===key&&lastProfTab==="wallets"?bWallets(a):lastProfKey===key&&lastProfTab==="receipt"?bReceipt(a,getMo()==='all'?CUR:getMo()):lastProfKey===key&&lastProfTab==="contact"?bContact(a):USER_ROLE==='activation'?bWallets(a):bSched(a))+'</div>';
 }
 
 // ===== DELETE ATHLETE =====
@@ -4730,11 +4733,16 @@ function switchRcpt(key,mo){
   if(a) document.getElementById('tb').innerHTML=bReceipt(a,mo);
 }
 
+let lastProfTab='sched';
+let lastProfKey=null;
+
 function sT(tab,key,el){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
-  el.classList.add('on');
+  if(el) el.classList.add('on');
   const a=A.find(x=>x.f+'_'+x.l===key);
   openSchedKey=null;openSchedMo=null;
+  lastProfTab=tab;
+  lastProfKey=key;
   const mo=getMo()==='all'?CUR:getMo();
   if(tab==='sched') document.getElementById('tb').innerHTML=bSched(a);
   else if(tab==='wallets') document.getElementById('tb').innerHTML=bWallets(a);
