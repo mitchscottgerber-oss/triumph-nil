@@ -7866,6 +7866,107 @@ function initMobile(){
   mobileNav('athletes');
 }
 
+function renderMobReports(){
+  // Build month chips
+  const mo=window._mobRptMo||CUR;
+  const moBar=document.getElementById('mob-rpt-mo-bar');
+  if(moBar) moBar.innerHTML='<span style="font-size:12px;color:#8e8e93;flex-shrink:0">Month:</span>'
+    +MO.map(m=>'<button onclick="window._mobRptMo=\''+m+'\';renderMobReports()" style="flex-shrink:0;padding:5px 11px;border-radius:20px;border:1.5px solid '+(m===mo?'#1d1d1f':'#e5e5ea')+';background:'+(m===mo?'#1d1d1f':'#fff')+';font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;color:'+(m===mo?'#fff':'#8e8e93')+';-webkit-text-fill-color:'+(m===mo?'#fff':'#8e8e93')+'">'+m+'</button>').join('');
+  // Build receipt
+  const body=document.getElementById('mob-reports-body');
+  if(!body) return;
+  window._sbMo=mo;
+  const yr=2026;
+  const dateStr=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  const ref='TRI-ALL-'+mo.toUpperCase()+'-'+String(yr).slice(2);
+  const sports=['Football','Baseball','Basketball-M','Basketball-W'];
+  const sportLabel={'Football':'Football','Baseball':'Baseball','Basketball-M':'Basketball (M)','Basketball-W':'Basketball (W)'};
+  const bySort={};
+  sports.forEach(sp=>{
+    const athletes=A.filter(a=>(a.sport||'Football')===sp);
+    if(!athletes.length) return;
+    const total=athletes.reduce((s,a)=>{const sch=a.sch.find(x=>x.mo===mo&&(x.yr||2026)===yr);return s+(sch?.a||0);},0);
+    if(!total) return;
+    const srcMap={};
+    athletes.forEach(a=>{
+      const sch=a.sch.find(x=>x.mo===mo&&(x.yr||2026)===yr);
+      if(!sch||!sch.a) return;
+      const srcs=parseSrcs(sch.s||[]);
+      if(srcs.length){
+        srcs.forEach(src=>{
+          const amt=parseFloat(String(src.amt).replace(/[^0-9.]/g,''))||0;
+          if(!srcMap[src.name]) srcMap[src.name]={amt:0,athletes:0,deal:a.deals.find(d=>d.n===src.name)};
+          srcMap[src.name].amt+=amt; srcMap[src.name].athletes++;
+        });
+      } else {
+        if(!srcMap['NIL Contract']) srcMap['NIL Contract']={amt:0,athletes:0,deal:null};
+        srcMap['NIL Contract'].amt+=sch.a; srcMap['NIL Contract'].athletes++;
+      }
+    });
+    const rsTotal=athletes.reduce((s,a)=>{const sch=a.sch.find(x=>x.mo===mo&&(x.yr||2026)===yr);return s+(sch?.shortfall||0);},0);
+    const rsCount=athletes.filter(a=>{const sch=a.sch.find(x=>x.mo===mo&&(x.yr||2026)===yr);return (sch?.shortfall||0)>0;}).length;
+    bySort[sp]={total,srcMap,rsTotal,rsCount,count:athletes.length};
+  });
+  const grandTotal=Object.values(bySort).reduce((s,d)=>s+d.total,0);
+  const grandRS=Object.values(bySort).reduce((s,d)=>s+d.rsTotal,0);
+  let html='<div id="mob-rpt-card" style="background:#fff;border-radius:12px;border:0.5px solid #e5e5ea;overflow:hidden">';
+  html+='<div style="background:#1d1d1f;padding:12px 16px;display:flex;justify-content:space-between;align-items:flex-start">';
+  html+='<div><div style="font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px">Triumph · Monthly Report</div>';
+  html+='<div style="font-size:15px;font-weight:700;color:#fff">All Sports · '+mo+' '+yr+'</div>';
+  html+='<div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:2px">'+ref+'</div></div>';
+  html+='<div style="text-align:right"><div style="font-size:10px;color:rgba(255,255,255,.4)">'+dateStr+'</div></div></div>';
+  html+='<div style="background:#eef6ff;padding:9px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid #b3d4f5">';
+  html+='<div style="font-size:10px;font-weight:600;color:#185fa5;text-transform:uppercase;letter-spacing:.05em">Total NIL Payment</div>';
+  html+='<div style="font-size:18px;font-weight:700;color:#185fa5">'+f(grandTotal)+'</div></div>';
+  Object.entries(bySort).forEach(([sp,d])=>{
+    html+='<div style="background:#f9f9f9;padding:8px 14px;display:flex;justify-content:space-between;border-bottom:0.5px solid #e5e5ea">';
+    html+='<div style="font-size:13px;font-weight:700;color:#1d1d1f">'+(sportLabel[sp]||sp)+'</div>';
+    html+='<div style="font-size:13px;font-weight:700;color:#185fa5">'+f(d.total)+'</div></div>';
+    html+='<div style="font-size:9px;font-weight:500;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;padding:6px 14px 2px">Source of funds</div>';
+    Object.entries(d.srcMap).forEach(([name,src])=>{
+      const deal=src.deal;
+      const typeLabels=(deal?.types||[]).map(t=>({social:'Social',appearance:'Appearance',content:'Content',autograph:'Autograph',billboard:'Billboard',virtual:'Virtual M&G'}[t]||t)).join(', ');
+      const sub=[typeLabels,src.athletes+' athlete'+(src.athletes!==1?'s':'')].filter(Boolean).join(' · ');
+      html+='<div style="padding:7px 14px 7px 22px;display:flex;justify-content:space-between;align-items:flex-start;border-bottom:0.5px solid #f2f2f7">';
+      html+='<div><div style="font-size:12px;font-weight:500;color:#1d1d1f">'+name+'</div>';
+      if(sub) html+='<div style="font-size:10px;color:#8e8e93;margin-top:1px">'+sub+'</div>';
+      html+='</div><div style="font-size:12px;font-weight:600;color:#1d1d1f;margin-left:8px;white-space:nowrap">'+f(src.amt)+'</div></div>';
+    });
+    if(d.rsTotal>0){
+      html+='<div style="padding:7px 14px 7px 22px;display:flex;justify-content:space-between;background:#fff0f3;border-bottom:0.5px solid #f5c6d0">';
+      html+='<div><div style="font-size:12px;font-weight:500;color:#c0392b">Rev Share moved</div>';
+      html+='<div style="font-size:10px;color:#c0392b;margin-top:1px">'+d.rsCount+' athlete'+(d.rsCount!==1?'s':'')+'</div></div>';
+      html+='<div style="font-size:12px;font-weight:600;color:#c0392b;white-space:nowrap">'+f(d.rsTotal)+'</div></div>';
+    }
+  });
+  html+='<div style="padding:12px 14px;display:flex;justify-content:space-between;background:#f9f9f9;border-top:0.5px solid #e5e5ea">';
+  html+='<div style="font-size:10px;color:#8e8e93;font-family:monospace">'+ref+'</div>';
+  html+='<div style="text-align:right"><div style="font-size:10px;color:#8e8e93;margin-bottom:1px">Total</div><div style="font-size:20px;font-weight:700;color:#1d1d1f">'+f(grandTotal)+'</div></div></div>';
+  html+='</div>';
+  body.innerHTML=html;
+}
+
+async function mobSendReport(){
+  const card=document.getElementById('mob-rpt-card');
+  if(!card){alert('No report visible.');return;}
+  const btn=document.getElementById('mob-rpt-send');
+  if(btn){btn.textContent='Generating...';btn.disabled=true;}
+  try{
+    const canvas=await html2canvas(card,{scale:3,backgroundColor:'#ffffff',useCORS:true,logging:false});
+    const dataUrl=canvas.toDataURL('image/jpeg',0.95);
+    const mo=window._mobRptMo||CUR;
+    const filename='Triumph_Report_'+mo+'_2026.jpg';
+    if(navigator.share&&navigator.canShare){
+      const blob=await(await fetch(dataUrl)).blob();
+      const file=new File([blob],filename,{type:'image/jpeg'});
+      if(navigator.canShare({files:[file]})){await navigator.share({files:[file],title:filename});}
+    } else {
+      const link=document.createElement('a');link.download=filename;link.href=dataUrl;link.click();
+    }
+  }catch(e){alert('Could not generate: '+e.message);}
+  if(btn){btn.textContent='Send Report';btn.disabled=false;}
+}
+
 function toggleMobMenu(){
   const overlay=document.getElementById('mob-menu-overlay');
   const drawer=document.getElementById('mob-menu-drawer');
@@ -7908,6 +8009,7 @@ function mobileNav(tab){
   if(tab==='athletes') renderMobAthletes();
   if(tab==='dashboard') renderMobDash();
   if(tab==='companies') renderMobCompanies();
+  if(tab==='reports') renderMobReports();
 }
 
 function renderMobAthletes(q=''){
@@ -8276,6 +8378,21 @@ function renderMobDash(){
     </div>
   </div>
 
+  <!-- Reports Screen -->
+  <div id="mob-reports" class="mob-screen" style="flex-direction:column;flex:1;overflow:hidden">
+    <div style="background:#fff;padding:16px 16px 0;border-bottom:0.5px solid #e5e5ea;flex-shrink:0;display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:22px;font-weight:700;color:#1d1d1f">Reports</div>
+      <button onclick="toggleMobMenu()" style="background:none;border:none;cursor:pointer;padding:4px;color:#1d1d1f"><i class="ti ti-menu-2" style="font-size:26px"></i></button>
+    </div>
+    <!-- Month selector -->
+    <div id="mob-rpt-mo-bar" style="padding:10px 14px;background:#fff;border-bottom:0.5px solid #e5e5ea;display:flex;align-items:center;gap:6px;overflow-x:auto;flex-shrink:0"></div>
+    <div id="mob-reports-body" style="flex:1;overflow-y:auto;padding:12px;padding-bottom:80px"></div>
+    <!-- Send button -->
+    <div style="position:absolute;bottom:0;left:0;right:0;padding:12px 14px max(20px,env(safe-area-inset-bottom));background:#fff;border-top:0.5px solid #e5e5ea">
+      <button id="mob-rpt-send" onclick="mobSendReport()" style="width:100%;height:48px;background:#1d1d1f;color:#fff;-webkit-text-fill-color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit">Send Report</button>
+    </div>
+  </div>
+
   <!-- Companies Screen -->
   <div id="mob-companies" class="mob-screen" style="flex-direction:column;flex:1;overflow:hidden">
     <div style="background:#fff;padding:16px;border-bottom:0.5px solid #e5e5ea;flex-shrink:0;display:flex;justify-content:space-between;align-items:center">
@@ -8307,6 +8424,7 @@ function renderMobDash(){
     <div style="flex:1;overflow-y:auto;padding:12px">
       <button onclick="mobileNav('athletes');toggleMobMenu()" style="width:100%;display:flex;align-items:center;gap:12px;padding:14px;border:none;background:#f9f9f9;border-radius:12px;margin-bottom:8px;cursor:pointer;font-family:inherit;font-size:15px;font-weight:600;color:#1d1d1f"><i class="ti ti-users" style="font-size:20px;color:#2980b9"></i> Athletes</button>
       <button onclick="mobileNav('companies');toggleMobMenu()" style="width:100%;display:flex;align-items:center;gap:12px;padding:14px;border:none;background:#f9f9f9;border-radius:12px;margin-bottom:8px;cursor:pointer;font-family:inherit;font-size:15px;font-weight:600;color:#1d1d1f"><i class="ti ti-building-store" style="font-size:20px;color:#1d9e75"></i> Companies</button>
+      <button onclick="mobileNav('reports');toggleMobMenu()" style="width:100%;display:flex;align-items:center;gap:12px;padding:14px;border:none;background:#f9f9f9;border-radius:12px;margin-bottom:8px;cursor:pointer;font-family:inherit;font-size:15px;font-weight:600;color:#1d1d1f"><i class="ti ti-receipt-2" style="font-size:20px;color:#8e44ad"></i> Reports</button>
     </div>
   </div>
 </div>
