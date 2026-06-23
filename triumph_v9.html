@@ -7840,12 +7840,14 @@ function buildMobReceiptCard(a,mo,yr){
     srcs.forEach(src=>{
       const deal=a.deals.find(d=>d.n===src.name);
       const approved=deal?.status==='approved';
+      const noSub=deal?.status==='no-submission';
       const hasPow=deal?.pow;
+      const statusLabel=approved?'<span style="color:#1d9e75;font-weight:600;font-size:11px">✓ NILGo Approved</span>':noSub?'':'';
       lines+=`<div class="mob-rcpt-line">
         <div class="mob-rcpt-line-left">
           <div class="mob-rcpt-deal">${src.name}</div>
           <div class="mob-rcpt-sub">
-            <span style="color:${approved?'#1d9e75':'#f59e0b'};font-weight:600;font-size:11px">${approved?'✓ NILGo Approved':'⏱ Pending'}</span>
+            ${statusLabel}
             ${hasPow?'<span class="mob-badge green" style="font-size:10px;padding:1px 6px;margin-left:4px"><i class="ti ti-paperclip" style="font-size:9px"></i> POW</span>':''}
           </div>
         </div>
