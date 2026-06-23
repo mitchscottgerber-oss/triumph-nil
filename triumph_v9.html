@@ -6552,12 +6552,156 @@ function buildCoList(){
 function toggleExp(i){const el=document.getElementById('co-exp-'+i);if(el) el.style.display=el.style.display==='block'?'none':'block';}
 
 /* ===== REPORTS ===== */
+function bRptSportBreakdown(){
+  const mo=getMo()==='all'?CUR:getMo();
+  const yr=2026;
+  const dateStr=new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  const ref='TRI-ALL-'+mo.toUpperCase()+'-'+String(yr).slice(2);
+  const sports=['Football','Baseball','Basketball-M','Basketball-W'];
+  const sportLabel={'Football':'Football','Baseball':'Baseball','Basketball-M':'Basketball (M)','Basketball-W':'Basketball (W)'};
+
+  // Group athletes by sport
+  const bySort={};
+  sports.forEach(sp=>{
+    const athletes=A.filter(a=>(a.sport||'Football')===sp);
+    if(!athletes.length) return;
+    const total=athletes.reduce((s,a)=>{
+      const sch=a.sch.find(x=>x.mo===mo&&(x.yr||2026)===yr);
+      return s+(sch?.a||0);
+    },0);
+    if(!total) return;
+    // Aggregate sources across all athletes in this sport
+    const srcMap={};
+    athletes.forEach(a=>{
+      const sch=a.sch.find(x=>x.mo===mo&&(x.yr||2026)===yr);
+      if(!sch||!sch.a) return;
+      const srcs=parseSrcs(sch.s||[]);
+      if(srcs.length){
+        srcs.forEach(src=>{
+          const amt=parseFloat(String(src.amt).replace(/[^0-9.]/g,''))||0;
+          if(!srcMap[src.name]) srcMap[src.name]={amt:0,athletes:0,deal:a.deals.find(d=>d.n===src.name)};
+          srcMap[src.name].amt+=amt;
+          srcMap[src.name].athletes++;
+        });
+      } else {
+        const name='NIL Contract';
+        if(!srcMap[name]) srcMap[name]={amt:0,athletes:0,deal:null};
+        srcMap[name].amt+=sch.a;
+        srcMap[name].athletes++;
+      }
+    });
+    const rsTotal=athletes.reduce((s,a)=>{
+      const sch=a.sch.find(x=>x.mo===mo&&(x.yr||2026)===yr);
+      return s+(sch?.shortfall||0);
+    },0);
+    const rsCount=athletes.filter(a=>{
+      const sch=a.sch.find(x=>x.mo===mo&&(x.yr||2026)===yr);
+      return (sch?.shortfall||0)>0;
+    }).length;
+    bySort[sp]={total,srcMap,rsTotal,rsCount,count:athletes.length};
+  });
+
+  const grandTotal=Object.values(bySort).reduce((s,d)=>s+d.total,0);
+  const grandRS=Object.values(bySort).reduce((s,d)=>s+d.rsTotal,0);
+
+  // Build receipt HTML
+  let html='<div id="sport-breakdown-receipt" style="background:#fff;border-radius:14px;border:0.5px solid #e5e5ea;overflow:hidden;max-width:560px;margin:0 auto">';
+  // Header
+  html+='<div style="background:#1d1d1f;padding:16px 20px;display:flex;justify-content:space-between;align-items:flex-start">';
+  html+='<div><div style="font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px">Triumph · Monthly Report</div>';
+  html+='<div style="font-size:17px;font-weight:700;color:#fff">All Sports · '+mo+' '+yr+'</div>';
+  html+='<div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:3px">'+ref+'</div></div>';
+  html+='<div style="text-align:right"><div style="font-size:10px;color:rgba(255,255,255,.4)">'+dateStr+'</div></div></div>';
+  // Grand total banner
+  html+='<div style="background:#eef6ff;padding:10px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid #b3d4f5">';
+  html+='<div style="font-size:10px;font-weight:600;color:#185fa5;text-transform:uppercase;letter-spacing:.05em">Total NIL Payment</div>';
+  html+='<div style="font-size:20px;font-weight:700;color:#185fa5">'+f(grandTotal)+'</div></div>';
+  // Sport sections
+  Object.entries(bySort).forEach(([sp,d])=>{
+    const label=sportLabel[sp]||sp;
+    // Sport header
+    html+='<div style="background:#f9f9f9;padding:9px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid #e5e5ea">';
+    html+='<div style="font-size:13px;font-weight:700;color:#1d1d1f">'+label+'</div>';
+    html+='<div style="font-size:13px;font-weight:700;color:#185fa5">'+f(d.total)+'</div></div>';
+    // Sources
+    html+='<div style="font-size:9px;font-weight:500;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;padding:7px 18px 3px">Source of funds</div>';
+    Object.entries(d.srcMap).forEach(([name,src])=>{
+      const deal=src.deal;
+      const typeLabels=(deal?.types||[]).map(t=>({
+        social:'Social Post',appearance:'Appearance',content:'Content Creation',
+        autograph:'Autograph Signing',billboard:'Billboard',virtual:'Virtual Meet & Greet'
+      }[t]||t)).join(', ');
+      const statusLabel=deal?.status==='approved'?'NILGo Approved':deal?.status==='no-submission'?'':deal?'Pending NILGo':'';
+      const sub=[statusLabel,typeLabels,src.athletes+' athlete'+(src.athletes!==1?'s':'')].filter(Boolean).join(' · ');
+      html+='<div style="padding:8px 18px 8px 28px;display:flex;justify-content:space-between;align-items:flex-start;border-bottom:0.5px solid #f2f2f7">';
+      html+='<div><div style="font-size:12px;font-weight:500;color:#1d1d1f">'+name+'</div>';
+      if(sub) html+='<div style="font-size:10px;color:#8e8e93;margin-top:2px">'+sub+'</div>';
+      html+='</div><div style="font-size:12px;font-weight:600;color:#1d1d1f;margin-left:12px;white-space:nowrap">'+f(src.amt)+'</div></div>';
+    });
+    // RS moved if any
+    if(d.rsTotal>0){
+      html+='<div style="padding:8px 18px 8px 28px;display:flex;justify-content:space-between;align-items:flex-start;border-bottom:0.5px solid #f2f2f7;background:#fff0f3">';
+      html+='<div><div style="font-size:12px;font-weight:500;color:#c0392b">Rev Share moved</div>';
+      html+='<div style="font-size:10px;color:#c0392b;margin-top:2px">Shortfall covered · '+d.rsCount+' athlete'+(d.rsCount!==1?'s':'')+'</div></div>';
+      html+='<div style="font-size:12px;font-weight:600;color:#c0392b;white-space:nowrap">'+f(d.rsTotal)+'</div></div>';
+    }
+  });
+  // Footer
+  html+='<div style="padding:14px 18px;display:flex;justify-content:space-between;align-items:center;background:#f9f9f9;border-top:0.5px solid #e5e5ea">';
+  html+='<div><div style="font-size:10px;color:#8e8e93;font-family:monospace">'+ref+'</div>';
+  if(grandRS>0) html+='<div style="font-size:10px;color:#c0392b;margin-top:2px">RS moved: '+f(grandRS)+'</div>';
+  html+='</div><div style="text-align:right">';
+  html+='<div style="font-size:10px;color:#8e8e93;margin-bottom:2px">Total</div>';
+  html+='<div style="font-size:22px;font-weight:700;color:#1d1d1f">'+f(grandTotal)+'</div></div></div>';
+  html+='</div>';
+
+  // Month picker + action buttons
+  const moSel='<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">'
+    +'<span style="font-size:12px;color:#8e8e93">Month:</span>'
+    +MO.map(m=>'<button onclick="document.querySelectorAll(\'.sbmo\').forEach(b=>b.classList.remove(\'on\'));this.classList.add(\'on\');window._sbMo=\''+m+'\';document.getElementById(\'rp-sportbreakdown\').innerHTML=bRptSportBreakdown()" class="sbmo'+(m===mo?' on':'')+'">'+m+'</button>').join('')
+    +'</div>';
+
+  const actBtns='<div class="ract" style="margin-top:12px">';
+  const actEnd='<button class="btn btn-dark" style="flex:1;justify-content:center" onclick="sbDownloadPNG()"><i class="ti ti-download"></i> Download PNG</button>'
+    +'</div>';
+
+  return moSel+html+actBtns+actEnd;
+}
+
+async function sbDownloadPNG(){
+  const card=document.getElementById('sport-breakdown-receipt');
+  if(!card){alert('Report not visible.');return;}
+  const btn=event.target.closest('button');
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader"></i> Generating...';}
+  try{
+    const canvas=await html2canvas(card,{scale:3,backgroundColor:'#ffffff',useCORS:true,logging:false});
+    const dataUrl=canvas.toDataURL('image/jpeg',0.95);
+    const mo=getMo()==='all'?CUR:getMo();
+    const filename='Triumph_Sport_Breakdown_'+mo+'_2026.jpg';
+    if(navigator.share&&navigator.canShare){
+      const blob=await(await fetch(dataUrl)).blob();
+      const file=new File([blob],filename,{type:'image/jpeg'});
+      if(navigator.canShare({files:[file]})){
+        await navigator.share({files:[file],title:filename});
+        if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-download"></i> Download PNG';}
+        return;
+      }
+    }
+    const link=document.createElement('a');
+    link.download=filename;
+    link.href=dataUrl;
+    link.click();
+  }catch(e){alert('Could not generate image: '+e.message);}
+  if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-download"></i> Download PNG';}
+}
+
 function buildReports(){
   const rpts=[
     {id:'monthly',icon:'ti-calendar-stats',name:'Monthly payment report',desc:'All athletes — payments due, funded, and short'},
     {id:'program',icon:'ti-report-analytics',name:'Full program summary',desc:'All athletes — NIL contract, paid, banked, remaining'},
     {id:'company',icon:'ti-building-store',name:'Company spend report',desc:'All sponsors — committed, drawn, and remaining'},
     {id:'wallets',icon:'ti-wallet',name:'NILGo deal wallets',desc:'All approved deals — submitted, drawn, remaining'},
+    {id:'sportbreakdown',icon:'ti-receipt-2',name:'Sport breakdown report',desc:'Monthly NIL by sport — source of funds for Kelly'},
   ];
   document.getElementById('rpt-body').innerHTML=rpts.map(r=>
     '<div class="rptcard" onclick="toggleRpt(\''+r.id+'\')">'
@@ -6567,7 +6711,7 @@ function buildReports(){
     +'</div>'
     +'<div class="rptprev" id="rp-'+r.id+'"></div>'
   ).join('');
-  window._rB={monthly:bRptMonthly,program:bRptProgram,company:bRptCompany,wallets:bRptWallets};
+  window._rB={monthly:bRptMonthly,program:bRptProgram,company:bRptCompany,wallets:bRptWallets,sportbreakdown:bRptSportBreakdown};
 }
 function toggleRpt(id){
   const el=document.getElementById('rp-'+id),arr=document.getElementById('ra-'+id);
@@ -8188,6 +8332,8 @@ function renderMobDash(){
 .mob-rcpt-mo-scroll{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .mob-rcpt-mo-scroll::-webkit-scrollbar{display:none}
 .mob-mo-btn{flex-shrink:0;padding:6px 12px;border-radius:20px;border:1.5px solid #e5e5ea;background:#fff;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;color:#8e8e93;white-space:nowrap}
+.sbmo{flex-shrink:0;padding:4px 10px;border-radius:20px;border:1.5px solid #e5e5ea;background:#fff;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;color:#8e8e93}
+.sbmo.on{background:#1d1d1f;color:#fff;-webkit-text-fill-color:#fff!important;border-color:#1d1d1f}
 .mob-mo-btn.on{background:#1d1d1f;color:#fff!important;-webkit-text-fill-color:#fff!important;border-color:#1d1d1f}
 .mob-rcpt-card{background:#fff;border:0.5px solid #e5e5ea;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06)}
 .mob-rcpt-hd{padding:16px;border-bottom:0.5px solid #f2f2f7;display:flex;justify-content:space-between;align-items:flex-start}
