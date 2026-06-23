@@ -1915,7 +1915,9 @@ function rAnnual(list,filterMos){
     const nilShortfall=a.sch.reduce((s,x)=>s+(x.shortfall||0),0);
     const nilRem=Math.max(0,nilTot-a.paid-nilShortfall);
     const rsRem=Math.max(0,(a.rsContract||0)-(a.rsPaid||0));
-    const isBankLow=banked<(a.sch.find(x=>x.mo===CUR&&(x.yr||2026)===2026)?.a||0);
+    const curMonthAmt=a.sch.find(x=>x.mo===CUR&&(x.yr||2026)===2026)?.a||0;
+    const isBankLow=banked<=0;
+    const isBankShort=!isBankLow&&banked<curMonthAmt;
     const key=a.f+'_'+a.l;
     const nilExpId='nil-exp-'+idx;
     const rsExpId='rs-exp-'+idx;
@@ -2010,7 +2012,7 @@ function rAnnual(list,filterMos){
         '<td style="text-align:right;font-weight:600;font-size:12px;color:#185fa5!important;-webkit-text-fill-color:#185fa5!important;background:#eef6ff!important">'+f(a.paid)+'</td>'+
         '<td style="text-align:right;font-weight:600;font-size:12px;color:#7B1A1A!important;-webkit-text-fill-color:#7B1A1A!important;background:#f9eaea!important">'+(rvTot>0?f(rvTot):'—')+'</td>'+
         '<td style="text-align:right;font-weight:700;font-size:12px;color:#185fa5!important;-webkit-text-fill-color:#185fa5!important;background:#eef6ff!important">'+f(nilRem)+'</td>'+
-        '<td style="text-align:right;background:#e8f8f2!important"><span style="font-size:12px;font-weight:600;color:'+(isBankLow?'#e34040':'#1d9e75')+'!important;-webkit-text-fill-color:'+(isBankLow?'#e34040':'#1d9e75')+'!important">'+f(banked)+'</span></td>'+
+        '<td style="text-align:right;background:'+(isBankLow?'#fff0f3':isBankShort?'#faeeda':'#e8f8f2')+'!important"><span style="font-size:12px;font-weight:600;color:'+(isBankLow?'#e34040':isBankShort?'#b7791f':'#1d9e75')+'!important;-webkit-text-fill-color:'+(isBankLow?'#e34040':isBankShort?'#b7791f':'#1d9e75')+'!important">'+(isBankLow?'No funds':f(banked))+'</span></td>'+
         cols.map(({mo,yr})=>{
           const s=a.sch.find(x=>x.mo===mo&&(x.yr||2026)===yr);
           const iC=mo===CUR&&yr===2026;
