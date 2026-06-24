@@ -2371,7 +2371,8 @@ function mpmSyncAmt(chk, scheduled){
     },0);
     const needed=Math.max(0,scheduled-currentTotal);
     const dealRemaining=parseFloat(inp.max)||0;
-    inp.value=Math.min(needed,dealRemaining).toFixed(2);
+    const fillAmt=dealRemaining>0?Math.min(needed,dealRemaining):0;
+    inp.value=fillAmt.toFixed(2);
   } else {
     inp.value=0;
   }
@@ -2382,6 +2383,8 @@ function mpmSyncAmt(chk, scheduled){
 function mpmSyncFromInput(inp, scheduled){
   const chk=document.querySelector('.mpm-deal-chk[data-idx="'+inp.dataset.idx+'"]');
   if(!chk) return;
+  const maxAllowed=parseFloat(inp.max)||0;
+  if(parseFloat(inp.value)>maxAllowed) inp.value=maxAllowed.toFixed(2);
   const val=parseFloat(inp.value)||0;
   chk.checked=val>0;
   chk.dataset.amt=val;
