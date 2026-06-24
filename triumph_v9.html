@@ -2010,12 +2010,12 @@ function rAnnual(list,filterMos){
             (rvTot>0?'<span style="font-size:9px;background:#fff0f3;padding:1px 5px;border-radius:4px;color:#c0392b">RS</span>':'')+
           '</div>'+
         '</td>'+
-        '<td style="text-align:right;font-weight:700;font-size:12px;color:#185fa5!important;-webkit-text-fill-color:#185fa5!important;background:#eef6ff!important">'+f(nilTot)+'</td>'+
-        '<td style="text-align:right;font-weight:600;font-size:12px;color:#185fa5!important;-webkit-text-fill-color:#185fa5!important;background:#eef6ff!important">'+f(a.paid)+'</td>'+
+        '<td id="cell-nilTot-'+key+'" style="text-align:right;font-weight:700;font-size:12px;color:#185fa5!important;-webkit-text-fill-color:#185fa5!important;background:#eef6ff!important;cursor:cell" title="Tap to edit" onclick="event.stopPropagation();athInlineEdit(this,\''+key+'\',\'contract\')">'+f(nilTot)+'</td>'+
+        '<td id="cell-paid-'+key+'" style="text-align:right;font-weight:600;font-size:12px;color:#185fa5!important;-webkit-text-fill-color:#185fa5!important;background:#eef6ff!important;cursor:cell" title="Tap to edit" onclick="event.stopPropagation();athInlineEdit(this,\''+key+'\',\'paid_out\')">'+f(a.paid)+'</td>'+
         '<td style="text-align:right;font-weight:600;font-size:12px;color:#7B1A1A!important;-webkit-text-fill-color:#7B1A1A!important;background:#f9eaea!important">'+(rvTot>0?f(rvTot):'—')+'</td>'+
         '<td style="text-align:right;font-weight:700;font-size:12px;color:#185fa5!important;-webkit-text-fill-color:#185fa5!important;background:#eef6ff!important">'+f(a.paid+rvTot)+'</td>'+
         '<td style="text-align:right;font-weight:700;font-size:12px;color:#185fa5!important;-webkit-text-fill-color:#185fa5!important;background:#eef6ff!important">'+f(nilRem)+'</td>'+
-        '<td style="text-align:right;background:'+(isBankLow?'#fff0f3':isBankShort?'#faeeda':'#e8f8f2')+'!important"><span style="font-size:12px;font-weight:600;color:'+(isBankLow?'#e34040':isBankShort?'#b7791f':'#1d9e75')+'!important;-webkit-text-fill-color:'+(isBankLow?'#e34040':isBankShort?'#b7791f':'#1d9e75')+'!important">'+(isBankLow?'No funds':f(banked))+'</span></td>'+
+        '<td id="cell-banked-'+key+'" style="text-align:right;background:'+(isBankLow?'#fff0f3':isBankShort?'#faeeda':'#e8f8f2')+'!important;cursor:cell" title="Tap to edit" onclick="event.stopPropagation();athInlineEdit(this,\''+key+'\',\'banked\')"><span style="font-size:12px;font-weight:600;color:'+(isBankLow?'#e34040':isBankShort?'#b7791f':'#1d9e75')+'!important;-webkit-text-fill-color:'+(isBankLow?'#e34040':isBankShort?'#b7791f':'#1d9e75')+'!important">'+(isBankLow?'No funds':f(banked))+'</span></td>'+
         cols.map(({mo,yr})=>{
           const s=a.sch.find(x=>x.mo===mo&&(x.yr||2026)===yr);
           const iC=mo===CUR&&yr===2026;
@@ -7396,6 +7396,39 @@ function gmInlineEdit(td,key,type,mo){
   inp.focus();inp.select();
 }
 function gmEditRs(key,mo,span){gmInlineEdit(span.closest('td'),key,'rs',mo);}
+
+function athInlineEdit(td,key,field){
+  if(td.querySelector('input')) return;
+  const a=A.find(x=>x.f+'_'+x.l===key);
+  if(!a) return;
+  let cur=0;
+  if(field==='contract') cur=a.sch.reduce((s,x)=>s+x.a,0);
+  else if(field==='paid_out') cur=a.paid||0;
+  else if(field==='banked') cur=a.banked||0;
+  const inp=document.createElement('input');
+  inp.type='number';inp.min='0';inp.step='0.01';
+  inp.value=Math.round(cur*100)/100;
+  inp.style.cssText='width:100%;height:100%;border:none;background:#fffde8;font-size:12px;font-weight:600;font-family:inherit;text-align:right;outline:2px solid #2980b9;outline-offset:-2px;border-radius:3px;padding:0 6px;box-sizing:border-box;color:#185fa5;-webkit-text-fill-color:#185fa5';
+  const commit=async()=>{
+    const val=parseFloat(inp.value)||0;
+    td.innerHTML='<span style="font-size:12px;color:#8e8e93">saving…</span>';
+    const dbField=field==='contract'?'contract':field==='paid_out'?'paid_out':'banked';
+    const {error}=await sb.from('athletes').update({[dbField]:val}).eq('id',a.id);
+    if(error){td.innerHTML='<span style="color:#e34040;font-size:11px">err</span>';return;}
+    if(field==='contract') a.contract=val;
+    else if(field==='paid_out') a.paid=val;
+    else if(field==='banked') a.banked=val;
+    const list=filteredList||A;
+    rAnnual(list);
+    syncStatus('Saved '+a.f+' '+a.l+' '+field+' ✓');
+  };
+  inp.onblur=commit;
+  inp.onkeydown=e=>{if(e.key==='Enter'){inp.blur();}if(e.key==='Escape'){rAnnual(filteredList||A);}};
+  inp.onclick=e=>e.stopPropagation();
+  td.innerHTML='';
+  td.appendChild(inp);
+  inp.focus();inp.select();
+}
 
 function gmReset(){
   gmData={};
