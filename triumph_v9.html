@@ -6942,9 +6942,9 @@ function openBulkUpdate(){
         btn.disabled=false;btn.style.opacity='1';return;
       }
       statusEl.textContent='Inserting 99 athletes…';
-      const rows=BU_ATHLETES.map((ba,i)=>({
+      const rows=BU_ATHLETES.map((ba)=>({
         first_name:ba.f, last_name:ba.l, position:ba.pos, sport:ba.sport,
-        contract:0, paid_out:0, rev_moved:0, banked:0, rank:i+1
+        contract:0, paid_out:0, rev_moved:0, banked:0
       }));
       const CHUNK=20;let inserted=0;const errs=[];
       for(let i=0;i<rows.length;i+=CHUNK){
