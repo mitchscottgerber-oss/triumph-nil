@@ -6938,8 +6938,8 @@ function openBulkUpdate(){
         statusEl.innerHTML='<span style="color:#1d9e75">✓ '+existing.length+'+ athletes already in DB — continuing</span>';
         await loadAthletes();
         buApplied['identity']=true;
-        setTimeout(()=>{buStep++;buRender();},700);
-        btn.disabled=false;btn.style.opacity='1';return;
+        btn.disabled=false;btn.style.opacity='1';
+        buStep++;buRender();return;
       }
       statusEl.textContent='Inserting 99 athletes…';
       const rows=BU_ATHLETES.map((ba,i)=>({
@@ -6957,8 +6957,8 @@ function openBulkUpdate(){
       statusEl.innerHTML='<span style="color:#1d9e75">✓ '+inserted+' athletes inserted into Supabase</span>';
       await loadAthletes();
       buApplied['identity']=true;
-      setTimeout(()=>{buStep++;buRender();},900);
-      btn.disabled=false;btn.style.opacity='1';return;
+      btn.disabled=false;btn.style.opacity='1';
+      buStep++;buRender();return;
     }
 
     if(step.key==='months'){
