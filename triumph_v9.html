@@ -2450,8 +2450,8 @@ function openMarkPaidModal(key, mo){
     :'<div style="padding:12px;text-align:center;color:#8e8e93;font-size:13px">No wallet deals yet — <a href="#" onclick="event.preventDefault();document.getElementById(\'mark-paid-overlay\').remove();sT(\'wallets\',\''+key+'\',null)" style="color:#185fa5">add deals in NILGo Wallets</a></div>';
   const ov=document.createElement('div');
   ov.id='mark-paid-overlay';
-  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1200;display:flex;align-items:center;justify-content:center';
-  ov.innerHTML=`<div style="background:#fff;border-radius:18px;width:460px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.25);overflow:hidden">
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.innerHTML=`<div style="background:#fff;border-radius:18px;width:100%;max-width:460px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden">
     <div style="background:#1d1d1f;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
       <div><div style="font-size:15px;font-weight:700;color:#fff">Confirm Payment</div>
       <div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px">${a.f} ${a.l} · ${mo} ${yr}</div></div>
@@ -2476,16 +2476,17 @@ function openMarkPaidModal(key, mo){
     </div>
     <div style="padding:14px 22px;border-top:1px solid #f2f2f7;display:flex;gap:10px;background:#fafafa;flex-shrink:0">
       <button onclick="document.getElementById('mark-paid-overlay').remove()" style="flex:1;height:36px;border-radius:8px;border:1.5px solid #e5e5ea;background:#fff;color:#1d1d1f;-webkit-text-fill-color:#1d1d1f;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Cancel</button>
-      <button id="mpm-confirm-btn" onclick="confirmMarkPaid('${key}','${mo}',${s.a})" style="flex:2;height:36px;border-radius:8px;border:none;background:#1d9e75;color:#fff;-webkit-text-fill-color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Confirm Payment</button>
+      <button id="mpm-confirm-btn" onclick="confirmMarkPaid('${key}','${mo}',${s.a},${yr})" style="flex:2;height:36px;border-radius:8px;border:none;background:#1d9e75;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:#fff">Confirm Payment</button>
     </div>
   </div>`;
   document.body.appendChild(ov);
   setTimeout(()=>mpmUpdateTotals(s.a),50);
 }
 
-async function confirmMarkPaid(key,mo,scheduled){
+async function confirmMarkPaid(key,mo,scheduled,yr){
+  yr=yr||2026;
   const a=A.find(x=>x.f+'_'+x.l===key);if(!a) return;
-  const s=a.sch.find(x=>x.mo===mo);if(!s) return;
+  const s=a.sch.find(x=>x.mo===mo&&(x.yr||2026)===yr);if(!s) return;
   // Collect selected sources — save as flat [name, amt, name, amt] format
   const srcFlat=[];
   let selTotal=0;
