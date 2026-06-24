@@ -2057,7 +2057,11 @@ function rAnnual(list,filterMos){
           var detailLabel=isOpen?'▲ close':(hasNILShortfall?'▾ RS moved':'▾ detail');
           var moAmt=s?s.a:0;
           var dotHtml='';
-          if(moAmt>0&&!(s&&s.p)){
+          var MO_LIST=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          var curMoIdx=MO_LIST.indexOf(CUR);
+          var thisMoIdx=MO_LIST.indexOf(mo);
+          var isFuture=(yr>2026)||(yr===2026&&thisMoIdx>curMoIdx);
+          if(moAmt>0&&!(s&&s.p)&&isFuture){
             var dotClr=rb<=0?'#e34040':rb>=moAmt?'#1d9e75':'#f59e0b';
             dotHtml='<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:'+dotClr+';margin-left:3px;vertical-align:middle;flex-shrink:0" title="Banked '+f(rb)+' vs '+f(moAmt)+' due"></span>';
             rb=Math.max(0,rb-moAmt);
