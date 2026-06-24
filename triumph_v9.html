@@ -4835,7 +4835,7 @@ let rowView='nil'; // 'nil' | 'rs'
 let showFutureYears=false;
 let filteredList=[]; // current rendered athlete list, for inline grid editing
 let annualSortCol='name'; // 'name'|'nil'|'paid'|'rev'|'total'|'remaining'|'banked'
-let annualSortDir=-1; // 0=default, 1=desc, -1=asc (start A→Z)
+let annualSortDir=1; // 1=asc for name (A→Z via localeCompare), -1=desc
 const nilMoExp={}; // idx -> 'Mo_YYYY' of currently open month expand
 const rsMoExp={}; // idx -> 'Mo_YYYY' for RS tab expands
 
