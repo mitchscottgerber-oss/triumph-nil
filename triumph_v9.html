@@ -6860,12 +6860,12 @@ function openBulkUpdate(){
     </div>`;
 
     const footerLeft=isIdentity?
-      `<span style="font-size:12px;color:#1d9e75;font-weight:500">✓ 99 athletes loaded from your spreadsheet</span>`:
+      `<span style="font-size:12px;color:#6c6c70">99 athletes ready to insert — names, position, sport</span>`:
       isMonths?
       `<span style="font-size:12px;color:#1d9e75;font-weight:500">✓ 13 months × 99 athletes ready to write</span>`:
       `<span style="font-size:12px;color:#6c6c70">Values pulled from your import file</span>`;
 
-    const applyLabel=isIdentity?'Confirm & continue →':
+    const applyLabel=isIdentity?'Insert 99 athletes into Supabase →':
       isMonths?'Write all monthly schedules →':
       `Apply ${step.label} →`;
 
@@ -6931,8 +6931,34 @@ function openBulkUpdate(){
     btn.disabled=true;btn.style.opacity='0.6';
 
     if(step.key==='identity'){
+      statusEl.textContent='Checking database…';
+      const {data:existing,error:chkErr}=await sb.from('athletes').select('id,first_name,last_name').limit(5);
+      if(chkErr){statusEl.innerHTML='<span style="color:#e34040">DB check failed: '+chkErr.message+'</span>';btn.disabled=false;btn.style.opacity='1';return;}
+      if(existing&&existing.length>0){
+        statusEl.innerHTML='<span style="color:#1d9e75">✓ '+existing.length+'+ athletes already in DB — continuing</span>';
+        await loadAthletes();
+        buApplied['identity']=true;
+        setTimeout(()=>{buStep++;buRender();},700);
+        btn.disabled=false;btn.style.opacity='1';return;
+      }
+      statusEl.textContent='Inserting 99 athletes…';
+      const rows=BU_ATHLETES.map((ba,i)=>({
+        first_name:ba.f, last_name:ba.l, position:ba.pos, sport:ba.sport,
+        contract:0, paid_out:0, rev_moved:0, banked:0, rank:i+1
+      }));
+      const CHUNK=20;let inserted=0;const errs=[];
+      for(let i=0;i<rows.length;i+=CHUNK){
+        const {error}=await sb.from('athletes').insert(rows.slice(i,i+CHUNK));
+        if(error) errs.push(error.message);
+        else inserted+=Math.min(CHUNK,rows.length-i);
+        statusEl.textContent='Inserting… '+Math.min(i+CHUNK,rows.length)+'/99';
+      }
+      if(errs.length){statusEl.innerHTML='<span style="color:#e34040">'+inserted+' inserted, errors: '+errs.slice(0,2).join('; ')+'</span>';btn.disabled=false;btn.style.opacity='1';return;}
+      statusEl.innerHTML='<span style="color:#1d9e75">✓ '+inserted+' athletes inserted into Supabase</span>';
+      await loadAthletes();
       buApplied['identity']=true;
-      buStep++;buRender();btn.disabled=false;btn.style.opacity='1';return;
+      setTimeout(()=>{buStep++;buRender();},900);
+      btn.disabled=false;btn.style.opacity='1';return;
     }
 
     if(step.key==='months'){
