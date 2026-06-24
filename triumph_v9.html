@@ -758,7 +758,6 @@ select.aa-inp{appearance:auto}
         </div>
       </div>
       <button class="btn btn-outline" id="fbar-export" style="padding:4px 12px;font-size:11px;height:28px;display:flex;align-items:center;gap:4px;white-space:nowrap" onclick="exportExcel()"><i class="ti ti-file-spreadsheet" style="font-size:13px"></i> Export</button>
-      <button class="btn btn-outline" style="padding:4px 12px;font-size:11px;height:28px;display:flex;align-items:center;gap:4px;white-space:nowrap" onclick="openBulkUpdate()"><i class="ti ti-table-import" style="font-size:13px"></i> Bulk Update</button>
       <button class="btn btn-dark" id="add-athlete-btn" style="padding:4px 14px;font-size:11px;height:28px;display:flex;align-items:center;gap:4px;white-space:nowrap" onclick="openAddAthlete()"><i class="ti ti-user-plus" style="font-size:13px"></i> Add Athlete</button>
     </div>
     <div class="scroll" id="a-body">
@@ -3129,7 +3128,8 @@ function saveEditDeal(key,di){
   }
   saveDealsToSupabase(a);
   document.getElementById('edit-deal-overlay').remove();
-  document.getElementById('tb').innerHTML=bWallets(a);
+  lastProfTab='wallets';
+  oProf(key);
 }
 
 function togglePOW(key,di){
@@ -4464,7 +4464,8 @@ function saveDeal(key){
   a.deals.push({n:name,sow,sub,t:total,s1:0,s2:0,hist:[],status,types,pow:false});
   saveDealsToSupabase(a);
   document.getElementById('add-deal-overlay').remove();
-  document.getElementById('tb').innerHTML=bWallets(a);
+  lastProfTab='wallets';
+  oProf(key);
 }
 
 function lockSbClick(btn){
