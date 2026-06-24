@@ -2371,10 +2371,7 @@ function mpmSyncAmt(chk, scheduled){
     },0);
     const needed=Math.max(0,scheduled-currentTotal);
     const dealRemaining=parseFloat(inp.max)||0;
-    const dealTotal=parseFloat(inp.dataset.total)||dealRemaining;
-    const isNoSub=inp.dataset.nosub==='1';
-    const dealMax=isNoSub?dealTotal:dealRemaining;
-    inp.value=Math.min(needed,dealMax).toFixed(2);
+    inp.value=Math.min(needed,dealRemaining).toFixed(2);
   } else {
     inp.value=0;
   }
