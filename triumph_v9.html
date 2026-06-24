@@ -1965,10 +1965,10 @@ function rAnnual(list,filterMos){
       const rsTotAll=rvTot+rsMoData.reduce((s,d)=>s+d.nilShortfall,0);
       const rsRemCalc=Math.max(0,(a.rsContract||0)-(a.rsPaid||0));
       html+='<tr class="athlete-rs-row" style="cursor:pointer" onclick="oProf(\''+key+'\')">'+
-        '<td style="position:sticky;left:0;z-index:1;background:#fff5f7;border-right:1px solid #f5c6d0;min-width:200px;white-space:nowrap">'+
-          '<div style="font-weight:600;font-size:12.5px;color:#c0392b">'+a.f+' '+a.l+'</div>'+
-          '<div style="display:flex;gap:4px;margin-top:2px">'+
-            '<span style="font-size:9px;background:#f2f2f7;padding:1px 5px;border-radius:4px;color:#8e8e93">'+a.pos+'</span>'+
+        '<td style="position:sticky;left:0;z-index:1;background:#fff5f7;border-right:1px solid #f5c6d0;min-width:200px;white-space:nowrap;padding-right:12px">'+
+          '<div style="display:flex;align-items:center;gap:6px;white-space:nowrap">'+
+            '<span style="font-weight:600;font-size:12.5px;color:#c0392b;white-space:nowrap">'+a.f+' '+a.l+'</span>'+
+            '<span style="font-size:9px;background:#f2f2f7;padding:1px 5px;border-radius:4px;color:#8e8e93;flex-shrink:0">'+a.pos+'</span>'+
           '</div>'+
         '</td>'+
         '<td style="text-align:right;font-weight:700;font-size:12px;color:#c0392b;background:#fff0f3">'+f(rsTotAll)+'</td>'+
@@ -2028,11 +2028,11 @@ function rAnnual(list,filterMos){
     } else {
       // NIL row (blue)
       html+='<tr class="athlete-nil-row" style="cursor:pointer;background:#eef6ff" onclick="oProf(\''+key+'\')">'+
-        '<td style="position:sticky;left:0;z-index:1;background:#eef6ff;border-right:1px solid #f2f2f7;min-width:200px;white-space:nowrap">'+
-          '<div style="font-weight:600;font-size:12.5px">'+a.f+' '+a.l+'</div>'+
-          '<div style="display:flex;gap:4px;margin-top:2px">'+
-            '<span style="font-size:9px;background:#f2f2f7;padding:1px 5px;border-radius:4px;color:#8e8e93">'+a.pos+'</span>'+
-            (rvTot>0?'<span style="font-size:9px;background:#fff0f3;padding:1px 5px;border-radius:4px;color:#c0392b">RS</span>':'')+
+        '<td style="position:sticky;left:0;z-index:1;background:#eef6ff;border-right:1px solid #f2f2f7;min-width:200px;white-space:nowrap;padding-right:12px">'+
+          '<div style="display:flex;align-items:center;gap:6px;white-space:nowrap">'+
+            '<span style="font-weight:600;font-size:12.5px;white-space:nowrap">'+a.f+' '+a.l+'</span>'+
+            '<span style="font-size:9px;background:#f2f2f7;padding:1px 5px;border-radius:4px;color:#8e8e93;flex-shrink:0">'+a.pos+'</span>'+
+            (rvTot>0?'<span style="font-size:9px;background:#fff0f3;padding:1px 5px;border-radius:4px;color:#c0392b;flex-shrink:0">RS</span>':'')+
           '</div>'+
         '</td>'+
         '<td id="cell-nilTot-'+key+'" style="text-align:right;font-weight:700;font-size:12px;color:#185fa5!important;-webkit-text-fill-color:#185fa5!important;background:#eef6ff!important;cursor:cell" title="Tap to edit" onclick="event.stopPropagation();athInlineEdit(this,\''+key+'\',\'contract\')">'+f(nilTot)+'</td>'+
