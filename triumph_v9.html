@@ -2041,39 +2041,38 @@ function rAnnual(list,filterMos){
         '<td style="text-align:right;font-weight:700;font-size:12px;color:#185fa5!important;-webkit-text-fill-color:#185fa5!important;background:#eef6ff!important">'+f(a.paid+rvTot)+'</td>'+
         '<td style="text-align:right;font-weight:700;font-size:12px;color:#185fa5!important;-webkit-text-fill-color:#185fa5!important;background:#eef6ff!important">'+f(nilRem)+'</td>'+
         '<td id="cell-banked-'+key+'" style="text-align:right;background:'+(isBankLow?'#fff0f3':isBankShort?'#faeeda':'#e8f8f2')+'!important;cursor:cell" title="Tap to edit" onclick="event.stopPropagation();athInlineEdit(this,\''+key+'\',\'banked\')"><span style="font-size:12px;font-weight:600;color:'+(isBankLow?'#e34040':isBankShort?'#b7791f':'#1d9e75')+'!important;-webkit-text-fill-color:'+(isBankLow?'#e34040':isBankShort?'#b7791f':'#1d9e75')+'!important">'+(isBankLow?'No funds':f(banked))+'</span></td>'+
-        (()=>{
-          // compute running banked balance across months for coverage dots
-          let runBanked=banked;
-          return cols.map(({mo,yr})=>{
-          const s=a.sch.find(x=>x.mo===mo&&(x.yr||2026)===yr);
-          const iC=mo===CUR&&yr===2026;
-          const moKey=mo+'_'+yr;
-          const activeExp=nilMoExp[idx];
-          const isOpen=activeExp&&activeExp===moKey;
-          const hasNILShortfall=(s&&s.shortfall&&s.shortfall>0)||false;
-          const cellBgNIL=hasNILShortfall?'background:#fffbe6!important':'background:#eef6ff!important';
-          const cellBorderNIL=isOpen?(hasNILShortfall?'outline:2px solid #f59e0b;outline-offset:-2px;border-radius:3px;':'outline:2px solid #2980b9;outline-offset:-2px;border-radius:3px;'):'';
-          const detailColor=hasNILShortfall?'#854f0b':'#2980b9';
-          const detailLabel=isOpen?'▲ close':(hasNILShortfall?'▾ RS moved':'▾ detail');
-          // coverage dot: green=covered, amber=partial, red=short; only show if month has a payment
-          const moAmt=s?s.a:0;
-          let dotHtml='';
-          if(moAmt>0&&!s?.p){
-            const dotClr=runBanked<=0?'#e34040':runBanked>=moAmt?'#1d9e75':'#f59e0b';
-            dotHtml='<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:'+dotClr+';margin-left:3px;vertical-align:middle;flex-shrink:0" title="Banked '+f(runBanked)+' vs '+f(moAmt)+' due"></span>';
-            runBanked=Math.max(0,runBanked-moAmt);
+        (function(athIdx,athBanked){
+          var rb=athBanked;
+          return cols.map(function(colObj){
+          var mo=colObj.mo,yr=colObj.yr;
+          var s=a.sch.find(function(x){return x.mo===mo&&(x.yr||2026)===yr;});
+          var iC=mo===CUR&&yr===2026;
+          var moKey=mo+'_'+yr;
+          var activeExp=nilMoExp[athIdx];
+          var isOpen=activeExp&&activeExp===moKey;
+          var hasNILShortfall=(s&&s.shortfall&&s.shortfall>0)||false;
+          var cellBgNIL=hasNILShortfall?'background:#fffbe6!important':'background:#eef6ff!important';
+          var cellBorderNIL=isOpen?(hasNILShortfall?'outline:2px solid #f59e0b;outline-offset:-2px;border-radius:3px;':'outline:2px solid #2980b9;outline-offset:-2px;border-radius:3px;'):'';
+          var detailColor=hasNILShortfall?'#854f0b':'#2980b9';
+          var detailLabel=isOpen?'▲ close':(hasNILShortfall?'▾ RS moved':'▾ detail');
+          var moAmt=s?s.a:0;
+          var dotHtml='';
+          if(moAmt>0&&!(s&&s.p)){
+            var dotClr=rb<=0?'#e34040':rb>=moAmt?'#1d9e75':'#f59e0b';
+            dotHtml='<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:'+dotClr+';margin-left:3px;vertical-align:middle;flex-shrink:0" title="Banked '+f(rb)+' vs '+f(moAmt)+' due"></span>';
+            rb=Math.max(0,rb-moAmt);
           }
-          if(!s||s.a===0) return '<td class="'+(iC?'curbg':'')+'" style="'+cellBgNIL+';cursor:pointer" onclick="event.stopPropagation();startGridEdit(this,'+idx+',\''+mo+'\','+yr+')"><span style="color:#e5e5ea">—</span></td>';
-          return '<td class="'+(iC?'curbg':'')+'" style="'+cellBgNIL+';cursor:text;'+cellBorderNIL+'">'  
+          if(!s||s.a===0) return '<td class="'+(iC?'curbg':'')+'" style="'+cellBgNIL+';cursor:pointer" onclick="event.stopPropagation();startGridEdit(this,'+athIdx+',\''+mo+'\','+yr+')"><span style="color:#e5e5ea">—</span></td>';
+          return '<td class="'+(iC?'curbg':'')+'" style="'+cellBgNIL+';cursor:text;'+cellBorderNIL+'">'
             +'<div style="display:flex;align-items:center;justify-content:flex-end;gap:2px">'
-            +'<span style="font-size:11.5px;font-weight:'+(isOpen?'700':'500')+(s.p?';color:#8e8e93':'')+(hasNILShortfall?';color:#854f0b':'')+'!important;cursor:pointer" onclick="event.stopPropagation();startGridEdit(this.closest(\'td\'),'+idx+',\''+mo+'\','+yr+')">'+f(s.a)+'</span>'
+            +'<span style="font-size:11.5px;font-weight:'+(isOpen?'700':'500')+(s.p?';color:#8e8e93':'')+(hasNILShortfall?';color:#854f0b':'')+'!important;cursor:pointer" onclick="event.stopPropagation();startGridEdit(this.closest(\'td\'),'+athIdx+',\''+mo+'\','+yr+')">'+f(s.a)+'</span>'
             +dotHtml
             +'</div>'
             +(s.p?'<div class="mc-paid-badge">✓</div>':'')
-            +'<div style="font-size:8px;color:'+detailColor+';cursor:pointer;margin-top:1px;font-weight:'+(hasNILShortfall?'600':'400')+'" onclick="event.stopPropagation();openMonthExpand('+idx+',\''+mo+'\','+yr+')">'+detailLabel+'</div>'
+            +'<div style="font-size:8px;color:'+detailColor+';cursor:pointer;margin-top:1px;font-weight:'+(hasNILShortfall?'600':'400')+'" onclick="event.stopPropagation();openMonthExpand('+athIdx+',\''+mo+'\','+yr+')">'+detailLabel+'</div>'
           +'</td>';
-        }).join('');
-        })())+
+          }).join('');
+        })(idx,banked)+
         '<td style="background:#f9f9f9"></td>'+
       '</tr>';
       // NIL month expand row — running balance + source of funds
