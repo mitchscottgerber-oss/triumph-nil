@@ -1935,10 +1935,11 @@ function rAnnual(list,filterMos){
 
   list.forEach((a,idx)=>{
     const nilTot=a.sch.reduce((s,x)=>s+x.a,0);
-    const rvTot=getRevYTD(a);
+    const rvContracted=getRevYTD(a);
+    const nilShortfall=a.sch.reduce((s,x)=>s+(x.shortfall||0),0);
+    const rvTot=rvContracted+nilShortfall;
     const _wb=getWalletBanked(a);
     const banked=_wb!==null?_wb:(a.banked-a.paid);
-    const nilShortfall=a.sch.reduce((s,x)=>s+(x.shortfall||0),0);
     const nilRem=Math.max(0,nilTot-a.paid-nilShortfall);
     const rsRem=Math.max(0,(a.rsContract||0)-(a.rsPaid||0));
     const curMonthAmt=a.sch.find(x=>x.mo===CUR&&(x.yr||2026)===2026)?.a||0;
