@@ -1257,7 +1257,7 @@ function doSwitchSport(sport) {
 // After PIN success, also update the dropdown - handled in checkPin()
 
 function getAthletesBySport(sport) {
-  return A.filter(a => (a.sport||'Football') === sport);
+  return A.filter(a => (a.sport||'Football') === sport).sort((a,b)=>(a.f+' '+a.l).localeCompare(b.f+' '+b.l));
 }
 
 
@@ -4834,8 +4834,8 @@ let PL=[]; // pipeline opportunities
 let rowView='nil'; // 'nil' | 'rs'
 let showFutureYears=false;
 let filteredList=[]; // current rendered athlete list, for inline grid editing
-let annualSortCol=null; // 'name'|'nil'|'paid'|'rev'|'total'|'remaining'|'banked'
-let annualSortDir=0; // 0=default, 1=desc, -1=asc
+let annualSortCol='name'; // 'name'|'nil'|'paid'|'rev'|'total'|'remaining'|'banked'
+let annualSortDir=-1; // 0=default, 1=desc, -1=asc (start A→Z)
 const nilMoExp={}; // idx -> 'Mo_YYYY' of currently open month expand
 const rsMoExp={}; // idx -> 'Mo_YYYY' for RS tab expands
 
