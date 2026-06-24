@@ -2370,7 +2370,10 @@ function mpmSyncAmt(chk, scheduled){
       return s+(i&&c!==chk?parseFloat(i.value)||0:0);
     },0);
     const needed=Math.max(0,scheduled-currentTotal);
-    const dealMax=parseFloat(inp.max)||0; // deal remaining already set as max
+    const dealRemaining=parseFloat(inp.max)||0;
+    const dealTotal=parseFloat(inp.dataset.total)||dealRemaining;
+    const isNoSub=inp.dataset.nosub==='1';
+    const dealMax=isNoSub?dealTotal:dealRemaining;
     inp.value=Math.min(needed,dealMax).toFixed(2);
   } else {
     inp.value=0;
@@ -2445,7 +2448,7 @@ function openMarkPaidModal(key, mo){
         </div>
         <div style="display:flex;align-items:center;border:1.5px solid #e5e5ea;border-radius:7px;overflow:hidden;height:30px;width:110px">
           <span style="padding:0 7px;font-size:12px;color:#8e8e93;border-right:1px solid #e5e5ea;height:100%;display:flex;align-items:center">$</span>
-          <input type="number" class="mpm-amt-inp" data-idx="${i}" min="0" max="${dealTotal}" value="0" style="border:none;flex:1;height:100%;padding:0 6px;font-size:12px;font-family:inherit;outline:none;width:60px" oninput="mpmSyncFromInput(this,${s.a})">
+          <input type="number" class="mpm-amt-inp" data-idx="${i}" min="0" max="${dealRemaining}" data-total="${dealTotal}" data-nosub="${d.status==='no-submission'?'1':'0'}" value="0" style="border:none;flex:1;height:100%;padding:0 6px;font-size:12px;font-family:inherit;outline:none;width:60px" oninput="mpmSyncFromInput(this,${s.a})">
         </div>
       </div>`;
     }).join('')
