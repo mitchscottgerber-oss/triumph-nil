@@ -1880,6 +1880,11 @@ function rAnnual(list,filterMos){
 
   // Apply column sort
   const sortFns={name:(a,b)=>((a.f+' '+a.l).localeCompare(b.f+' '+b.l)),nil:(a,b)=>a.sch.reduce((s,x)=>s+x.a,0)-b.sch.reduce((s,x)=>s+x.a,0),paid:(a,b)=>a.paid-b.paid,rev:(a,b)=>getRevYTD(a)-getRevYTD(b),total:(a,b)=>(a.paid+getRevYTD(a))-(b.paid+getRevYTD(b)),remaining:(a,b)=>{const nilRa=Math.max(0,a.sch.reduce((s,x)=>s+x.a,0)-a.paid-a.sch.reduce((s,x)=>s+(x.shortfall||0),0)),nilRb=Math.max(0,b.sch.reduce((s,x)=>s+x.a,0)-b.paid-b.sch.reduce((s,x)=>s+(x.shortfall||0),0));return nilRa-nilRb;},banked:(a,b)=>{const wa=getWalletBanked(a),wb2=getWalletBanked(b);const ba=wa!==null?wa:(a.banked-a.paid),bb=wb2!==null?wb2:(b.banked-b.paid);return ba-bb;}};
+  // Month sort: key format mo_Jan_2026
+  if(annualSortCol&&annualSortCol.startsWith('mo_')&&!sortFns[annualSortCol]){
+    const parts=annualSortCol.split('_');const sortMo=parts[1],sortYr=parseInt(parts[2]);
+    sortFns[annualSortCol]=(a,b)=>{const sa=a.sch.find(x=>x.mo===sortMo&&(x.yr||2026)===sortYr),sb2=b.sch.find(x=>x.mo===sortMo&&(x.yr||2026)===sortYr);return(sa?sa.a:0)-(sb2?sb2.a:0);};
+  }
   if(annualSortCol&&annualSortDir!==0&&sortFns[annualSortCol]){
     list=[...list].sort((a,b)=>annualSortDir*sortFns[annualSortCol](a,b));
   }
@@ -1887,7 +1892,7 @@ function rAnnual(list,filterMos){
   const sIcon=(col)=>{'use strict';const active=annualSortCol===col;const ic=active&&annualSortDir===1?'ti-chevron-down':active&&annualSortDir===-1?'ti-chevron-up':'ti-selector';const clr=active?'color:currentColor':'color:#ccc';return'<i class="ti '+ic+'" style="font-size:11px;margin-left:3px;vertical-align:-1px;'+clr+'" aria-hidden="true"></i>';};
   const thSort=(col,label,extraStyle,alignLeft)=>{
     const active=annualSortCol===col;
-    const baseStyle='cursor:pointer;user-select:none;'+(alignLeft?'text-align:left':'text-align:right')+';min-width:'+(col==='total'?'110':'90')+'px;'+(extraStyle||'');
+    const baseStyle='cursor:pointer;user-select:none;'+(alignLeft?'text-align:left':'text-align:right')+';min-width:'+(col==='name'?'200':col==='total'?'110':'90')+'px;white-space:nowrap;'+(extraStyle||'');
     return '<th style="'+baseStyle+'" onclick="annualSort(\''+col+'\')" title="Sort by '+label+'">'
       +(alignLeft?'<span style="display:flex;align-items:center;gap:2px">'+label+sIcon(col)+'</span>'
        :'<span style="display:flex;align-items:center;justify-content:flex-end;gap:2px">'+label+sIcon(col)+'</span>')
@@ -1912,12 +1917,16 @@ function rAnnual(list,filterMos){
     )
     +cols.map(({mo,yr},i)=>{
       const isCur=mo===CUR&&yr===2026;
+      const moColKey='mo_'+mo+'_'+yr;
+      const moActive=annualSortCol===moColKey;
+      const moIc=moActive&&annualSortDir===1?'ti-chevron-down':moActive&&annualSortDir===-1?'ti-chevron-up':'ti-selector';
+      const moIcClr=moActive?'color:'+(isCur?'#6d28d9':'#8e8e93'):'color:#ddd';
       const label=mo+' \''+(String(yr).slice(2));
-      return'<th class="'+(isCur?'cur':'')+'" style="min-width:78px;background:'+(isCur?'#f0ebff':'#fff')+'!important;color:'+(isCur?'#6d28d9':'#8e8e93')+'!important;">'
-        +'<div>'+label+'</div>'
+      return'<th class="'+(isCur?'cur':'')+'" style="min-width:82px;background:'+(isCur?'#f0ebff':'#fff')+'!important;color:'+(isCur?'#6d28d9':'#8e8e93')+'!important;cursor:pointer;user-select:none;white-space:nowrap" onclick="annualSort(\''+moColKey+'\')" title="Sort by '+label+'">'
+        +'<div style="display:flex;align-items:center;justify-content:flex-end;gap:2px">'+label+'<i class="ti '+moIc+'" style="font-size:11px;'+moIcClr+'" aria-hidden="true"></i></div>'
         +(rowView==='rs'
-          ?(moRS[i]>0?'<div style="font-size:8px;color:#c0392b;font-weight:500;margin-top:1px">'+f(moRS[i])+'</div>':'')
-          :(moNIL[i]>0?'<div style="font-size:8px;color:#1d9e75;font-weight:500;margin-top:1px">'+f(moNIL[i])+'</div>':''))
+          ?(moRS[i]>0?'<div style="font-size:8px;color:#c0392b;font-weight:500;margin-top:1px;text-align:right">'+f(moRS[i])+'</div>':'')
+          :(moNIL[i]>0?'<div style="font-size:8px;color:#1d9e75;font-weight:500;margin-top:1px;text-align:right">'+f(moNIL[i])+'</div>':''))
       +'</th>';
     }).join('')
     +'<th style="min-width:36px;background:#f9f9f9;cursor:pointer;text-align:center" onclick="toggleFutureYears()" title="'+(showFutureYears?'Collapse 2027–2028':'Expand to see 2027–2028')+'">'
@@ -1956,7 +1965,7 @@ function rAnnual(list,filterMos){
       const rsTotAll=rvTot+rsMoData.reduce((s,d)=>s+d.nilShortfall,0);
       const rsRemCalc=Math.max(0,(a.rsContract||0)-(a.rsPaid||0));
       html+='<tr class="athlete-rs-row" style="cursor:pointer" onclick="oProf(\''+key+'\')">'+
-        '<td style="position:sticky;left:0;z-index:1;background:#fff5f7;border-right:1px solid #f5c6d0">'+
+        '<td style="position:sticky;left:0;z-index:1;background:#fff5f7;border-right:1px solid #f5c6d0;min-width:200px;white-space:nowrap">'+
           '<div style="font-weight:600;font-size:12.5px;color:#c0392b">'+a.f+' '+a.l+'</div>'+
           '<div style="display:flex;gap:4px;margin-top:2px">'+
             '<span style="font-size:9px;background:#f2f2f7;padding:1px 5px;border-radius:4px;color:#8e8e93">'+a.pos+'</span>'+
@@ -2019,7 +2028,7 @@ function rAnnual(list,filterMos){
     } else {
       // NIL row (blue)
       html+='<tr class="athlete-nil-row" style="cursor:pointer;background:#eef6ff" onclick="oProf(\''+key+'\')">'+
-        '<td style="position:sticky;left:0;z-index:1;background:#eef6ff;border-right:1px solid #f2f2f7">'+
+        '<td style="position:sticky;left:0;z-index:1;background:#eef6ff;border-right:1px solid #f2f2f7;min-width:200px;white-space:nowrap">'+
           '<div style="font-weight:600;font-size:12.5px">'+a.f+' '+a.l+'</div>'+
           '<div style="display:flex;gap:4px;margin-top:2px">'+
             '<span style="font-size:9px;background:#f2f2f7;padding:1px 5px;border-radius:4px;color:#8e8e93">'+a.pos+'</span>'+
