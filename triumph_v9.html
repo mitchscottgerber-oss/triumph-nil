@@ -1500,7 +1500,7 @@ function getWalletBanked(a, mo, yr){
   if(active.length===0) return null; // no deals → fall back to manual banked field
   return active.reduce((s,d)=>{
     const spent=(d.hist||[]).reduce((t,h)=>t+(h.amt||0),0);
-    return s+Math.max(0,(d.t||0)-spent);
+    return s+Math.max(0,(parseFloat(String(d.t).replace(/[^0-9.]/g,''))||0)-spent);
   },0);
 }
 
@@ -2387,7 +2387,7 @@ function openMarkPaidModal(key, mo){
       const approved=d.status==='approved';
       const noSub=d.status==='no-submission';
       const dealUsed=(d.hist||[]).reduce((s,h)=>s+(h.amt||0),0);
-      const dealRemaining=Math.max(0,(d.t||0)-dealUsed);
+      const dealRemaining=Math.max(0,(parseFloat(String(d.t).replace(/[^0-9.]/g,''))||0)-dealUsed);
       const pill=approved
         ?'<span style="font-size:9px;background:#e8f8f2;color:#0f6e56;padding:1px 6px;border-radius:4px;font-weight:500">NILGo Approved</span>'
         :noSub
@@ -2470,7 +2470,7 @@ async function confirmMarkPaid(key,mo,scheduled){
       if(d){
         if(!d.hist) d.hist=[];
         const used=d.hist.reduce((s,h)=>s+(h.amt||0),0);
-        const remaining=Math.max(0,d.t-used);
+        const remaining=Math.max(0,(parseFloat(String(d.t).replace(/[^0-9.]/g,''))||0)-used);
         const capped=Math.min(amt,remaining);
         if(capped<=0) return; // no funds remaining in this deal
         const existing=d.hist.find(h=>h.mo===mo&&(h.yr||2026)===(s.yr||2026));
@@ -2914,7 +2914,7 @@ function bWallets(a){
     +'</div>'
     +(a.deals.length===0?'<div style="color:#8e8e93;font-size:12px;text-align:center;padding:24px 0">No deals yet — click <b>Add deal</b> to get started</div>':'')
     +'<div class="wlist">'+a.deals.map((d,di)=>{
-      const used=(d.hist||[]).reduce((s,h)=>s+(h.amt||0),0),rem=d.t-used,pct=d.t>0?Math.round(used/d.t*100):0,emp=rem<=0,low=rem>0&&rem<d.t*0.25;
+      const used=(d.hist||[]).reduce((s,h)=>s+(h.amt||0),0),rem=(parseFloat(String(d.t).replace(/[^0-9.]/g,''))||0)-used,_dt=(parseFloat(String(d.t).replace(/[^0-9.]/g,''))||0),pct=_dt>0?Math.round(used/_dt*100):0,emp=rem<=0,low=rem>0&&rem<d.t*0.25;
       const status=d.status||'approved';
       const statusCfg={
         pending:       {label:'Pending',              cls:'badge-pending', icon:'ti-clock'},
