@@ -6936,7 +6936,7 @@ function openBulkUpdate(){
       if(chkErr){statusEl.innerHTML='<span style="color:#e34040">DB check failed: '+chkErr.message+'</span>';btn.disabled=false;btn.style.opacity='1';return;}
       if(existing&&existing.length>0){
         statusEl.innerHTML='<span style="color:#1d9e75">✓ '+existing.length+'+ athletes already in DB — continuing</span>';
-        await loadAthletes();
+        await loadFromSupabase();
         buApplied['identity']=true;
         btn.disabled=false;btn.style.opacity='1';
         buStep++;buRender();return;
@@ -6955,7 +6955,7 @@ function openBulkUpdate(){
       }
       if(errs.length){statusEl.innerHTML='<span style="color:#e34040">'+inserted+' inserted, errors: '+errs.slice(0,2).join('; ')+'</span>';btn.disabled=false;btn.style.opacity='1';return;}
       statusEl.innerHTML='<span style="color:#1d9e75">✓ '+inserted+' athletes inserted into Supabase</span>';
-      await loadAthletes();
+      await loadFromSupabase();
       buApplied['identity']=true;
       btn.disabled=false;btn.style.opacity='1';
       buStep++;buRender();return;
