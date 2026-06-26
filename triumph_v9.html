@@ -1534,7 +1534,7 @@ function openAddCompany(){
     <div style="background:#1d1d1f;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
       <div><div style="font-size:15px;font-weight:700;color:#fff">Add Company</div>
       <div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px">New sponsor or partner</div></div>
-      <button onclick="document.getElementById('add-co-overlay').remove()" style="background:rgba(255,255,255,.12);border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;color:#fff;-webkit-text-fill-color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center">✕</button>
+      <button onclick="document.getElementById('add-co-overlay').remove()" style="background:rgba(255,255,255,.12);border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center">✕</button>
     </div>
     <div style="padding:20px 22px;overflow-y:auto;flex:1">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#8e8e93;border-bottom:1px solid #f2f2f7;padding-bottom:6px;margin-bottom:12px">Company Info</div>
@@ -2414,9 +2414,10 @@ function mpmUpdateTotals(scheduled){
   if(confirmBtn) confirmBtn.textContent=shortfall>0?'Confirm + move '+f(shortfall)+' to RS':'Confirm Payment';
 }
 
-function openMarkPaidModal(key, mo){
+function openMarkPaidModal(key, mo, yr){
+  yr=yr||2026;
   const a=A.find(x=>x.f+'_'+x.l===key);if(!a) return;
-  const s=a.sch.find(x=>x.mo===mo);if(!s||s.a===0) return;
+  const s=a.sch.find(x=>x.mo===mo&&(x.yr||2026)===yr);if(!s||s.a===0) return;
   const existing=document.getElementById('mark-paid-overlay');
   if(existing) existing.remove();
   const deals=a.deals||[];
@@ -2480,17 +2481,17 @@ function openMarkPaidModal(key, mo){
       </div>
     </div>
     <div style="padding:14px 22px;border-top:1px solid #f2f2f7;display:flex;gap:10px;background:#fafafa;flex-shrink:0">
-      <button onclick="document.getElementById('mark-paid-overlay').remove()" style="flex:1;height:36px;border-radius:8px;border:1.5px solid #e5e5ea;background:#fff;color:#1d1d1f;-webkit-text-fill-color:#1d1d1f;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Cancel</button>
-      <button id="mpm-confirm-btn" onclick="confirmMarkPaid('${key}','${mo}',${s.a},${yr})" style="flex:2;height:36px;border-radius:8px;border:none;background:#1d9e75;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:#fff">Confirm Payment</button>
+      <button onclick="document.getElementById('mark-paid-overlay').remove()" style="flex:1;height:36px;border-radius:8px;border:1.5px solid #e5e5ea;background:#fff;color:#1d1d1f;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Cancel</button>
+      <button id="mpm-confirm-btn" onclick="confirmMarkPaid('${a.id}','${mo}',${s.a},${yr})" style="flex:2;height:36px;border-radius:8px;border:none;background:#1d9e75;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;color:#fff">Confirm Payment</button>
     </div>
   </div>`;
   document.body.appendChild(ov);
   setTimeout(()=>mpmUpdateTotals(s.a),50);
 }
 
-async function confirmMarkPaid(key,mo,scheduled,yr){
+async function confirmMarkPaid(aid,mo,scheduled,yr){
   yr=yr||2026;
-  const a=A.find(x=>x.f+'_'+x.l===key);if(!a) return;
+  const a=A.find(x=>x.id===aid);if(!a) return;
   const s=a.sch.find(x=>x.mo===mo&&(x.yr||2026)===yr);if(!s) return;
   // Collect selected sources — save as flat [name, amt, name, amt] format
   const srcFlat=[];
@@ -2749,7 +2750,7 @@ function bSched(a){
       +(hasShortfall?'<div style="font-size:8px;color:#2980b9;margin-top:1px">Cleared: '+f(cleared)+'</div>'
         +'<div style="font-size:8px;color:#e34040;font-weight:600">→ RS: '+f(s.shortfall)+'</div>':'')
       +(s.p&&!iC?'<div class="mc-paid-badge">✓ Paid</div>':iC?'<div class="mcst c">Due now</div>':s.a>0?'<div class="mcst due">Upcoming</div>':'<div class="mcst up">—</div>')
-      +(s.a>0&&!s.p?'<button onclick="event.stopPropagation();openMarkPaidModal(\''+key+'\',\''+s.mo+'\')" style="margin-top:5px;font-size:9px;font-weight:600;color:'+(iC?'#fff':'#1d9e75')+';-webkit-text-fill-color:'+(iC?'#fff':'#1d9e75')+';background:'+(iC?'rgba(255,255,255,.15)':'#e8f8f2')+';border:none;border-radius:6px;padding:2px 7px;cursor:pointer;font-family:inherit;width:100%">Mark Paid</button>':'')
+      +(s.a>0&&!s.p?'<button onclick="event.stopPropagation();openMarkPaidModal(\''+key+'\',\''+s.mo+'\','+(s.yr||2026)+')" style="margin-top:5px;font-size:9px;font-weight:600;color:'+(iC?'#fff':'#1d9e75')+';-webkit-text-fill-color:'+(iC?'#fff':'#1d9e75')+';background:'+(iC?'rgba(255,255,255,.15)':'#e8f8f2')+';border:none;border-radius:6px;padding:2px 7px;cursor:pointer;font-family:inherit;width:100%">Mark Paid</button>':'')
       +(s.p?'<button onclick="event.stopPropagation();markPaid(\''+key+'\',\''+s.mo+'\')" style="margin-top:5px;font-size:9px;font-weight:600;color:#e34040;-webkit-text-fill-color:#e34040;background:#fff0f3;border:none;border-radius:6px;padding:2px 7px;cursor:pointer;font-family:inherit;width:100%">Undo Paid</button>':'')
       +(srcs.length>1&&!iC?'<div class="mchint">Tap to expand</div>':'')
     +'</div>';  }).join('');
