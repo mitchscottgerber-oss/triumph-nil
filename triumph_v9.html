@@ -5110,7 +5110,7 @@ function renderCos(){
       var open=exp.style.display==='none';
       exp.style.display=open?'block':'none';
       if(chev) chev.style.transform=open?'rotate(90deg)':'';
-    },{once:true});
+    });
     // Search filter
     document.getElementById('co-body').addEventListener('input',function(e){
       if(!e.target.classList.contains('pk-search')) return;
@@ -5123,7 +5123,7 @@ function renderCos(){
         row.style.display=match?'':'none';
         if(q&&athText.indexOf(q)!==-1) row.querySelector('.pk-expand').style.display='block';
       });
-    },{once:true});
+    });
     return;
   }
 
