@@ -4323,9 +4323,14 @@ function applyRole(role){
 // Deal templates — stored in localStorage
 function getDealTemplates(){try{return JSON.parse(localStorage.getItem('dealTemplates')||'[]');}catch{return[];}}
 function initBuiltinTemplates(){
-  const existing=getDealTemplates();
+  var existing=getDealTemplates();
+  // If Playfly is at index 0 (wrongly prepended), move it to the end
+  if(existing.length>0&&existing[0].name==='June Playfly Billboard Campaign'){
+    existing.push(existing.shift());
+    saveDealTemplates(existing);
+  }
   if(existing.find(function(t){return t.name==='June Playfly Billboard Campaign';})) return;
-  existing.unshift({
+  existing.push({
     name:'June Playfly Billboard Campaign',
     total:'14376',
     types:['Digital Ad'],
