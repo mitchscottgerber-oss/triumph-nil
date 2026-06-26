@@ -2418,6 +2418,20 @@ function openMarkPaidModal(key, mo, yr){
   yr=yr||2026;
   const a=A.find(x=>x.f+'_'+x.l===key);if(!a) return;
   const s=a.sch.find(x=>x.mo===mo&&(x.yr||2026)===yr);if(!s||s.a===0) return;
+  // If already has sources recorded (prior partial pay), just mark paid directly
+  if(!s.p && s.cleared>0 && s.s && s.s.length>0){
+    s.p=true;
+    a.paid=a.sch.reduce((t,x)=>t+(x.p?x.a:0),0);
+    sb.from('payment_schedule').upsert(
+      {athlete_id:a.id,month:mo,year:yr,amount:s.a,is_paid:true,
+       sources:s.s,nil_cleared:s.cleared,shortfall:s.shortfall||0,rs_paid:false},
+      {onConflict:'athlete_id,month,year'}
+    ).then(()=>sb.from('athletes').update({paid_out:a.paid}).eq('id',a.id));
+    syncStatus('Marked paid ✓');
+    oProf(key);
+    rAnnual(getAthletesBySport(activeSport));
+    return;
+  }
   const existing=document.getElementById('mark-paid-overlay');
   if(existing) existing.remove();
   const deals=a.deals||[];
