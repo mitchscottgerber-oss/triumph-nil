@@ -2423,14 +2423,16 @@ function openMarkPaidModal(key, mo, yr){
   const existing=document.getElementById('mark-paid-overlay');
   if(existing) existing.remove();
   const deals=a.deals||[];
-  // Build deal checkboxes — approved deals first
-  const sorted=[...deals].sort((a,b)=>{
+  // Build deal checkboxes — approved deals first, dedup by name
+  const seen={};
+  const deduped=deals.filter(function(d){if(seen[d.n]) return false;seen[d.n]=true;return true;});
+  const sorted=[...deduped].sort((a,b)=>{
     const ap=a.status==='approved'?0:1,bp=b.status==='approved'?0:1;
     return ap-bp;
   });
   const dealRows=sorted.length
     ?sorted.map((d)=>{
-      const i=a.deals.indexOf(d); // original index so confirmMarkPaid reads correct deal
+      const i=a.deals.indexOf(d);
       const approved=d.status==='approved';
       const noSub=d.status==='no-submission';
       const prevEntry=(d.hist||[]).find(function(h){return h.mo===mo&&(h.yr||2026)===yr;});
@@ -4523,6 +4525,9 @@ function openAddDeal(key){
 
 async function saveDealsToSupabase(a){
   try{
+    // Auto-dedup deals by name before saving
+    const seen={};
+    a.deals=(a.deals||[]).filter(function(d){if(seen[d.n]) return false;seen[d.n]=true;return true;});
     await sb.from('athletes').update({deals:JSON.stringify(a.deals)}).eq('id',a.id);
   }catch(e){console.warn('deals save:',e);}
 }
