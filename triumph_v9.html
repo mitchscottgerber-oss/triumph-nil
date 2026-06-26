@@ -11,6 +11,7 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;color-scheme:light}
 html,body{height:100%;background:#f5f5f7;color:#1d1d1f;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:13px;-webkit-text-fill-color:#1d1d1f}
+button{-webkit-text-fill-color:inherit!important;cursor:pointer}
 .app{display:grid;grid-template-columns:192px 1fr;height:100vh;overflow:hidden}
 /* SIDEBAR */
 .sb{background:#fff;border-right:1px solid #e5e5ea;display:flex;flex-direction:column}
@@ -2742,7 +2743,7 @@ function bSched(a){
       +(hasShortfall?'<div style="font-size:8px;color:#2980b9;margin-top:1px">Cleared: '+f(cleared)+'</div>'
         +'<div style="font-size:8px;color:#e34040;font-weight:600">→ RS: '+f(s.shortfall)+'</div>':'')
       +(s.p&&!iC?'<div class="mc-paid-badge">✓ Paid</div>':iC?'<div class="mcst c">Due now</div>':s.a>0?'<div class="mcst due">Upcoming</div>':'<div class="mcst up">—</div>')
-      +(s.a>0&&!s.p?'<button onclick="event.stopPropagation();openMarkPaidModal(\''+key+'\',\''+s.mo+'\','+(s.yr||2026)+')" style="margin-top:5px;font-size:9px;font-weight:600;color:'+(iC?'#fff':'#1d9e75')+';-webkit-text-fill-color:'+(iC?'#fff':'#1d9e75')+';background:'+(iC?'rgba(255,255,255,.15)':'#e8f8f2')+';border:none;border-radius:6px;padding:2px 7px;cursor:pointer;font-family:inherit;width:100%">Mark Paid</button>':'')
+      +(s.a>0&&!s.p?'<button onclick="event.stopPropagation();openMarkPaidModal(\''+key+'\',\''+s.mo+'\','+(s.yr||2026)+')" style="margin-top:5px;font-size:9px;font-weight:600;color:'+(iC?'#fff':'#1d9e75')+';background:'+(iC?'rgba(255,255,255,.15)':'#e8f8f2')+';border:none;border-radius:6px;padding:2px 7px;cursor:pointer;font-family:inherit;width:100%">Mark Paid</button>':'')
       +(s.p?'<button onclick="event.stopPropagation();markPaid(\''+key+'\',\''+s.mo+'\')" style="margin-top:5px;font-size:9px;font-weight:600;color:#e34040;-webkit-text-fill-color:#e34040;background:#fff0f3;border:none;border-radius:6px;padding:2px 7px;cursor:pointer;font-family:inherit;width:100%">Undo Paid</button>':'')
       +(srcs.length>1&&!iC?'<div class="mchint">Tap to expand</div>':'')
     +'</div>';  }).join('');
