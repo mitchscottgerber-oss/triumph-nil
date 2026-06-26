@@ -2418,20 +2418,7 @@ function openMarkPaidModal(key, mo, yr){
   yr=yr||2026;
   const a=A.find(x=>x.f+'_'+x.l===key);if(!a) return;
   const s=a.sch.find(x=>x.mo===mo&&(x.yr||2026)===yr);if(!s||s.a===0) return;
-  // If already has sources recorded (prior partial pay), just mark paid directly
-  if(!s.p && s.cleared>0 && s.s && s.s.length>0){
-    s.p=true;
-    a.paid=a.sch.reduce((t,x)=>t+(x.p?x.a:0),0);
-    sb.from('payment_schedule').upsert(
-      {athlete_id:a.id,month:mo,year:yr,amount:s.a,is_paid:true,
-       sources:s.s,nil_cleared:s.cleared,shortfall:s.shortfall||0,rs_paid:false},
-      {onConflict:'athlete_id,month,year'}
-    ).then(()=>sb.from('athletes').update({paid_out:a.paid}).eq('id',a.id));
-    syncStatus('Marked paid ✓');
-    oProf(key);
-    rAnnual(getAthletesBySport(activeSport));
-    return;
-  }
+
   const existing=document.getElementById('mark-paid-overlay');
   if(existing) existing.remove();
   const deals=a.deals||[];
@@ -2457,14 +2444,14 @@ function openMarkPaidModal(key, mo, yr){
         ?'<span style="font-size:9px;background:#f2f2f7;color:#6c6c70;padding:1px 6px;border-radius:4px;font-weight:500">No Submission Req.</span>'
         :'<span style="font-size:9px;background:#faeeda;color:#633806;padding:1px 6px;border-radius:4px;font-weight:500">Pending NILGo</span>';
       return`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid ${fullyUsed?'#fecaca':'#e5e5ea'};border-radius:8px;margin-bottom:6px;background:${fullyUsed?'#fff8f8':'#fff'};opacity:${fullyUsed?'0.7':'1'}">
-        <input type="checkbox" class="mpm-deal-chk" data-amt="0" data-idx="${i}" style="width:16px;height:16px;cursor:pointer;accent-color:#185fa5" ${fullyUsed?'disabled':''} onchange="mpmSyncAmt(this,${s.a})">
+        <input type="checkbox" class="mpm-deal-chk" data-amt="0" data-idx="${i}" style="width:16px;height:16px;cursor:pointer;accent-color:#185fa5" ${fullyUsed?'disabled':''} ${prevAmt>0?'checked':''} onchange="mpmSyncAmt(this,${s.a})">
         <div style="flex:1">
           <div style="font-size:13px;font-weight:500;color:${fullyUsed?'#9ca3af':'#1d1d1f'}">${d.n}</div>
           <div style="margin-top:2px;display:flex;align-items:center;gap:5px">${pill}<span style="font-size:10px;color:${availColor};font-weight:${fullyUsed?'600':'400'}">${availLabel}</span></div>
         </div>
         <div style="display:flex;align-items:center;border:1.5px solid #e5e5ea;border-radius:7px;overflow:hidden;height:30px;width:110px;${fullyUsed?'opacity:0.4':''}" >
           <span style="padding:0 7px;font-size:12px;color:#8e8e93;border-right:1px solid #e5e5ea;height:100%;display:flex;align-items:center">$</span>
-          <input type="number" class="mpm-amt-inp" data-idx="${i}" min="0" max="${dealRemaining}" data-total="${dealTotal}" data-nosub="${d.status==='no-submission'?'1':'0'}" value="0" ${fullyUsed?'disabled':''} style="border:none;flex:1;height:100%;padding:0 6px;font-size:12px;font-family:inherit;outline:none;width:60px;background:transparent" oninput="mpmSyncFromInput(this,${s.a})">
+          <input type="number" class="mpm-amt-inp" data-idx="${i}" min="0" max="${dealRemaining}" data-total="${dealTotal}" data-nosub="${d.status==='no-submission'?'1':'0'}" value="${prevAmt>0?prevAmt.toFixed(2):'0'}" ${fullyUsed?'disabled':''} style="border:none;flex:1;height:100%;padding:0 6px;font-size:12px;font-family:inherit;outline:none;width:60px;background:transparent" oninput="mpmSyncFromInput(this,${s.a})">
         </div>
       </div>`;
     }).join('')
