@@ -4299,10 +4299,25 @@ function applyRole(role){
 // ===== ADD DEAL MODAL =====
 // Deal templates — stored in localStorage
 function getDealTemplates(){try{return JSON.parse(localStorage.getItem('dealTemplates')||'[]');}catch{return[];}}
+function initBuiltinTemplates(){
+  const existing=getDealTemplates();
+  if(existing.find(function(t){return t.name==='June Playfly Billboard Campaign';})) return;
+  existing.unshift({
+    name:'June Playfly Billboard Campaign',
+    total:'14376',
+    types:['Digital Ad'],
+    status:'no-submission',
+    subCompanies:["Whitley's Peanut Factory","Virginia Federal Credit Union (VACU)","Twenty / 20 Management, Inc.","The Joint Chiropractic","The Hotel Roanoke & Conference Center","Smithfield Foods","Signarama","Red Beards Pest Control Wildlife, LLC","Lunch Pail Ventures","Kroger","IV Labs, Inc.","Henritze Dental Group","Grand Home Furnishings","Eagle Construction","Cox","Carter Machinery","JET Express Carwash","186 Advertising","Delta Dental of Virginia","Coca-Cola Consolidated, Inc","G & H Appliance, Inc.","Carilion Clinic: Healthcare for Hokies","Carilion Children's","Scoville Specialities, Inc"],
+    subAmt:599,
+    subType:'Digital Ad'
+  });
+  saveDealTemplates(existing);
+}
 function saveDealTemplates(t){localStorage.setItem('dealTemplates',JSON.stringify(t));}
 
 function loadDealTemplate(){
   const sel=document.getElementById('nd-template');if(!sel) return;
+  initBuiltinTemplates();
   const idx=parseInt(sel.value);
   if(isNaN(idx)) return;
   const t=getDealTemplates()[idx];if(!t) return;
@@ -4311,6 +4326,16 @@ function loadDealTemplate(){
   document.querySelectorAll('input[name="nd-type"]').forEach(cb=>{cb.checked=(t.types||[]).includes(cb.value);});
   const stat=document.querySelector('input[name="nd-status"][value="'+(t.status||'pending')+'"]');
   if(stat) stat.checked=true;
+  // store subCompanies on the hidden field for saveDeal to pick up
+  const scEl=document.getElementById('nd-subcompanies');
+  if(scEl) scEl.value=t.subCompanies?JSON.stringify({cos:t.subCompanies,amt:t.subAmt||0,type:t.subType||''}):'';
+  // show preview
+  const prev=document.getElementById('nd-sub-preview');
+  if(prev&&t.subCompanies&&t.subCompanies.length){
+    prev.innerHTML='<div style="font-size:10px;font-weight:600;color:#185fa5;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">'+t.subCompanies.length+' sub-companies · $'+t.subAmt+' · '+t.subType+'</div>'
+      +'<div style="font-size:10px;color:#8e8e93;line-height:1.6">'+t.subCompanies.slice(0,5).join(', ')+(t.subCompanies.length>5?' +' +(t.subCompanies.length-5)+' more':'')+'</div>';
+    prev.style.display='block';
+  } else if(prev){ prev.style.display='none'; }
 }
 
 function saveDealAsTemplate(){
@@ -4393,6 +4418,9 @@ function openAddDeal(key){
             <select id="nd-template" onchange="loadDealTemplate()" style="flex:1;min-width:0;height:30px;border:1.5px solid #b3d4f5;border-radius:6px;font-size:12px;font-family:inherit;background:#fff;color:#185fa5;padding:0 8px;outline:none;max-width:calc(100% - 120px)"><option value="">— select a template —</option></select>
             <button onclick="saveDealAsTemplate()" style="flex-shrink:0;height:30px;padding:0 10px;background:#185fa5;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap"><i class="ti ti-bookmark" style="font-size:10px"></i> Save</button>
             <button onclick="manageTemplates()" style="flex-shrink:0;height:30px;padding:0 8px;background:transparent;color:#185fa5;border:1.5px solid #b3d4f5;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap">Manage</button>
+          </div>
+          <div id="nd-sub-preview" style="display:none;margin-top:8px;padding:8px;background:#fff;border-radius:6px;border:0.5px solid #b3d4f5"></div>
+          <input type="hidden" id="nd-subcompanies" value="">
           </div>
         </div>
         <div style="margin-bottom:12px">
@@ -4483,7 +4511,10 @@ function saveDeal(key){
   const errEl=document.getElementById('nd-err');
   if(!name){errEl.textContent='Deal name is required';errEl.style.display='block';return;}
   if(!total){errEl.textContent='Deal total is required';errEl.style.display='block';return;}
-  a.deals.push({n:name,sow,sub,t:total,s1:0,s2:0,hist:[],status,types,pow:false});
+  const scRaw=document.getElementById('nd-subcompanies')?.value||'';
+  let subCompanies=null;
+  try{if(scRaw) subCompanies=JSON.parse(scRaw);}catch(e){}
+  a.deals.push({n:name,sow,sub,t:total,s1:0,s2:0,hist:[],status,types,pow:false,subCompanies:subCompanies||null});
   saveDealsToSupabase(a);
   document.getElementById('add-deal-overlay').remove();
   lastProfTab='wallets';
@@ -8561,23 +8592,42 @@ function buildMobReceiptCard(a,mo,yr){
   if(srcs.length>0){
     srcs.forEach(src=>{
       const deal=a.deals.find(d=>d.n===src.name);
-      const approved=deal?.status==='approved';
-      const noSub=deal?.status==='no-submission';
-      const hasPow=deal?.pow;
-      const statusLabel=approved?'<span style="color:#1d9e75;font-weight:600;font-size:11px">✓ NILGo Approved</span>':'';
-      const typeMap={social:'<i class="ti ti-brand-instagram" style="color:#e1306c;font-size:11px"></i> Social Post',appearance:'<i class="ti ti-users" style="color:#2980b9;font-size:11px"></i> Appearance',content:'<i class="ti ti-video" style="color:#8e44ad;font-size:11px"></i> Content Creation',autograph:'<i class="ti ti-signature" style="color:#b7791f;font-size:11px"></i> Autograph Signing',billboard:'<i class="ti ti-ad-2" style="color:#0369a1;font-size:11px"></i> Billboard',virtual:'<i class="ti ti-device-laptop" style="color:#7c3aed;font-size:11px"></i> Virtual Meet & Greet'};
-      const typeLabels=(deal?.types||[]).map(t=>typeMap[t]||t).join('<span style="color:#d1d1d6;margin:0 3px">·</span>');
-      lines+=`<div class="mob-rcpt-line">
-        <div class="mob-rcpt-line-left">
-          <div class="mob-rcpt-deal">${src.name}</div>
-          <div class="mob-rcpt-sub" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:2px">
-            ${statusLabel}
-            ${typeLabels?`<span style="font-size:11px;color:#8e8e93;display:flex;align-items:center;gap:3px">${typeLabels}</span>`:''}
-            ${hasPow?'<span class="mob-badge green" style="font-size:10px;padding:1px 6px"><i class="ti ti-paperclip" style="font-size:9px"></i> POW</span>':''}
+      const approved=deal&&deal.status==='approved';
+      const hasPow=deal&&deal.pow;
+      const sc=deal&&deal.subCompanies;
+      const typeMap={social:'<i class="ti ti-brand-instagram" style="color:#e1306c;font-size:11px"></i> Social Post',appearance:'<i class="ti ti-users" style="color:#2980b9;font-size:11px"></i> Appearance',content:'<i class="ti ti-video" style="color:#8e44ad;font-size:11px"></i> Content Creation',autograph:'<i class="ti ti-signature" style="color:#b7791f;font-size:11px"></i> Autograph Signing',billboard:'<i class="ti ti-ad-2" style="color:#0369a1;font-size:11px"></i> Billboard',virtual:'<i class="ti ti-device-laptop" style="color:#7c3aed;font-size:11px"></i> Virtual Meet & Greet','Digital Ad':'<i class="ti ti-ad-2" style="color:#0369a1;font-size:11px"></i> Digital Ad'};
+      if(sc&&sc.cos&&sc.cos.length){
+        // Expand sub-companies — each gets its own receipt line
+        const subAmt=sc.amt||0;
+        const subType=sc.type||'';
+        const subTypeLabel=typeMap[subType]||('<span style="font-size:11px;color:#8e8e93">'+subType+'</span>');
+        sc.cos.forEach(function(coName){
+          lines+=`<div class="mob-rcpt-line">
+            <div class="mob-rcpt-line-left">
+              <div class="mob-rcpt-deal">${coName}</div>
+              <div class="mob-rcpt-sub" style="display:flex;align-items:center;gap:5px;margin-top:2px">
+                <span style="font-size:11px;color:#8e8e93;display:flex;align-items:center;gap:3px">${subTypeLabel}</span>
+              </div>
+            </div>
+            <div class="mob-rcpt-amt">${f(subAmt)}</div>
+          </div>`;
+        });
+      } else {
+        // Normal single deal line
+        const statusLabel=approved?'<span style="color:#1d9e75;font-weight:600;font-size:11px">✓ NILGo Approved</span>':'';
+        const typeLabels=(deal&&deal.types||[]).map(function(t){return typeMap[t]||t;}).join('<span style="color:#d1d1d6;margin:0 3px">·</span>');
+        lines+=`<div class="mob-rcpt-line">
+          <div class="mob-rcpt-line-left">
+            <div class="mob-rcpt-deal">${src.name}</div>
+            <div class="mob-rcpt-sub" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:2px">
+              ${statusLabel}
+              ${typeLabels?`<span style="font-size:11px;color:#8e8e93;display:flex;align-items:center;gap:3px">${typeLabels}</span>`:''}
+              ${hasPow?'<span class="mob-badge green" style="font-size:10px;padding:1px 6px"><i class="ti ti-paperclip" style="font-size:9px"></i> POW</span>':''}
+            </div>
           </div>
-        </div>
-        <div class="mob-rcpt-amt">${src.amt}</div>
-      </div>`;
+          <div class="mob-rcpt-amt">${src.amt}</div>
+        </div>`;
+      }
     });
   } else if(s.a>0){
     lines=`<div class="mob-rcpt-line"><div class="mob-rcpt-line-left"><div class="mob-rcpt-deal">NIL Payment</div><div class="mob-rcpt-sub" style="color:#8e8e93">${mo} ${yr}</div></div><div class="mob-rcpt-amt">${f(s.a)}</div></div>`;
@@ -8602,7 +8652,7 @@ function buildMobReceiptCard(a,mo,yr){
     <div class="mob-rcpt-ft">
       <div style="font-size:11px;color:#aeaeb2">${dateStr}</div>
       <div>
-        <div style="font-size:10px;color:#8e8e93;text-align:right;margin-bottom:2px">Total</div>
+        <div style="font-size:10px;color:#8e8e93;text-align:right;margin-bottom:2px">Monthly Total</div>
         <div style="font-size:22px;font-weight:700">${f(total)}</div>
       </div>
     </div>`;
