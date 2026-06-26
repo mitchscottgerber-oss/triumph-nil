@@ -5064,6 +5064,7 @@ function renderCos(){
       +modeBtn('pipeline','Pipeline','layout-kanban')
       +modeBtn('roster','Company Roster','building-store')
       +(USER_ROLE!=='activation'?modeBtn('planner','Activation Planner','layout-board'):'')
+      +(USER_ROLE!=='activation'?modeBtn('packets','Packets','package')+''​:'')
       +'</div>'
       +rightBtn
     +'</div>';
@@ -5096,7 +5097,79 @@ function renderCos(){
     return;
   }
 
+  if(coPageMode==='packets'){
+    document.getElementById('co-body').innerHTML=header+buildPackets();
+    return;
+  }
+
   document.getElementById('co-body').innerHTML=header+buildCompanyRoster();
+}
+
+function buildPackets(){
+  // Gather all unique packet templates from deals across all athletes
+  const packetMap={}; // packetName -> {cos:{coName->{athletes:[],cleared:0}}}
+  A.forEach(function(a){
+    (a.deals||[]).forEach(function(d){
+      if(!d.subCompanies||!d.subCompanies.cos) return;
+      var pName=d.n;
+      if(!packetMap[pName]) packetMap[pName]={name:pName,subAmt:d.subCompanies.amt||0,subType:d.subCompanies.type||'',cos:{}};
+      var pk=packetMap[pName];
+      d.subCompanies.cos.forEach(function(co){
+        if(!pk.cos[co]) pk.cos[co]={athletes:[],cleared:0,usedByAthletes:[]};
+        // Check if this company has been used for any month by this athlete
+        var used=(d.usedCos||[]).filter(function(u){return u.co===co;});
+        if(used.length>0){
+          pk.cos[co].cleared+=d.subCompanies.amt*(used.length);
+          pk.cos[co].usedByAthletes.push({name:a.f+' '+a.l,pos:a.pos,months:used.map(function(u){return u.mo+' '+(u.yr||2026);}).join(', ')});
+        }
+        pk.cos[co].athletes.push({name:a.f+' '+a.l,pos:a.pos});
+      });
+    });
+  });
+
+  const packets=Object.values(packetMap);
+  if(!packets.length) return '<div style="padding:60px;text-align:center;color:#8e8e93"><i class="ti ti-package" style="font-size:32px;display:block;margin-bottom:12px"></i>No packets yet. Add a deal from a packet template to get started.</div>';
+
+  return packets.map(function(pk){
+    const cos=Object.entries(pk.cos);
+    const totalAthletes=new Set(cos.flatMap(function(e){return e[1].usedByAthletes.map(function(a){return a.name;});})).size;
+    const totalCleared=cos.reduce(function(s,e){return s+e[1].cleared;},0);
+    const usedCount=cos.filter(function(e){return e[1].usedByAthletes.length>0;}).length;
+
+    return '<div style="margin-bottom:24px">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
+        +'<div>'
+          +'<div style="font-size:15px;font-weight:700;color:#1d1d1f">'+pk.name+'</div>'
+          +'<div style="font-size:11px;color:#8e8e93;margin-top:2px">'+cos.length+' companies · '+f(pk.subAmt)+' each · '+pk.subType+' · '+usedCount+' used · '+f(totalCleared)+' cleared</div>'
+        +'</div>'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px">'
+      +cos.map(function(entry){
+        var coName=entry[0],co=entry[1];
+        var used=co.usedByAthletes.length>0;
+        var borderClr=used?'#b3d4f5':'#e5e5ea';
+        var bgClr=used?'#f0f7ff':'#fff';
+        return '<div style="border:1px solid '+borderClr+';border-radius:10px;padding:12px;background:'+bgClr+'">'
+          +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">'
+            +'<div style="font-size:12px;font-weight:600;color:#1d1d1f;line-height:1.3">'+coName+'</div>'
+            +(used?'<span style="font-size:10px;background:#dbeafe;color:#1e40af;padding:1px 6px;border-radius:4px;font-weight:500;flex-shrink:0">'+f(co.cleared)+'</span>':'<span style="font-size:10px;color:#d1d1d6;flex-shrink:0">Available</span>')
+          +'</div>'
+          +(used
+            ?'<div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">'
+              +co.usedByAthletes.map(function(ath){
+                return '<div style="display:flex;align-items:center;gap:6px">'
+                  +'<div style="width:22px;height:22px;border-radius:6px;background:#1d1d1f;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0">'+ath.name.split(' ').map(function(w){return w[0];}).join('').slice(0,2)+'</div>'
+                  +'<div><div style="font-size:11px;font-weight:500;color:#1d1d1f">'+ath.name+'</div><div style="font-size:9px;color:#8e8e93">'+ath.months+'</div></div>'
+                +'</div>';
+              }).join('')
+            +'</div>'
+            :'<div style="margin-top:6px;font-size:10px;color:#aeaeb2">Not yet applied</div>'
+          )
+        +'</div>';
+      }).join('')
+      +'</div>'
+    +'</div>';
+  }).join('');
 }
 
 // ===== PIPELINE =====
