@@ -5099,6 +5099,31 @@ function renderCos(){
 
   if(coPageMode==='packets'){
     document.getElementById('co-body').innerHTML=header+buildPackets();
+    // Row expand toggle
+    document.getElementById('co-body').addEventListener('click',function(e){
+      var hd=e.target.closest('.pk-row-hd');
+      if(!hd||hd.dataset.used!=='1') return;
+      var row=hd.closest('.pk-row');
+      var exp=row&&row.querySelector('.pk-expand');
+      var chev=hd.querySelector('.pk-chev');
+      if(!exp) return;
+      var open=exp.style.display==='none';
+      exp.style.display=open?'block':'none';
+      if(chev) chev.style.transform=open?'rotate(90deg)':'';
+    },{once:true});
+    // Search filter
+    document.getElementById('co-body').addEventListener('input',function(e){
+      if(!e.target.classList.contains('pk-search')) return;
+      var q=e.target.value.toLowerCase();
+      var pkId=e.target.dataset.pk;
+      document.querySelectorAll('.pk-row[data-pk="'+pkId+'"]').forEach(function(row){
+        var coName=row.querySelector('.pk-coname').textContent.toLowerCase();
+        var athText=row.querySelector('.pk-expand').textContent.toLowerCase();
+        var match=q===''||coName.indexOf(q)!==-1||athText.indexOf(q)!==-1;
+        row.style.display=match?'':'none';
+        if(q&&athText.indexOf(q)!==-1) row.querySelector('.pk-expand').style.display='block';
+      });
+    },{once:true});
     return;
   }
 
@@ -5106,7 +5131,7 @@ function renderCos(){
 }
 
 function buildPackets(){
-  const packetMap={};
+  var packetMap={};
   A.forEach(function(a){
     (a.deals||[]).forEach(function(d){
       if(!d.subCompanies||!d.subCompanies.cos) return;
@@ -5124,56 +5149,54 @@ function buildPackets(){
     });
   });
 
-  const packets=Object.values(packetMap);
+  var packets=Object.values(packetMap);
   if(!packets.length) return '<div style="padding:60px;text-align:center;color:#8e8e93"><i class="ti ti-package" style="font-size:32px;display:block;margin-bottom:12px"></i>No packets yet.</div>';
 
   var html='';
   packets.forEach(function(pk,pi){
     var cos=Object.entries(pk.cos);
     var usedCount=cos.filter(function(e){return e[1].usedByAthletes.length>0;}).length;
-    var availCount=cos.length-usedCount;
-    var pkId='pk-'+pi;
-
+    var pkId='pk'+pi;
     var rows=cos.map(function(entry,ri){
       var coName=entry[0],co=entry[1];
       var used=co.usedByAthletes.length>0;
-      var rowId=pkId+'-row-'+ri;
       var athHtml=co.usedByAthletes.map(function(ath){
-        return '<div style="display:flex;align-items:center;gap:6px;padding:5px 12px 5px 28px;border-top:0.5px solid #f0f0ee">'          +'<div style="font-size:11px;color:#1d1d1f;flex:1">'+ath.name+' <span style="color:#aeaeb2;font-size:10px">'+ath.pos+'</span></div>'          +'<div style="font-size:10px;color:#8e8e93">'+ath.months+'</div>'        +'</div>';
+        return '<div style="padding:5px 12px 5px 28px;border-top:0.5px solid #f0f0ee;display:flex;justify-content:space-between">'
+          +'<span style="font-size:11px;color:#1d1d1f">'+ath.name+' <span style="color:#aeaeb2">'+ath.pos+'</span></span>'
+          +'<span style="font-size:10px;color:#8e8e93">'+ath.months+'</span>'
+        +'</div>';
       }).join('');
-      var expandBtn=used?'<i class="ti ti-chevron-right" id="'+rowId+'-icon" style="font-size:12px;color:#aeaeb2;transition:transform .15s" aria-hidden="true"></i>':'';
-      return '<div id="'+rowId+'" style="border-bottom:0.5px solid #f0f0ee">'        +'<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;cursor:'+(used?'pointer':'default')+'"'          +(used?' onclick="pkToggleRow(\"'+rowId+'\")"':'')+'>'          +'<div style="display:flex;align-items:center;gap:8px">'            +expandBtn            +'<span style="font-size:12px;color:#1d1d1f" class="'+pkId+'-coname">'+coName+'</span>'          +'</div>'          +(used            ?'<span style="font-size:10px;background:#E6F1FB;color:#0C447C;padding:1px 7px;border-radius:20px;font-weight:500">'+co.usedByAthletes.length+' athlete'+(co.usedByAthletes.length!==1?'s':'')+'</span>'            :'<span style="font-size:10px;color:#aeaeb2">Available</span>'          )        +'</div>'        +'<div id="'+rowId+'-expand" style="display:none">'+athHtml+'</div>'      +'</div>';
+      return '<div class="pk-row" data-pk="'+pkId+'" style="border-bottom:0.5px solid #f0f0ee">'
+        +'<div class="pk-row-hd" data-used="'+(used?'1':'0')+'" style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;cursor:'+(used?'pointer':'default')+'">'
+          +'<div style="display:flex;align-items:center;gap:7px">'
+            +(used?'<i class="ti ti-chevron-right pk-chev" style="font-size:12px;color:#aeaeb2" aria-hidden="true"></i>':'<span style="display:inline-block;width:14px"></span>')
+            +'<span class="pk-coname" style="font-size:12px;color:#1d1d1f">'+coName+'</span>'
+          +'</div>'
+          +(used
+            ?'<span style="font-size:10px;background:#E6F1FB;color:#0C447C;padding:1px 7px;border-radius:20px;font-weight:500">'+co.usedByAthletes.length+' athlete'+(co.usedByAthletes.length!==1?'s':'')+'</span>'
+            :'<span style="font-size:10px;color:#aeaeb2">Available</span>')
+        +'</div>'
+        +'<div class="pk-expand" style="display:none">'+athHtml+'</div>'
+      +'</div>';
     }).join('');
 
-    html+='<div style="margin-bottom:20px">'      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'        +'<div>'          +'<span style="font-size:13px;font-weight:600;color:#1d1d1f">'+pk.name+'</span>'          +'<span style="font-size:11px;color:#8e8e93;margin-left:8px">'+pk.subType+' · '+f(pk.subAmt)+' each</span>'        +'</div>'        +'<span style="font-size:11px;color:#8e8e93">'+usedCount+' used · '+availCount+' available</span>'      +'</div>'      +'<div style="border:0.5px solid #e5e5ea;border-radius:10px;overflow:hidden;background:#fff">'        +'<div style="padding:7px 10px;border-bottom:0.5px solid #f0f0ee;background:#f8f8f6">'          +'<div style="position:relative">'            +'<i class="ti ti-search" style="position:absolute;left:7px;top:50%;transform:translateY(-50%);font-size:13px;color:#aeaeb2" aria-hidden="true"></i>'            +'<input type="text" placeholder="Search company or athlete…" oninput="pkFilter(''+pkId+'',this.value)" style="width:100%;padding:5px 8px 5px 26px;border:0.5px solid #e5e5ea;border-radius:7px;font-size:12px;font-family:inherit;background:#fff;color:#1d1d1f;outline:none">'          +'</div>'        +'</div>'        +rows      +'</div>'    +'</div>';
+    html+='<div style="margin-bottom:20px">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
+        +'<span style="font-size:13px;font-weight:600;color:#1d1d1f">'+pk.name+'</span>'
+        +'<span style="font-size:11px;color:#8e8e93">'+usedCount+' used · '+(cos.length-usedCount)+' available</span>'
+      +'</div>'
+      +'<div style="border:0.5px solid #e5e5ea;border-radius:10px;overflow:hidden;background:#fff">'
+        +'<div style="padding:7px 10px;border-bottom:0.5px solid #f0f0ee;background:#f8f8f6;position:relative">'
+          +'<i class="ti ti-search" style="position:absolute;left:17px;top:50%;transform:translateY(-50%);font-size:13px;color:#aeaeb2;pointer-events:none" aria-hidden="true"></i>'
+          +'<input type="text" class="pk-search" data-pk="'+pkId+'" placeholder="Search company or athlete\u2026" style="width:100%;padding:5px 8px 5px 26px;border:0.5px solid #e5e5ea;border-radius:7px;font-size:12px;font-family:inherit;background:#fff;color:#1d1d1f;outline:none">'
+        +'</div>'
+        +rows
+      +'</div>'
+    +'</div>';
   });
   return html;
 }
 
-function pkToggleRow(rowId){
-  var exp=document.getElementById(rowId+'-expand');
-  var icon=document.getElementById(rowId+'-icon');
-  if(!exp) return;
-  var open=exp.style.display==='none';
-  exp.style.display=open?'block':'none';
-  if(icon) icon.style.transform=open?'rotate(90deg)':'';
-}
-
-function pkFilter(pkId,q){
-  var q2=q.toLowerCase();
-  document.querySelectorAll('#co-body .'+pkId+'-coname').forEach(function(el){
-    var row=el.closest('[id^="'+pkId+'-row-"]');
-    if(!row) return;
-    var coName=el.textContent.toLowerCase();
-    var athText=row.querySelector('[id$="-expand"]');
-    var athMatch=athText&&athText.textContent.toLowerCase().indexOf(q2)!==-1;
-    row.style.display=(q2===''||coName.indexOf(q2)!==-1||athMatch)?'':'none';
-    if(athMatch&&q2!==''){
-      var exp=row.querySelector('[id$="-expand"]');
-      if(exp) exp.style.display='block';
-    }
-  });
-}
 
 // ===== PIPELINE =====
 const PL_STAGES=['Inbound','Evaluating','MSA Out','Active'];
