@@ -2411,7 +2411,7 @@ function mpmUpdateTotals(scheduled){
     }
   }
   if(sfEl) sfEl.style.display=shortfall>0?'block':'none';
-  if(confirmBtn) confirmBtn.textContent=shortfall>0?'Confirm + move '+f(shortfall)+' to RS':'Confirm Payment';
+  if(confirmBtn) confirmBtn.textContent='Confirm Payment';
 }
 
 function openMarkPaidModal(key, mo, yr){
@@ -2474,9 +2474,9 @@ function openMarkPaidModal(key, mo, yr){
         <div style="font-size:12px;color:#8e8e93">Selected total</div>
         <div id="mpm-sel-total" style="font-size:14px;font-weight:600;color:#8e8e93">$0.00</div>
       </div>
-      <div id="mpm-shortfall-row" style="display:none;background:#fff0f3;border:1px solid #f5c6d0;border-radius:8px;padding:10px 14px;margin-top:4px">
-        <div style="font-size:11px;font-weight:600;color:#c0392b">Shortfall will be moved to Rev Share</div>
-        <div style="font-size:11px;color:#c0392b;margin-top:2px">The difference will auto-log on ${a.f}'s RS tab for ${mo}.</div>
+      <div id="mpm-shortfall-row" style="display:none;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;margin-top:4px">
+        <div style="font-size:11px;font-weight:600;color:#92400e">Shortfall — manual RS entry needed</div>
+        <div style="font-size:11px;color:#92400e;margin-top:2px">Confirming will mark this month paid as-is. You'll need to manually add the shortfall to ${a.f}'s Rev Share tab.</div>
       </div>
     </div>
     <div style="padding:14px 22px;border-top:1px solid #f2f2f7;display:flex;gap:10px;background:#fafafa;flex-shrink:0">
@@ -2492,7 +2492,7 @@ async function confirmMarkPaid(aid,mo,scheduled,yr){
   yr=yr||2026;
   const a=A.find(x=>x.id===aid);if(!a) return;
   const s=a.sch.find(x=>x.mo===mo&&(x.yr||2026)===yr);if(!s) return;
-  // Collect selected sources — save as flat [name, amt, name, amt] format
+  // Collect sources
   const srcFlat=[];
   let selTotal=0;
   document.querySelectorAll('.mpm-amt-inp').forEach(inp=>{
@@ -2502,14 +2502,14 @@ async function confirmMarkPaid(aid,mo,scheduled,yr){
       if(d){srcFlat.push(d.n,f(amt));selTotal+=amt;}
     }
   });
-  const checked=[...document.querySelectorAll('.mpm-deal-chk:checked')];
   const shortfall=Math.max(0,(scheduled||s.a)-selTotal);
+  // Mark paid — record what was actually cleared, note shortfall but don't auto-move
   s.p=true;
-  s.cleared=selTotal||s.a;
+  s.cleared=selTotal;
   s.s=srcFlat;
-  if(shortfall>0) s.shortfall=shortfall;
-  a.paid=a.sch.reduce((t,x)=>t+(x.p?x.a:0),0); // recalc from schedule
-  // Update wallet deal hist entries — upsert by mo, cap to deal remaining
+  s.shortfall=shortfall; // stored for reference, not auto-applied to RS
+  a.paid=a.sch.reduce((t,x)=>t+(x.p?x.a:0),0);
+  // Update wallet deal hist entries
   let histChanged=false;
   document.querySelectorAll('.mpm-amt-inp').forEach(inp=>{
     const amt=parseFloat(inp.value)||0;
@@ -2517,34 +2517,23 @@ async function confirmMarkPaid(aid,mo,scheduled,yr){
       const d=a.deals[parseInt(inp.dataset.idx)];
       if(d){
         if(!d.hist) d.hist=[];
-        const used=d.hist.reduce((s,h)=>s+(h.amt||0),0);
-        const dTotal=parseFloat(String(d.t).replace(/[^0-9.]/g,''))||0;
-        const remaining=Math.max(0,dTotal-used);
-        const capped=(d.status==='no-submission')?amt:Math.min(amt,remaining);
-        if(capped<=0) return;
         const existing=d.hist.find(h=>h.mo===mo&&(h.yr||2026)===(s.yr||2026));
-        if(existing) existing.amt=capped; // update existing entry
-        else d.hist.push({mo,yr:s.yr||2026,amt:capped});
+        if(existing) existing.amt=amt;
+        else d.hist.push({mo,yr:s.yr||2026,amt});
         histChanged=true;
       }
     }
   });
   if(histChanged) await saveDealsToSupabase(a);
-  // Auto-log shortfall to RS if needed
-  if(shortfall>0){
-    const rsKey=a.f+'_'+a.l;
-    if(!revShare[rsKey]) revShare[rsKey]={};
-    revShare[rsKey][mo+'_'+(s.yr||2026)]=(revShare[rsKey][mo+'_'+(s.yr||2026)]||0)+shortfall;
-    await saveRSShortfall(A.indexOf(a),mo,s.yr||2026,shortfall);
-  }
   try{
     await sb.from('payment_schedule').upsert(
       {athlete_id:a.id,month:mo,year:s.yr||2026,amount:s.a,is_paid:true,
-       sources:srcFlat,nil_cleared:s.cleared,shortfall:s.shortfall||0},
+       sources:srcFlat,nil_cleared:selTotal,shortfall,rs_paid:false},
       {onConflict:'athlete_id,month,year'}
     );
     await sb.from('athletes').update({paid_out:a.paid}).eq('id',a.id);
-    syncStatus('Payment confirmed ✓');
+    const msg=shortfall>0?'Paid ✓ — shortfall of '+f(shortfall)+' needs manual RS entry':'Payment confirmed ✓';
+    syncStatus(msg);
   }catch(e){syncStatus('Sync error: '+e.message,false);}
   document.getElementById('mark-paid-overlay').remove();
   const profKey=a.f+'_'+a.l;
