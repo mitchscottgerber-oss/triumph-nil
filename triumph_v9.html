@@ -8325,7 +8325,28 @@ document.addEventListener('click', function(e){
   }
   if(!await checkAuth()) return;
   await loadFromSupabase();
-  migratePlayflyDeals();
+  // Migrate Playfly deals — attach sub-companies to existing deals
+  (async function(){
+    try{
+      var DONE_KEY='playfly_sub_migrated_v1';
+      if(localStorage.getItem(DONE_KEY)) return;
+      var playfyCos=["Whitley's Peanut Factory","Virginia Federal Credit Union (VACU)","Twenty / 20 Management, Inc.","The Joint Chiropractic","The Hotel Roanoke & Conference Center","Smithfield Foods","Signarama","Red Beards Pest Control Wildlife, LLC","Lunch Pail Ventures","Kroger","IV Labs, Inc.","Henritze Dental Group","Grand Home Furnishings","Eagle Construction","Cox","Carter Machinery","JET Express Carwash","186 Advertising","Delta Dental of Virginia","Coca-Cola Consolidated, Inc","G & H Appliance, Inc.","Carilion Clinic: Healthcare for Hokies","Carilion Children's","Scoville Specialities, Inc"];
+      var updated=0;
+      for(var i=0;i<A.length;i++){
+        var a=A[i];
+        var changed=false;
+        (a.deals||[]).forEach(function(d){
+          if(d.n&&d.n.toLowerCase().indexOf('playfly')!==-1&&!d.subCompanies){
+            d.subCompanies={cos:playfyCos,amt:599,type:'Digital Ad'};
+            changed=true;
+          }
+        });
+        if(changed){await saveDealsToSupabase(a);updated++;}
+      }
+      localStorage.setItem(DONE_KEY,'1');
+      if(updated>0) syncStatus('Playfly receipts updated: '+updated+' athletes ✓');
+    }catch(e){console.warn('Playfly migration error:',e);}
+  })();
   if(isMobile()){
     initMobile();
   } else {
