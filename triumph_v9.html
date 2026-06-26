@@ -8325,6 +8325,7 @@ document.addEventListener('click', function(e){
   }
   if(!await checkAuth()) return;
   await loadFromSupabase();
+  migratePlayflyDeals();
   if(isMobile()){
     initMobile();
   } else {
