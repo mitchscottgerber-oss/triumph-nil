@@ -8802,6 +8802,8 @@ function buildMobReceiptCard(a,mo,yr){
   if(srcs.length>0){
     srcs.forEach(src=>{
       const deal=a.deals.find(d=>d.n===src.name);
+      // If no direct deal match, check if this src.name is a sub-company within a packet deal
+      const packetDeal=!deal?a.deals.find(function(d){return d.subCompanies&&d.subCompanies.cos&&d.subCompanies.cos.indexOf(src.name)!==-1;}):null;
       const approved=deal&&deal.status==='approved';
       const hasPow=deal&&deal.pow;
       const sc=deal&&deal.subCompanies;
@@ -8822,13 +8824,15 @@ function buildMobReceiptCard(a,mo,yr){
           </div>`;
         });
       } else {
-        // Normal single deal line
+        // Normal single deal line — or sub-company from a packet deal
+        const packetType=packetDeal&&packetDeal.subCompanies?packetDeal.subCompanies.type||'Digital Ad':'';
         const statusLabel=approved?'<span style="color:#1d9e75;font-weight:600;font-size:11px">✓ NILGo Approved</span>':'';
         const typeLabels=(deal&&deal.types||[]).map(function(t){return typeMap[t]||t;}).join('<span style="color:#d1d1d6;margin:0 3px">·</span>');
         lines+=`<div class="mob-rcpt-line">
           <div class="mob-rcpt-line-left">
             <div class="mob-rcpt-deal">${src.name}</div>
             <div class="mob-rcpt-sub" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:2px">
+              ${packetType?`<span style="font-size:11px;color:#8e8e93">${packetType}</span>`:''}
               ${statusLabel}
               ${typeLabels?`<span style="font-size:11px;color:#8e8e93;display:flex;align-items:center;gap:3px">${typeLabels}</span>`:''}
               ${hasPow?'<span class="mob-badge green" style="font-size:10px;padding:1px 6px"><i class="ti ti-paperclip" style="font-size:9px"></i> POW</span>':''}
