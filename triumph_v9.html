@@ -2547,8 +2547,9 @@ async function confirmMarkPaid(aid,mo,scheduled,yr){
     syncStatus('Payment confirmed ✓');
   }catch(e){syncStatus('Sync error: '+e.message,false);}
   document.getElementById('mark-paid-overlay').remove();
-  oProf(key);
+  const profKey=a.f+'_'+a.l;
   rAnnual(getAthletesBySport(activeSport));
+  oProf(profKey);
 }
 
 async function markRSPaid(key,mo){
