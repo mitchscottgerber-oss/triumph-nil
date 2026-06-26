@@ -8810,7 +8810,7 @@ function buildMobReceiptCard(a,mo,yr){
         // Only show companies used for THIS month
         const subAmt=sc.amt||0;
         const subType=sc.type||'';
-        const subTypeLabel=typeMap[subType]||('<span style="font-size:9px;color:#8e8e93">'+subType+'</span>');
+        const subTypeLabel=subType||'';
         const usedThisMo=(deal.usedCos||[]).filter(function(u){return u.mo===mo&&(u.yr||2026)===yr;}).map(function(u){return u.co;});
         const displayCos=usedThisMo.length>0?usedThisMo:sc.cos;
         displayCos.forEach(function(coName){
@@ -8818,7 +8818,7 @@ function buildMobReceiptCard(a,mo,yr){
             <div class="mob-rcpt-line-left">
               <div class="mob-rcpt-deal">${coName}</div>
               <div class="mob-rcpt-sub" style="display:flex;align-items:center;gap:5px;margin-top:1px">
-                <span style="font-size:9px;color:#8e8e93;display:flex;align-items:center;gap:3px">${subTypeLabel}</span>
+                <span style="font-size:9px;color:#8e8e93">${subTypeLabel}</span>
               </div>
             </div>
             <div class="mob-rcpt-amt">${f(subAmt)}</div>
