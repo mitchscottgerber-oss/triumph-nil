@@ -2433,8 +2433,11 @@ function openMarkPaidModal(key, mo, yr){
       const i=a.deals.indexOf(d); // original index so confirmMarkPaid reads correct deal
       const approved=d.status==='approved';
       const noSub=d.status==='no-submission';
-      const dealUsed=(d.hist||[]).reduce((s,h)=>s+(h.amt||0),0);
+      const prevEntry=(d.hist||[]).find(function(h){return h.mo===mo&&(h.yr||2026)===yr;});
+      const prevAmt=prevEntry?prevEntry.amt:0;
+      const dealAllUsed=(d.hist||[]).reduce(function(s,h){return s+(h.amt||0);},0);
       const dealTotal=parseFloat(String(d.t).replace(/[^0-9.]/g,''))||0;
+      const dealUsed=dealAllUsed-prevAmt;
       const dealRemaining=Math.max(0,dealTotal-dealUsed);
       const fullyUsed=dealRemaining<=0&&dealUsed>0;
       const availColor=fullyUsed?'#e34040':dealRemaining<dealTotal*0.25?'#b7791f':'#aeaeb2';
