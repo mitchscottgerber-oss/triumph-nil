@@ -2499,38 +2499,61 @@ async function confirmMarkPaid(aid,mo,scheduled,yr){
   yr=yr||2026;
   const a=A.find(x=>x.id===aid);if(!a) return;
   const s=a.sch.find(x=>x.mo===mo&&(x.yr||2026)===yr);if(!s) return;
-  // Collect sources
+  // Collect sources — handle sub-company deals specially
   const srcFlat=[];
   let selTotal=0;
+  let histChanged=false;
+
   document.querySelectorAll('.mpm-amt-inp').forEach(inp=>{
     const amt=parseFloat(inp.value)||0;
-    if(amt>0){
-      const d=a.deals[parseInt(inp.dataset.idx)];
-      if(d){srcFlat.push(d.n,f(amt));selTotal+=amt;}
+    if(amt<=0) return;
+    const d=a.deals[parseInt(inp.dataset.idx)];
+    if(!d) return;
+
+    if(d.subCompanies&&d.subCompanies.cos&&d.subCompanies.cos.length){
+      // Sub-company deal: auto-pick companies from unused pool to cover amt
+      const usedCos=(d.usedCos||[]);
+      const allCos=d.subCompanies.cos;
+      const subAmt=d.subCompanies.amt||0;
+      const subType=d.subCompanies.type||'';
+      const availCos=allCos.filter(function(co){return!usedCos.find(function(u){return u.co===co&&u.mo!==mo;});});
+      let remaining=amt;
+      const pickedCos=[];
+      for(var ci=0;ci<availCos.length&&remaining>0;ci++){
+        pickedCos.push(availCos[ci]);
+        remaining=Math.max(0,remaining-subAmt);
+      }
+      // Record each picked company as its own src line
+      pickedCos.forEach(function(co){
+        srcFlat.push(co,f(Math.min(subAmt,amt)));
+      });
+      selTotal+=amt;
+      // Mark these companies as used for this month
+      if(!d.usedCos) d.usedCos=[];
+      // Remove any prior entries for this mo (re-confirm case)
+      d.usedCos=d.usedCos.filter(function(u){return u.mo!==mo||(u.yr||2026)!==(s.yr||2026);});
+      pickedCos.forEach(function(co){d.usedCos.push({co:co,mo:mo,yr:s.yr||2026});});
+      if(!d.hist) d.hist=[];
+      const existing=d.hist.find(function(h){return h.mo===mo&&(h.yr||2026)===(s.yr||2026);});
+      if(existing) existing.amt=amt; else d.hist.push({mo:mo,yr:s.yr||2026,amt:amt});
+      histChanged=true;
+    } else {
+      // Normal deal
+      srcFlat.push(d.n,f(amt));
+      selTotal+=amt;
+      if(!d.hist) d.hist=[];
+      const existing=d.hist.find(function(h){return h.mo===mo&&(h.yr||2026)===(s.yr||2026);});
+      if(existing) existing.amt=amt; else d.hist.push({mo:mo,yr:s.yr||2026,amt:amt});
+      histChanged=true;
     }
   });
+
   const shortfall=Math.max(0,(scheduled||s.a)-selTotal);
-  // Mark paid — record what was actually cleared, note shortfall but don't auto-move
   s.p=true;
   s.cleared=selTotal;
   s.s=srcFlat;
-  s.shortfall=shortfall; // stored for reference, not auto-applied to RS
-  a.paid=a.sch.reduce((t,x)=>t+(x.p?x.a:0),0);
-  // Update wallet deal hist entries
-  let histChanged=false;
-  document.querySelectorAll('.mpm-amt-inp').forEach(inp=>{
-    const amt=parseFloat(inp.value)||0;
-    if(amt>0){
-      const d=a.deals[parseInt(inp.dataset.idx)];
-      if(d){
-        if(!d.hist) d.hist=[];
-        const existing=d.hist.find(h=>h.mo===mo&&(h.yr||2026)===(s.yr||2026));
-        if(existing) existing.amt=amt;
-        else d.hist.push({mo,yr:s.yr||2026,amt});
-        histChanged=true;
-      }
-    }
-  });
+  s.shortfall=shortfall;
+  a.paid=a.sch.reduce(function(t,x){return t+(x.p?x.a:0);},0);
   if(histChanged) await saveDealsToSupabase(a);
   try{
     await sb.from('payment_schedule').upsert(
@@ -8619,11 +8642,13 @@ function buildMobReceiptCard(a,mo,yr){
       const sc=deal&&deal.subCompanies;
       const typeMap={social:'<i class="ti ti-brand-instagram" style="color:#e1306c;font-size:11px"></i> Social Post',appearance:'<i class="ti ti-users" style="color:#2980b9;font-size:11px"></i> Appearance',content:'<i class="ti ti-video" style="color:#8e44ad;font-size:11px"></i> Content Creation',autograph:'<i class="ti ti-signature" style="color:#b7791f;font-size:11px"></i> Autograph Signing',billboard:'<i class="ti ti-ad-2" style="color:#0369a1;font-size:11px"></i> Billboard',virtual:'<i class="ti ti-device-laptop" style="color:#7c3aed;font-size:11px"></i> Virtual Meet & Greet','Digital Ad':'<i class="ti ti-ad-2" style="color:#0369a1;font-size:11px"></i> Digital Ad'};
       if(sc&&sc.cos&&sc.cos.length){
-        // Expand sub-companies — each gets its own receipt line
+        // Only show companies used for THIS month
         const subAmt=sc.amt||0;
         const subType=sc.type||'';
-        const subTypeLabel=typeMap[subType]||('<span style="font-size:11px;color:#8e8e93">'+subType+'</span>');
-        sc.cos.forEach(function(coName){
+        const subTypeLabel=typeMap[subType]||('<span style="font-size:9px;color:#8e8e93">'+subType+'</span>');
+        const usedThisMo=(deal.usedCos||[]).filter(function(u){return u.mo===mo&&(u.yr||2026)===yr;}).map(function(u){return u.co;});
+        const displayCos=usedThisMo.length>0?usedThisMo:sc.cos;
+        displayCos.forEach(function(coName){
           lines+=`<div class="mob-rcpt-line">
             <div class="mob-rcpt-line-left">
               <div class="mob-rcpt-deal">${coName}</div>
