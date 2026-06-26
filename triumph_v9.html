@@ -8816,10 +8816,7 @@ function buildMobReceiptCard(a,mo,yr){
         displayCos.forEach(function(coName){
           lines+=`<div class="mob-rcpt-line">
             <div class="mob-rcpt-line-left">
-              <div class="mob-rcpt-deal">${coName}</div>
-              <div class="mob-rcpt-sub" style="display:flex;align-items:center;gap:5px;margin-top:1px">
-                <span style="font-size:11px;color:#8e8e93">${subTypeLabel}</span>
-              </div>
+              <div class="mob-rcpt-deal">${coName} <span style="font-size:11px;font-weight:400;color:#8e8e93">· ${subTypeLabel}</span></div>
             </div>
             <div class="mob-rcpt-amt">${f(subAmt)}</div>
           </div>`;
