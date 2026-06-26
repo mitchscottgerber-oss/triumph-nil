@@ -8482,7 +8482,7 @@ document.addEventListener('click', function(e){
   // Migrate Playfly deals — attach sub-companies to existing deals
   (async function(){
     try{
-      var DONE_KEY='playfly_sub_migrated_v1';
+      var DONE_KEY='playfly_sub_migrated_v2';
       if(localStorage.getItem(DONE_KEY)) return;
       var playfyCos=["Whitley's Peanut Factory","Virginia Federal Credit Union (VACU)","Twenty / 20 Management, Inc.","The Joint Chiropractic","The Hotel Roanoke & Conference Center","Smithfield Foods","Signarama","Red Beards Pest Control Wildlife, LLC","Lunch Pail Ventures","Kroger","IV Labs, Inc.","Henritze Dental Group","Grand Home Furnishings","Eagle Construction","Cox","Carter Machinery","JET Express Carwash","186 Advertising","Delta Dental of Virginia","Coca-Cola Consolidated, Inc","G & H Appliance, Inc.","Carilion Clinic: Healthcare for Hokies","Carilion Children's","Scoville Specialities, Inc"];
       var updated=0;
@@ -8810,7 +8810,7 @@ function buildMobReceiptCard(a,mo,yr){
         // Only show companies used for THIS month
         const subAmt=sc.amt||0;
         const subType=sc.type||'';
-        const subTypeLabel=subType||'';
+        const subTypeLabel=subType||'Digital Ad';
         const usedThisMo=(deal.usedCos||[]).filter(function(u){return u.mo===mo&&(u.yr||2026)===yr;}).map(function(u){return u.co;});
         const displayCos=usedThisMo.length>0?usedThisMo:sc.cos;
         displayCos.forEach(function(coName){
@@ -8818,7 +8818,7 @@ function buildMobReceiptCard(a,mo,yr){
             <div class="mob-rcpt-line-left">
               <div class="mob-rcpt-deal">${coName}</div>
               <div class="mob-rcpt-sub" style="display:flex;align-items:center;gap:5px;margin-top:1px">
-                <span style="font-size:9px;color:#8e8e93">${subTypeLabel}</span>
+                <span style="font-size:11px;color:#8e8e93">${subTypeLabel}</span>
               </div>
             </div>
             <div class="mob-rcpt-amt">${f(subAmt)}</div>
