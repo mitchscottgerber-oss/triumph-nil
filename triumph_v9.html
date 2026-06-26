@@ -133,7 +133,7 @@ html,body{height:100%;background:#f5f5f7;color:#1d1d1f;font-family:-apple-system
 .acpill.nfp .acpval{color:#fff!important;-webkit-text-fill-color:#fff!important}
 .acpnone{font-size:11px;color:#aeaeb2;-webkit-text-fill-color:#aeaeb2}
 /* ANNUAL TABLE */
-.twrap{background:#fff;border:1.5px solid #e5e5ea;border-radius:12px;overflow:auto}
+.twrap{background:#fff;border:1.5px solid #e5e5ea;border-radius:12px;overflow:auto;max-height:calc(100vh - 180px)}
 .atbl{border-collapse:collapse;min-width:100%}
 .atbl th{background:#f9f9f9;padding:8px 10px;font-size:9px;font-weight:600;color:#8e8e93;-webkit-text-fill-color:#8e8e93;text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid #e5e5ea;white-space:nowrap;position:sticky;top:0;z-index:2;text-align:center}
 .atbl th:first-child{text-align:left;min-width:155px;position:sticky;left:0;z-index:3;background:#f9f9f9}
@@ -1891,7 +1891,7 @@ function rAnnual(list,filterMos){
   const sIcon=(col)=>{'use strict';const active=annualSortCol===col;const ic=active&&annualSortDir===1?'ti-chevron-down':active&&annualSortDir===-1?'ti-chevron-up':'ti-selector';const clr=active?'color:currentColor':'color:#ccc';return'<i class="ti '+ic+'" style="font-size:11px;margin-left:3px;vertical-align:-1px;'+clr+'" aria-hidden="true"></i>';};
   const thSort=(col,label,extraStyle,alignLeft)=>{
     const active=annualSortCol===col;
-    const baseStyle='cursor:pointer;user-select:none;'+(alignLeft?'text-align:left':'text-align:right')+';min-width:'+(col==='name'?'200':col==='total'?'110':'90')+'px;white-space:nowrap;'+(extraStyle||'');
+    const baseStyle='cursor:pointer;user-select:none;position:sticky;top:0;z-index:'+(alignLeft?'4':'2')+';'+(alignLeft?'text-align:left':'text-align:right')+';min-width:'+(col==='name'?'200':col==='total'?'110':'90')+'px;white-space:nowrap;'+(extraStyle||'');
     return '<th style="'+baseStyle+'" onclick="annualSort(\''+col+'\')" title="Sort by '+label+'">'
       +(alignLeft?'<span style="display:flex;align-items:center;gap:2px">'+label+sIcon(col)+'</span>'
        :'<span style="display:flex;align-items:center;justify-content:flex-end;gap:2px">'+label+sIcon(col)+'</span>')
@@ -1921,7 +1921,7 @@ function rAnnual(list,filterMos){
       const moIc=moActive&&annualSortDir===1?'ti-chevron-down':moActive&&annualSortDir===-1?'ti-chevron-up':'ti-selector';
       const moIcClr=moActive?'color:'+(isCur?'#6d28d9':'#8e8e93'):'color:#ddd';
       const label=mo+' \''+(String(yr).slice(2));
-      return'<th class="'+(isCur?'cur':'')+'" style="min-width:82px;background:'+(isCur?'#f0ebff':'#fff')+'!important;color:'+(isCur?'#6d28d9':'#8e8e93')+'!important;cursor:pointer;user-select:none;white-space:nowrap" onclick="annualSort(\''+moColKey+'\')" title="Sort by '+label+'">'
+      return'<th class="'+(isCur?'cur':'')+'" style="min-width:82px;position:sticky;top:0;z-index:2;background:'+(isCur?'#f0ebff':'#f9f9f9')+'!important;color:'+(isCur?'#6d28d9':'#8e8e93')+'!important;cursor:pointer;user-select:none;white-space:nowrap" onclick="annualSort(\''+moColKey+'\')" title="Sort by '+label+'">'
         +'<div style="display:flex;align-items:center;justify-content:flex-end;gap:2px">'+label+'<i class="ti '+moIc+'" style="font-size:11px;'+moIcClr+'" aria-hidden="true"></i></div>'
         +(rowView==='rs'
           ?(moRS[i]>0?'<div style="font-size:8px;color:#c0392b;font-weight:500;margin-top:1px;text-align:right">'+f(moRS[i])+'</div>':'')
