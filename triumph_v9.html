@@ -5118,10 +5118,33 @@ function renderCos(){
       var pkId=e.target.dataset.pk;
       document.querySelectorAll('.pk-row[data-pk="'+pkId+'"]').forEach(function(row){
         var coName=row.querySelector('.pk-coname').textContent.toLowerCase();
-        var athText=row.querySelector('.pk-expand').textContent.toLowerCase();
-        var match=q===''||coName.indexOf(q)!==-1||athText.indexOf(q)!==-1;
-        row.style.display=match?'':'none';
-        if(q&&athText.indexOf(q)!==-1) row.querySelector('.pk-expand').style.display='block';
+        var exp=row.querySelector('.pk-expand');
+        var chev=row.querySelector('.pk-chev');
+        if(q===''){
+          row.style.display='';
+          exp.style.display='none';
+          if(chev) chev.style.transform='';
+          return;
+        }
+        if(coName.indexOf(q)!==-1){
+          // Company name matches — show row, collapse athletes
+          row.style.display='';
+          exp.style.display='none';
+          if(chev) chev.style.transform='';
+        } else {
+          // Check if any athlete matches — show only matching athletes
+          var athRows=exp.querySelectorAll('div');
+          var anyMatch=false;
+          athRows.forEach(function(ar){
+            var txt=ar.textContent.toLowerCase();
+            var matches=txt.indexOf(q)!==-1;
+            ar.style.display=matches?'':'none';
+            if(matches) anyMatch=true;
+          });
+          row.style.display=anyMatch?'':'none';
+          exp.style.display=anyMatch?'block':'none';
+          if(chev&&anyMatch) chev.style.transform='rotate(90deg)';
+        }
       });
     });
     return;
