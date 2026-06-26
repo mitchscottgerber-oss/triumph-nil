@@ -2421,7 +2421,6 @@ function openMarkPaidModal(key, mo, yr){
   const existing=document.getElementById('mark-paid-overlay');
   if(existing) existing.remove();
   const deals=a.deals||[];
-  const yr=s.yr||2026;
   // Build deal checkboxes — approved deals first
   const sorted=[...deals].sort((a,b)=>{
     const ap=a.status==='approved'?0:1,bp=b.status==='approved'?0:1;
@@ -2461,7 +2460,7 @@ function openMarkPaidModal(key, mo, yr){
     <div style="background:#1d1d1f;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
       <div><div style="font-size:15px;font-weight:700;color:#fff">Confirm Payment</div>
       <div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:2px">${a.f} ${a.l} · ${mo} ${yr}</div></div>
-      <button onclick="document.getElementById('mark-paid-overlay').remove()" style="background:rgba(255,255,255,.12);border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;color:#fff;-webkit-text-fill-color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center">✕</button>
+      <button onclick="document.getElementById('mark-paid-overlay').remove()" style="background:rgba(255,255,255,.12);border:none;border-radius:8px;width:30px;height:30px;cursor:pointer;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center">✕</button>
     </div>
     <div style="padding:18px 22px;overflow-y:auto;flex:1">
       <div style="background:#e8f8f2;border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
