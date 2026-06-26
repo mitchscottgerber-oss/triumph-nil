@@ -8859,7 +8859,7 @@ function buildMobReceiptCard(a,mo,yr){
         <div style="font-size:10px;color:#aeaeb2;font-family:monospace;margin-top:2px">${ref}</div>
       </div>
     </div>
-    ${total>0?`<div style="background:#eef6ff;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid #b3d4f5"><span style="font-size:10px;font-weight:600;color:#185fa5;text-transform:uppercase;letter-spacing:.05em">Total NIL Payment</span><span style="font-size:16px;font-weight:700;color:#185fa5">${f(total)}</span></div>`:''}
+    ${total>0?`<div style="background:#eef6ff;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid #b3d4f5"><span style="font-size:10px;font-weight:600;color:#185fa5;text-transform:uppercase;letter-spacing:.05em">Total NIL Payment for ${mo}</span><span style="font-size:16px;font-weight:700;color:#185fa5">${f(total)}</span></div>`:''}
     <div style="font-size:9px;font-weight:500;color:#8e8e93;text-transform:uppercase;letter-spacing:.06em;padding:8px 14px 4px">Source of funds</div>
     <div class="mob-rcpt-lines">${lines}</div>
     <div class="mob-rcpt-ft">
