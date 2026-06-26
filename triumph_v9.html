@@ -8443,6 +8443,40 @@ document.addEventListener('click', function(e){
       if(updated>0) syncStatus('Playfly receipts updated: '+updated+' athletes ✓');
     }catch(e){console.warn('Playfly migration error:',e);}
   })();
+  // Backfill usedCos for already-paid months on Playfly deals
+  (async function(){
+    try{
+      var DONE_KEY='playfly_usedcos_backfill_v1';
+      if(localStorage.getItem(DONE_KEY)) return;
+      var playfyCos=["Whitley's Peanut Factory","Virginia Federal Credit Union (VACU)","Twenty / 20 Management, Inc.","The Joint Chiropractic","The Hotel Roanoke & Conference Center","Smithfield Foods","Signarama","Red Beards Pest Control Wildlife, LLC","Lunch Pail Ventures","Kroger","IV Labs, Inc.","Henritze Dental Group","Grand Home Furnishings","Eagle Construction","Cox","Carter Machinery","JET Express Carwash","186 Advertising","Delta Dental of Virginia","Coca-Cola Consolidated, Inc","G & H Appliance, Inc.","Carilion Clinic: Healthcare for Hokies","Carilion Children's","Scoville Specialities, Inc"];
+      var subAmt=599;
+      var updated=0;
+      for(var i=0;i<A.length;i++){
+        var a=A[i];
+        var changed=false;
+        (a.deals||[]).forEach(function(d){
+          if(!d.n||d.n.toLowerCase().indexOf('playfly')===-1) return;
+          if(!d.subCompanies) return;
+          var hist=d.hist||[];
+          if(!d.usedCos) d.usedCos=[];
+          hist.forEach(function(h){
+            var alreadySet=d.usedCos.some(function(u){return u.mo===h.mo&&(u.yr||2026)===(h.yr||2026);});
+            if(alreadySet) return;
+            var numCos=Math.ceil((h.amt||0)/subAmt);
+            var usedSoFar=d.usedCos.map(function(u){return u.co;});
+            var avail=playfyCos.filter(function(co){return usedSoFar.indexOf(co)===-1;});
+            for(var ci=0;ci<Math.min(numCos,avail.length);ci++){
+              d.usedCos.push({co:avail[ci],mo:h.mo,yr:h.yr||2026});
+            }
+            changed=true;
+          });
+        });
+        if(changed){await saveDealsToSupabase(a);updated++;}
+      }
+      localStorage.setItem(DONE_KEY,'1');
+      if(updated>0) syncStatus('Playfly backfill: '+updated+' athletes updated ✓');
+    }catch(e){console.warn('Playfly backfill error:',e);}
+  })();
   if(isMobile()){
     initMobile();
   } else {
